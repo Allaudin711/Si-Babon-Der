@@ -667,7 +667,6 @@ let splashAudioStarted = false;
 function runSplashLoadingSequence() {
     const progressBar = document.getElementById('splash-progress-bar');
     const btnMulai = document.getElementById('btn-mulai-splash');
-    const statusText = document.getElementById('splash-status-text');
 
     splashLoadingCompleted = false;
     splashAudioStarted = false;
@@ -675,16 +674,13 @@ function runSplashLoadingSequence() {
     // Reset initial UI states
     if (progressBar) progressBar.style.width = '0%';
     if (btnMulai) {
-        btnMulai.disabled = true;
-        btnMulai.classList.remove('btn-splash-unlocked', 'btn-splash-waiting');
-        btnMulai.classList.add('btn-splash-locked');
+        btnMulai.disabled = false;
+        btnMulai.classList.remove('btn-splash-unlocked', 'btn-splash-locked');
+        btnMulai.classList.add('btn-splash-waiting');
         btnMulai.innerHTML = `
             <svg class="splash-lock-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            <span id="btn-mulai-label">MEMUAT SISTEM &amp; AUDIO... 0%</span>
+            <span id="btn-mulai-label">KLIK UNTUK MEMUAT</span>
         `;
-    }
-    if (statusText) {
-        statusText.innerHTML = '<span class="telemetry-dot"></span><span>MENYIAPKAN AUDIO SISTEM...</span>';
     }
 
     // Initialize audio element for Kamen Rider Build (2017) Henshin Sequence
@@ -701,10 +697,6 @@ function runSplashLoadingSequence() {
         splashLoadingCompleted = true;
 
         if (progressBar) progressBar.style.width = '100%';
-
-        if (statusText) {
-            statusText.innerHTML = '<span style="color:#10b981; font-weight:700;">✓ [SELESAI] INISIALISASI AUDIO &amp; SISTEM LENGKAP — SILAKAN MASUK</span>';
-        }
 
         if (btnMulai) {
             btnMulai.disabled = false;
@@ -723,7 +715,7 @@ function runSplashLoadingSequence() {
         showToast('Inisialisasi sistem selesai! Tekan ENTER atau klik untuk masuk.');
     }
 
-    // Function to smoothly update loading bar and Kamen Rider telemetry
+    // Function to smoothly update loading bar
     function updateLoadingProgress() {
         if (!splashAudio || splashLoadingCompleted) return;
 
@@ -734,7 +726,6 @@ function runSplashLoadingSequence() {
             : 34.5;
 
         const rawPct = Math.min(100, (cur / dur) * 100);
-        const pct = Math.min(100, Math.floor(rawPct));
 
         if (progressBar) {
             progressBar.style.width = rawPct.toFixed(1) + '%';
@@ -742,29 +733,10 @@ function runSplashLoadingSequence() {
 
         const btnLabel = document.getElementById('btn-mulai-label');
         if (btnLabel && !splashLoadingCompleted) {
-            btnLabel.textContent = `MEMUAT SISTEM & AUDIO... ${pct}%`;
+            btnLabel.textContent = 'MEMUAT SISTEM';
         }
 
-        // Live Kamen Rider Build (2017) audio telemetry stages
-        if (statusText && !splashLoadingCompleted) {
-            if (cur < 4.2) {
-                statusText.innerHTML = `<span class="telemetry-dot"></span><span>[RABBIT] FULLBOTTLE DETEKSI: KELINCI (JUMP &amp; AGILITY)</span>`;
-            } else if (cur < 6.8) {
-                statusText.innerHTML = `<span class="telemetry-dot"></span><span>[TANK] FULLBOTTLE DETEKSI: TANK (DAYA HANCUR BAJA)</span>`;
-            } else if (cur < 8.8) {
-                statusText.innerHTML = `<span class="telemetry-dot" style="background:#00f0ff;"></span><span>[BEST MATCH] MO-GU-NYU! BEST MATCH! KOMBINASI TERBAIK!</span>`;
-            } else if (cur < 22.0) {
-                statusText.innerHTML = `<span class="telemetry-dot" style="background:#2563eb;"></span><span>[BUILD DRIVER] ARE YOU READY?! MENYIAPKAN FORMULA STRUKTUR BETON...</span>`;
-            } else if (cur < 26.5) {
-                statusText.innerHTML = `<span class="telemetry-dot" style="background:#e11d48;"></span><span>[HENSHIN] HAGANE NO MOONSAULT! RABBIT-TANK!</span>`;
-            } else if (cur < 31.0) {
-                statusText.innerHTML = `<span class="telemetry-dot" style="background:#10b981;"></span><span>[YEAH!] PROFIL STRUKTUR KOKOH &amp; PRESISI TERCAPAI!</span>`;
-            } else {
-                statusText.innerHTML = `<span class="telemetry-dot"></span><span>[FINISH] PELEPASAN TEKANAN HIDROLIK... SELESAI!</span>`;
-            }
-        }
-
-        if (pct >= 100 || cur >= (dur - 0.15)) {
+        if (rawPct >= 100 || cur >= (dur - 0.15)) {
             finishSplashLoading();
             return;
         }
@@ -788,7 +760,7 @@ function runSplashLoadingSequence() {
                 const p = Math.min(100, Math.floor((simCur / simDur) * 100));
                 if (progressBar) progressBar.style.width = p + '%';
                 const btnLabel = document.getElementById('btn-mulai-label');
-                if (btnLabel) btnLabel.textContent = `MEMUAT SISTEM... ${p}%`;
+                if (btnLabel) btnLabel.textContent = 'MEMUAT SISTEM';
                 if (p >= 100) {
                     clearInterval(simInterval);
                     finishSplashLoading();
@@ -808,16 +780,17 @@ function runSplashLoadingSequence() {
                     btnMulai.disabled = true;
                     btnMulai.classList.remove('btn-splash-waiting');
                     btnMulai.classList.add('btn-splash-locked');
+                    const btnLabel = document.getElementById('btn-mulai-label');
+                    if (btnLabel) {
+                        btnLabel.textContent = 'MEMUAT SISTEM';
+                    }
                 }
                 requestAnimationFrame(updateLoadingProgress);
             }).catch((err) => {
-                console.log('Autoplay blocked by browser policy, awaiting user action:', err);
-                if (statusText) {
-                    statusText.innerHTML = '<span class="blink-cyan">▶ KLIK TOMBOL ATAU LAYAR UNTUK MEMUTAR SUARA &amp; MEMULAI</span>';
-                }
+                console.log('Autoplay waiting for user action:', err);
                 const btnLabel = document.getElementById('btn-mulai-label');
                 if (btnLabel) {
-                    btnLabel.textContent = 'KLIK UNTUK MEMUTAR SUARA & MULAI';
+                    btnLabel.textContent = 'KLIK UNTUK MEMUAT';
                 }
                 if (btnMulai) {
                     btnMulai.disabled = false;
@@ -831,7 +804,7 @@ function runSplashLoadingSequence() {
     // Attempt autoplay immediately on load
     startAudioPlay();
 
-    // User interaction listeners if autoplay was blocked
+    // User interaction listeners
     if (btnMulai) {
         btnMulai.onclick = function() {
             if (!splashAudioStarted) {
