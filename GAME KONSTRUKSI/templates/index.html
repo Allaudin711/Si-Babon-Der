@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Si Babon Der! - Simulasi Balok Beton &amp; Slinder</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='logo-favicon.jpg') }}">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Custom Engineering Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- ==========================================================================
+         INTERACTIVE CAD BLUEPRINT LOADING / SPLASH SCREEN
+         (Featuring Futuristic Holographic Motion Logo & Blueprint Architecture)
+         ========================================================================== -->
+    <div id="splash-screen">
+        <div class="splash-futuristic-container">
+            <!-- Blueprint Schematic Banner Card -->
+            <div class="splash-banner-card">
+                <img src="{{ url_for('static', filename='img/loading-screen-bg.jpg') }}" alt="Si Babon Der CAD Blueprint" class="splash-blueprint-banner-img" onerror="this.onerror=null; this.src='{{ url_for('static', filename='img/splash-blueprint-bg.jpg') }}';">
+                
+                <!-- Cyber Laser Scanner Beam -->
+                <div class="splash-laser-scanner"></div>
+
+                <!-- High-Tech Telemetry HUD Badges -->
+                <div class="hud-corner-tag top-left">SYS: ONLINE // 60 FPS</div>
+                <div class="hud-corner-tag top-right">CAD 3D ENGINE V3.8</div>
+                <div class="hud-corner-tag bottom-left">SNI 2847 / ASTM C39</div>
+                <div class="hud-corner-tag bottom-right">LATENCY: 0.12ms</div>
+
+                <!-- Overlay with Futuristic Motion Logo -->
+                <div class="splash-motion-overlay">
+                    <!-- Futuristic Rotating HUD Rings & 3D Logo Core -->
+                    <div class="splash-hud-portal">
+                        <div class="hud-ring-outer"></div>
+                        <div class="hud-ring-mid"></div>
+                        <div class="hud-ring-radar"></div>
+                        <div class="hud-ring-dashed"></div>
+                        <div class="hud-particle-orbit">
+                            <span class="hud-particle p1"></span>
+                            <span class="hud-particle p2"></span>
+                            <span class="hud-particle p3"></span>
+                        </div>
+                        <div class="hud-center-lens">
+                            <img src="{{ url_for('static', filename='logo-favicon.jpg') }}" alt="Logo" class="splash-logo-core" onerror="this.onerror=null; this.src='{{ url_for('static', filename='logo-favicon.jpeg.jpeg') }}';">
+                            <div class="lens-glare-sweep"></div>
+                        </div>
+                    </div>
+
+                    <!-- Glowing Pill Title -->
+                    <div class="splash-glow-badge">
+                        <span>SI BABON <strong>DER!</strong></span>
+                    </div>
+                    <div class="splash-tagline">SIMULASI BALOK BETON &amp; SLINDER</div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="splash-progress-track">
+                <div class="splash-progress-bar" id="splash-progress-bar"></div>
+            </div>
+
+            <button class="btn-mulai-splash" id="btn-mulai-splash" onclick="mulaiAplikasi()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> ENTER CAD WORKSPACE
+            </button>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         TOP APP HEADER BAR (CLEAN & MINIMALIST)
+         ========================================================================== -->
+    <header class="app-header">
+        <div class="brand-wrapper">
+            <button class="btn-mobile-menu" onclick="toggleMobileMenu()" title="Toggle Navigation Menu">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <img src="{{ url_for('static', filename='logo-favicon.jpg') }}" alt="Logo" class="brand-logo-img" onerror="this.onerror=null; this.src='{{ url_for('static', filename='logo-favicon.jpeg.jpeg') }}';">
+            <div class="brand-titles">
+                <div class="brand-title">SI BABON <span>DER!</span></div>
+                <div class="brand-subtitle">Simulasi Balok Beton &amp; Slinder</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==========================================================================
+         MAIN APPLICATION LAYOUT
+         ========================================================================== -->
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-heading">WORKSPACE NAVIGATION</div>
+
+            <button class="btn-nav active" onclick="switchTab(this, 'create')">
+                <img src="{{ url_for('static', filename='icons/menu-create.svg') }}" alt="Create Element Logo" class="nav-btn-logo nav-logo-create">
+                <span>Create Element</span>
+            </button>
+            <button class="btn-nav" onclick="switchTab(this, 'loss')">
+                <img src="{{ url_for('static', filename='icons/menu-loss.svg') }}" alt="Material Loss Logo" class="nav-btn-logo nav-logo-loss">
+                <span>Material Loss</span>
+            </button>
+            <button class="btn-nav" onclick="switchTab(this, 'pengujian')">
+                <img src="{{ url_for('static', filename='icons/menu-pengujian.svg') }}" alt="Lab Testing Logo" class="nav-btn-logo nav-logo-pengujian">
+                <span>Lab Testing</span>
+                <span class="nav-badge">UTM</span>
+            </button>
+            <button class="btn-nav" onclick="switchTab(this, 'analisis')">
+                <img src="{{ url_for('static', filename='icons/menu-analisis.svg') }}" alt="Analysis Report Logo" class="nav-btn-logo nav-logo-analisis">
+                <span>Analysis Report</span>
+            </button>
+            <button class="btn-nav" onclick="switchTab(this, 'rab')">
+                <img src="{{ url_for('static', filename='icons/menu-rab.svg') }}" alt="Cost &amp; BoQ Logo" class="nav-btn-logo nav-logo-rab">
+                <span>Cost &amp; BoQ</span>
+            </button>
+            <button class="btn-nav" onclick="switchTab(this, 'karbon')">
+                <img src="{{ url_for('static', filename='icons/menu-karbon.svg') }}" alt="Carbon Footprint Logo" class="nav-btn-logo nav-logo-karbon">
+                <span>Carbon Footprint</span>
+                <span class="nav-badge" style="color:var(--accent-emerald); border-color:var(--accent-emerald);">ECO</span>
+            </button>
+            <button class="btn-nav" onclick="switchTab(this, 'ekspor')">
+                <img src="{{ url_for('static', filename='icons/menu-ekspor.svg') }}" alt="Export Report Logo" class="nav-btn-logo nav-logo-ekspor">
+                <span>Export Report</span>
+            </button>
+            <!-- REPOSITIONED: Structural Battle is below Export Report -->
+            <button class="btn-nav" onclick="switchTab(this, 'pertempuran')">
+                <img src="{{ url_for('static', filename='logo-favicon.jpg') }}" alt="Battle Logo" class="nav-btn-logo nav-logo-battle" onerror="this.onerror=null; this.src='{{ url_for('static', filename='logo-favicon.jpeg.jpeg') }}';">
+                <span>Structural Battle</span>
+                <span class="nav-badge">BATTLE</span>
+            </button>
+        </nav>
+
+        <!-- Main Workspace (Center Canvas 3D & Right Control Panel) -->
+        <main class="main-container">
+            <!-- Center 3D CAD Simulation Viewport -->
+            <section class="canvas-area" id="canvas-view" onwheel="handleZoomWheel(event)">
+                <!-- Dynamic via JavaScript -->
+            </section>
+
+            <!-- Right Telemetry & Control Panel -->
+            <aside class="control-panel" id="panel-view">
+                <!-- Dynamic via JavaScript -->
+            </aside>
+        </main>
+    </div>
+
+    <!-- HUD Toast Notifications Container -->
+    <div id="hud-toast-container"></div>
+
+    <!-- Core Simulation Logic -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

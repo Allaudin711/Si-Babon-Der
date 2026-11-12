@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="battleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
+    </linearGradient>
+    <linearGradient id="bgBattle" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2e1015"/>
+      <stop offset="100%" stop-color="#0e1424"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="44" height="44" rx="10" fill="url(#bgBattle)" stroke="#ef4444" stroke-width="1.8" stroke-opacity="0.7"/>
+  <path d="M24 10 L35 15 L35 27 C35 34 24 39 24 39 C24 39 13 34 13 27 L13 15 Z" fill="#1c1924" stroke="#ef4444" stroke-width="1.8"/>
+  <circle cx="24" cy="24" r="6" fill="none" stroke="#00f0ff" stroke-width="1.5"/>
+  <path d="M17 17 L31 31 M31 17 L17 31" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round"/>
+</svg>
