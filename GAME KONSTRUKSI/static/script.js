@@ -687,15 +687,15 @@ function mulaiAplikasi() {
     playKamenRiderBuildSound('henshin');
 
     // Visual Kamen Rider Build (2017) Rabbit-Tank Dual Flash FX
-    let flash = document.createElement('div');
-    flash.className = 'build-henshin-flash';
-    document.body.appendChild(flash);
-    setTimeout(() => { flash.style.opacity = '1'; }, 10);
-    setTimeout(() => { flash.style.opacity = '0'; }, 450);
-    setTimeout(() => { flash.remove(); }, 950);
+    const buildFlash = document.createElement('div');
+    buildFlash.className = 'build-henshin-flash';
+    document.body.appendChild(buildFlash);
+    setTimeout(() => { buildFlash.style.opacity = '1'; }, 10);
+    setTimeout(() => { buildFlash.style.opacity = '0'; }, 450);
+    setTimeout(() => { buildFlash.remove(); }, 950);
 
     // Visual Flash FX
-    let flash = document.createElement('div');
+    const flash = document.createElement('div');
     flash.className = 'henshin-flash-fx';
     document.body.appendChild(flash);
     setTimeout(() => { flash.style.opacity = '0.9'; }, 10);
