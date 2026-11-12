@@ -1277,6 +1277,122 @@ option {
     gap: 8px;
 }
 
+/* Futuristic Audio Subtitle HUD */
+.splash-subtitle-container {
+    width: 100%;
+    background: rgba(8, 18, 38, 0.85);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    border-radius: 6px;
+    padding: 8px 14px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.12), inset 0 0 10px rgba(0, 240, 255, 0.05);
+    backdrop-filter: blur(8px);
+    transition: all 0.3s ease;
+}
+
+.subtitle-cyber-bracket {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--cyan-neon);
+    opacity: 0.8;
+}
+
+.subtitle-waveform-indicator {
+    display: flex;
+    align-items: center;
+    gap: 2.5px;
+    height: 14px;
+}
+
+.wave-bar {
+    width: 2.5px;
+    background: var(--cyan-neon);
+    border-radius: 1px;
+    box-shadow: 0 0 6px var(--cyan-neon);
+    transition: height 0.15s ease;
+}
+
+.wave-bar.w1 { height: 5px; }
+.wave-bar.w2 { height: 11px; }
+.wave-bar.w3 { height: 8px; }
+.wave-bar.w4 { height: 13px; }
+
+.splash-subtitle-container.active-audio .wave-bar {
+    animation: waveBounce 0.6s infinite alternate ease-in-out;
+}
+.splash-subtitle-container.active-audio .wave-bar.w1 { animation-delay: 0.1s; }
+.splash-subtitle-container.active-audio .wave-bar.w2 { animation-delay: 0.3s; }
+.splash-subtitle-container.active-audio .wave-bar.w3 { animation-delay: 0.2s; }
+.splash-subtitle-container.active-audio .wave-bar.w4 { animation-delay: 0.4s; }
+
+@keyframes waveBounce {
+    0% { height: 3px; opacity: 0.4; }
+    100% { height: 14px; opacity: 1; }
+}
+
+.splash-audio-subtitle {
+    font-family: 'Share Tech Mono', monospace, Consolas;
+    font-size: 12px;
+    letter-spacing: 1.2px;
+    font-weight: 700;
+    color: #e0f2fe;
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+    text-align: center;
+    text-transform: uppercase;
+    transition: all 0.2s ease-in-out;
+}
+
+.subtitle-voice {
+    color: #38bdf8 !important;
+    text-shadow: 0 0 12px rgba(56, 189, 248, 0.9) !important;
+}
+
+.subtitle-climax {
+    color: #f43f5e !important;
+    text-shadow: 0 0 15px rgba(244, 63, 94, 0.9) !important;
+    animation: climaxPulse 0.4s infinite alternate;
+}
+
+.subtitle-success {
+    color: #10b981 !important;
+    text-shadow: 0 0 12px rgba(16, 185, 129, 0.85) !important;
+}
+
+@keyframes climaxPulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.03); }
+}
+
+/* Progress Header with Percentage */
+.splash-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 6px;
+    padding: 0 2px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+.splash-progress-label {
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.splash-progress-pct {
+    color: var(--cyan-neon);
+    font-weight: 800;
+    font-size: 12px;
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.7);
+}
+
 .splash-progress-track {
     width: 100%;
     height: 8px;

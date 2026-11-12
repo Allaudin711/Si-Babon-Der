@@ -667,12 +667,22 @@ let splashAudioStarted = false;
 function runSplashLoadingSequence() {
     const progressBar = document.getElementById('splash-progress-bar');
     const btnMulai = document.getElementById('btn-mulai-splash');
+    const pctEl = document.getElementById('splash-progress-pct');
+    const subtitleEl = document.getElementById('splash-audio-subtitle');
+    const subtitleContainer = document.getElementById('splash-subtitle-container');
 
     splashLoadingCompleted = false;
     splashAudioStarted = false;
 
     // Reset initial UI states
     if (progressBar) progressBar.style.width = '0%';
+    if (pctEl) pctEl.textContent = '0%';
+    if (subtitleEl) {
+        subtitleEl.textContent = 'AUDIO SUBTITLE STANDBY';
+        subtitleEl.className = 'splash-audio-subtitle';
+    }
+    if (subtitleContainer) subtitleContainer.classList.remove('active-audio');
+
     if (btnMulai) {
         btnMulai.disabled = false;
         btnMulai.classList.remove('btn-splash-unlocked', 'btn-splash-locked');
@@ -697,6 +707,13 @@ function runSplashLoadingSequence() {
         splashLoadingCompleted = true;
 
         if (progressBar) progressBar.style.width = '100%';
+        if (pctEl) pctEl.textContent = '100%';
+
+        if (subtitleContainer) subtitleContainer.classList.remove('active-audio');
+        if (subtitleEl) {
+            subtitleEl.innerHTML = '<span class="subtitle-success">✓ [SISTEM TERVERIFIKASI • SILAKAN MASUK]</span>';
+            subtitleEl.className = 'splash-audio-subtitle subtitle-success';
+        }
 
         if (btnMulai) {
             btnMulai.disabled = false;
@@ -715,7 +732,7 @@ function runSplashLoadingSequence() {
         showToast('Inisialisasi sistem selesai! Tekan ENTER atau klik untuk masuk.');
     }
 
-    // Function to smoothly update loading bar
+    // Function to smoothly update loading bar, percentage, and futuristic audio subtitle
     function updateLoadingProgress() {
         if (!splashAudio || splashLoadingCompleted) return;
 
@@ -726,14 +743,62 @@ function runSplashLoadingSequence() {
             : 34.5;
 
         const rawPct = Math.min(100, (cur / dur) * 100);
+        const pctInt = Math.min(100, Math.floor(rawPct));
 
         if (progressBar) {
             progressBar.style.width = rawPct.toFixed(1) + '%';
         }
 
+        if (pctEl) {
+            pctEl.textContent = pctInt + '%';
+        }
+
         const btnLabel = document.getElementById('btn-mulai-label');
         if (btnLabel && !splashLoadingCompleted) {
             btnLabel.textContent = 'MEMUAT SISTEM';
+        }
+
+        // Animated Waveform Indicator
+        if (subtitleContainer && !splashAudio.paused) {
+            subtitleContainer.classList.add('active-audio');
+        }
+
+        // Futuristic Audio Subtitles Synchronized with Kamen Rider Build (2017) Audio
+        if (subtitleEl && !splashLoadingCompleted) {
+            if (cur < 3.2) {
+                subtitleEl.innerHTML = '<span>⚡ [FULLBOTTLE INSERTION]</span>';
+                subtitleEl.className = 'splash-audio-subtitle';
+            } else if (cur < 4.8) {
+                subtitleEl.innerHTML = '<span class="subtitle-voice">🐰 "RABBIT!" (FULLBOTTLE ENGAGED)</span>';
+                subtitleEl.className = 'splash-audio-subtitle subtitle-voice';
+            } else if (cur < 6.8) {
+                subtitleEl.innerHTML = '<span class="subtitle-voice">🛡️ "TANK!" (FULLBOTTLE ENGAGED)</span>';
+                subtitleEl.className = 'splash-audio-subtitle subtitle-voice';
+            } else if (cur < 8.8) {
+                subtitleEl.innerHTML = '<span class="subtitle-voice">✨ "BEST MATCH!" (KOMBINASI TERBAIK)</span>';
+                subtitleEl.className = 'splash-audio-subtitle subtitle-voice';
+            } else if (cur < 21.0) {
+                subtitleEl.innerHTML = '<span>⚙️ [CRANK ROTATION • STANDBY TECHNO RIFF]</span>';
+                subtitleEl.className = 'splash-audio-subtitle';
+            } else if (cur < 23.4) {
+                subtitleEl.innerHTML = '<span class="subtitle-climax">🔥 "ARE YOU READY?!"</span>';
+                subtitleEl.className = 'splash-audio-subtitle subtitle-climax';
+            } else if (cur < 25.4) {
+                subtitleEl.innerHTML = '<span class="subtitle-climax">⚡ "HENSHIN!" [SNAP-RUNNER MOLD SLAM]</span>';
+                subtitleEl.className = 'splash-audio-subtitle subtitle-climax';
+            } else if (cur < 27.6) {
+                subtitleEl.innerHTML = '<span class="subtitle-climax">🌪️ "HAGANE NO MOONSAULT!"</span>';
+                subtitleEl.className = 'splash-audio-subtitle subtitle-climax';
+            } else if (cur < 30.0) {
+                subtitleEl.innerHTML = '<span class="subtitle-climax">⚔️ "RABBIT-TANK!"</span>';
+                subtitleEl.className = 'splash-audio-subtitle subtitle-climax';
+            } else if (cur < 32.2) {
+                subtitleEl.innerHTML = '<span class="subtitle-climax">💥 "YEAHHH!"</span>';
+                subtitleEl.className = 'splash-audio-subtitle subtitle-climax';
+            } else {
+                subtitleEl.innerHTML = '<span>💨 [STEAM EXHAUST RELEASE • KERNEL READY]</span>';
+                subtitleEl.className = 'splash-audio-subtitle';
+            }
         }
 
         if (rawPct >= 100 || cur >= (dur - 0.15)) {
@@ -759,6 +824,7 @@ function runSplashLoadingSequence() {
                 simCur += 0.1;
                 const p = Math.min(100, Math.floor((simCur / simDur) * 100));
                 if (progressBar) progressBar.style.width = p + '%';
+                if (pctEl) pctEl.textContent = p + '%';
                 const btnLabel = document.getElementById('btn-mulai-label');
                 if (btnLabel) btnLabel.textContent = 'MEMUAT SISTEM';
                 if (p >= 100) {
