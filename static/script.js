@@ -150,6 +150,7 @@ let testState = {
     selectedMaterialIndex: 0,
     selectedMethod: 'Uji Kuat Tekan (Compressive Strength Test)'
 };
+let currentActiveTab = 'create';
 
 /* ==========================================================================
    HUD FLOATING TOAST NOTIFICATION
@@ -184,6 +185,155 @@ function initAudio() {
     if (!audioCtx) {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (AudioContext) audioCtx = new AudioContext();
+    }
+}
+
+
+/* ==========================================================================
+   KAMEN RIDER HENSHIN BELT & SCI-FI SOUND SYNTHESIZER (WEB AUDIO API)
+   ========================================================================== */
+function playKamenRiderSound(type) {
+    if (!soundEnabled) return;
+    try {
+        initAudio();
+        if (!audioCtx) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+
+        if (type === 'henshin') {
+            // ==============================================================
+            // KAMEN RIDER HENSHIN FULL TRANSFORMATION CLIMAX BURST
+            // ==============================================================
+            
+            // Layer 1: High-Tech Key Latch Insertion Chimes (KA-CHING!)
+            const oscLatch1 = audioCtx.createOscillator();
+            const oscLatch2 = audioCtx.createOscillator();
+            const gainLatch = audioCtx.createGain();
+            
+            oscLatch1.type = 'square';
+            oscLatch2.type = 'triangle';
+            oscLatch1.frequency.setValueAtTime(1760, now);
+            oscLatch1.frequency.setValueAtTime(2637, now + 0.08);
+            oscLatch2.frequency.setValueAtTime(880, now);
+            oscLatch2.frequency.setValueAtTime(1318, now + 0.08);
+            
+            gainLatch.gain.setValueAtTime(0.2, now);
+            gainLatch.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+            
+            oscLatch1.connect(gainLatch);
+            oscLatch2.connect(gainLatch);
+            gainLatch.connect(audioCtx.destination);
+            
+            oscLatch1.start(now);
+            oscLatch2.start(now);
+            oscLatch1.stop(now + 0.22);
+            oscLatch2.stop(now + 0.22);
+
+            // Layer 2: Ascending Electronic Plasma Horn / Energy Charge Sweep
+            const oscCharge = audioCtx.createOscillator();
+            const filterCharge = audioCtx.createBiquadFilter();
+            const gainCharge = audioCtx.createGain();
+            
+            oscCharge.type = 'sawtooth';
+            oscCharge.frequency.setValueAtTime(120, now + 0.08);
+            oscCharge.frequency.exponentialRampToValueAtTime(1580, now + 0.65);
+            
+            filterCharge.type = 'bandpass';
+            filterCharge.frequency.setValueAtTime(220, now + 0.08);
+            filterCharge.frequency.exponentialRampToValueAtTime(3400, now + 0.65);
+            filterCharge.Q.setValueAtTime(8, now + 0.08);
+            
+            gainCharge.gain.setValueAtTime(0.02, now + 0.08);
+            gainCharge.gain.linearRampToValueAtTime(0.3, now + 0.52);
+            gainCharge.gain.exponentialRampToValueAtTime(0.001, now + 0.72);
+            
+            oscCharge.connect(filterCharge);
+            filterCharge.connect(gainCharge);
+            gainCharge.connect(audioCtx.destination);
+            
+            oscCharge.start(now + 0.08);
+            oscCharge.stop(now + 0.72);
+
+            // Layer 3: Heavy Sub-Bass Transformation Impact (KABOOOOM!)
+            const oscImpact = audioCtx.createOscillator();
+            const gainImpact = audioCtx.createGain();
+            
+            oscImpact.type = 'sine';
+            oscImpact.frequency.setValueAtTime(220, now + 0.62);
+            oscImpact.frequency.exponentialRampToValueAtTime(32, now + 1.6);
+            
+            gainImpact.gain.setValueAtTime(0.45, now + 0.62);
+            gainImpact.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+            
+            oscImpact.connect(gainImpact);
+            gainImpact.connect(audioCtx.destination);
+            
+            oscImpact.start(now + 0.62);
+            oscImpact.stop(now + 1.6);
+
+            // Layer 4: Kamen Rider Iconic Heroic Chords (Major Arpeggio Power Fanfare)
+            const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
+            notes.forEach((freq, idx) => {
+                const oscH = audioCtx.createOscillator();
+                const gainH = audioCtx.createGain();
+                
+                oscH.type = 'sawtooth';
+                const startTime = now + 0.65 + (idx * 0.045);
+                oscH.frequency.setValueAtTime(freq, startTime);
+                
+                gainH.gain.setValueAtTime(0.12, startTime);
+                gainH.gain.exponentialRampToValueAtTime(0.001, startTime + 0.9);
+                
+                oscH.connect(gainH);
+                gainH.connect(audioCtx.destination);
+                
+                oscH.start(startTime);
+                oscH.stop(startTime + 0.9);
+            });
+
+            // Layer 5: Futuristic Laser Dispersion Tail (SHWIIII-SHINGGG!)
+            const oscTail = audioCtx.createOscillator();
+            const gainTail = audioCtx.createGain();
+            
+            oscTail.type = 'sine';
+            oscTail.frequency.setValueAtTime(2400, now + 1.0);
+            oscTail.frequency.exponentialRampToValueAtTime(440, now + 1.9);
+            
+            gainTail.gain.setValueAtTime(0.1, now + 1.0);
+            gainTail.gain.exponentialRampToValueAtTime(0.001, now + 1.9);
+            
+            oscTail.connect(gainTail);
+            gainTail.connect(audioCtx.destination);
+            
+            oscTail.start(now + 1.0);
+            oscTail.stop(now + 1.9);
+
+        } else if (type === 'standby') {
+            // Kamen Rider Driver Ready / Standby Dual Pulse
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.type = 'square';
+            osc1.frequency.setValueAtTime(987.77, now);
+            gain1.gain.setValueAtTime(0.08, now);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+            osc1.connect(gain1);
+            gain1.connect(audioCtx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.12);
+
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'sawtooth';
+            osc2.frequency.setValueAtTime(1318.51, now + 0.12);
+            gain2.gain.setValueAtTime(0.06, now + 0.12);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.start(now + 0.12);
+            osc2.stop(now + 0.24);
+        }
+    } catch (e) {
+        // Fallback safely
     }
 }
 
@@ -285,18 +435,30 @@ function runSplashLoadingSequence() {
             if (btnMulai) {
                 btnMulai.style.display = 'flex';
                 btnMulai.scrollIntoView({ behavior: 'smooth' });
+                btnMulai.onmouseenter = () => playKamenRiderSound('standby');
+                playKamenRiderSound('standby');
             }
         }
     }, 35);
 }
 
 function mulaiAplikasi() {
-    playSynthSound('success');
+    // Play Kamen Rider Henshin Sound Effect!
+    playKamenRiderSound('henshin');
+
+    // Visual Flash FX
+    let flash = document.createElement('div');
+    flash.className = 'henshin-flash-fx';
+    document.body.appendChild(flash);
+    setTimeout(() => { flash.style.opacity = '0.9'; }, 10);
+    setTimeout(() => { flash.style.opacity = '0'; }, 350);
+    setTimeout(() => { flash.remove(); }, 850);
+
     const splash = document.getElementById('splash-screen');
     if (splash) {
         splash.style.opacity = '0';
         splash.style.visibility = 'hidden';
-        setTimeout(() => splash.remove(), 700);
+        setTimeout(() => splash.remove(), 750);
     }
     renderCreate();
     initCADCanvasMouseEvents();
@@ -310,8 +472,12 @@ function initCADCanvasMouseEvents() {
     const canvas = document.getElementById('canvas-view');
     if (!canvas) return;
 
+    // Attach wheel event directly to canvas
+    canvas.addEventListener('wheel', handleZoomWheel, { passive: false });
+
     canvas.addEventListener('mousedown', (e) => {
-        if (e.target.closest('.viewport-hud-bottom') || e.target.closest('.zoom-controls') || e.target.closest('button')) return;
+        if (canvas.classList.contains('scroll-mode') || 
+            e.target.closest('.analysis-scroll-view, .analysis-report-container, .table-responsive-wrapper, .hydraulic-testing-box, .loss-container, .viewport-hud-bottom, .zoom-controls, button, select, input')) return;
         isDraggingCAD = true;
         lastMouseX = e.clientX;
         lastMouseY = e.clientY;
@@ -335,8 +501,10 @@ function initCADCanvasMouseEvents() {
         isDraggingCAD = false;
     });
 
-    // Touch support
+    // Touch support (respects scroll-mode so 2 fingers and swipe can scroll naturally)
     canvas.addEventListener('touchstart', (e) => {
+        if (canvas.classList.contains('scroll-mode') || 
+            e.target.closest('.analysis-scroll-view, .analysis-report-container, .table-responsive-wrapper, .hydraulic-testing-box, .loss-container, button, select, input')) return;
         if (e.touches.length === 1) {
             isDraggingCAD = true;
             lastMouseX = e.touches[0].clientX;
@@ -364,6 +532,16 @@ function initCADCanvasMouseEvents() {
 }
 
 function handleZoomWheel(event) {
+    const canvasEl = document.getElementById('canvas-view');
+    // If we are in scroll-mode (e.g. Analysis Report, Export Center, etc.) OR cursor is inside scrollable elements:
+    if ((canvasEl && canvasEl.classList.contains('scroll-mode')) ||
+        event.target.closest('.analysis-scroll-view, .analysis-report-container, .table-responsive-wrapper, .hydraulic-testing-box, .loss-container, .carbon-calc-container, [data-scrollable="true"]')) {
+        // ALLOW NATURAL TOUCHPAD / MOUSE WHEEL SCROLLING!
+        // DO NOT call event.preventDefault()!
+        return;
+    }
+
+    // Only zoom 3D model if directly hovering 3D CAD canvas in 3D tabs
     event.preventDefault();
     if (event.deltaY < 0) {
         currentZoom = Math.min(2.8, currentZoom + 0.1);
@@ -763,6 +941,7 @@ function createConcreteElement() {
 }
 
 function renderCreate() {
+    if (canvasView) canvasView.classList.remove("scroll-mode");
     let isSilinder = elementData.tipe === 'Silinder Uji';
     let calcInitial = calculateAdvancedStrength(elementData);
 
@@ -1054,6 +1233,7 @@ function cycleCuring(index) {
 }
 
 function renderLossMaterial() {
+    if (canvasView) canvasView.classList.remove("scroll-mode");
     if (storedConcreteList.length === 0) {
         canvasView.innerHTML = `
             <div style="text-align: center; color: var(--blue-neon); padding: 40px; background: rgba(18, 33, 66, 0.7); border: 1px solid var(--border-bright); border-radius: 16px;">
@@ -1390,6 +1570,7 @@ function getEnemyAvatarHTML(enemyName) {
 }
 
 function renderPertempuran() {
+    if (canvasView) canvasView.classList.remove("scroll-mode");
     let materialOptionsHtml = '';
     if (storedConcreteList.length === 0) {
         materialOptionsHtml = `<option value="">Belum ada elemen beton (buat di menu Create)</option>`;
@@ -1817,6 +1998,7 @@ function updateHpUI() {
    TAB 4: LAB TESTING (SIMULATION OF TEST MARK 2000 kN UTM MACHINE)
    ========================================================================== */
 function renderPengujian() {
+    if (canvasView) canvasView.classList.remove("scroll-mode");
     let materialOptionsHtml = '';
     if (storedConcreteList.length === 0) {
         materialOptionsHtml = `<option value="">Belum ada elemen beton (buat di menu Create)</option>`;
@@ -2187,7 +2369,112 @@ function runMulaiUji() {
     }, 38);
 }
 
+
+/* ==========================================================================
+   TIDIED & STRUCTURED MATHEMATICAL FORMULA BUILDER (SNI & ASTM COMPLIANT)
+   ========================================================================== */
+function renderTidySNIFormulas(rec, isSilinder) {
+    let fc = parseFloat(rec.fcFinal) || 14.8;
+    let loadKn = parseFloat(rec.Load_kN) || 3120;
+    let nBars = parseInt(rec.nBars) || 4;
+    let diam = parseFloat(rec.tulanganDiameter) || 12;
+    let b = 200; // mm (lebar balok)
+    let h = 200; // mm (tinggi balok)
+    let d = 160; // mm (tinggi efektif d = h - 40mm cover)
+    let fy = 420; // MPa (BJTS 420B SNI 2052:2017)
+    let As = nBars * (Math.PI * Math.pow(diam, 2) / 4); // mm²
+    let aWhitney = (As * fy) / (0.85 * Math.max(10, fc) * b); // mm
+    let MnNominal = (As * fy * (d - (aWhitney / 2))) / 1e6; // kNm
+    let phiMn = 0.90 * MnNominal; // kNm (reduksi lentur tarik terkendali)
+    let EcVal = Math.round(4700 * Math.sqrt(fc)); // MPa (SNI 2847 Pasal 19.2.2.1)
+    let frVal = (0.62 * Math.sqrt(fc)).toFixed(2); // MPa (modulus runtuh)
+    let areaMm2 = isSilinder ? Math.round(Math.PI * Math.pow(150, 2) / 4) : (b * h);
+
+    return `
+        <div class="sni-math-container">
+            <!-- Header Title -->
+            <div class="sni-math-header">
+                <div class="sni-math-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line></svg>
+                    <span>2. RUMUS TEKNIS PERHITUNGAN SNI &amp; ASTM (KUAT TEKAN &amp; MOMEN LENTUR)</span>
+                </div>
+                <span class="telemetry-chip live-chip"><span class="dot-live"></span>SNI 2847:2019 / ASTM C39</span>
+            </div>
+
+            <div class="sni-math-grid">
+                <!-- FORMULA CARD 1: KUAT TEKAN f'c -->
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 1: KUAT TEKAN KARAKTERISTIK (f'c)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">f'<sub>c</sub></span> = 
+                        <div class="math-frac">
+                            <span class="math-num">P<sub>ult</sub></span>
+                            <span class="math-den">A</span>
+                        </div>
+                        &times; <span class="math-var">F<sub>L/D</sub></span>
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">f'<sub>c</sub></span> = 
+                        <div class="math-frac">
+                            <span class="math-num">${(loadKn * 1000).toLocaleString('id-ID')} N</span>
+                            <span class="math-den">${areaMm2.toLocaleString('id-ID')} mm&sup2;</span>
+                        </div>
+                        &times; 1.00 = <strong class="math-result" style="color:var(--cyan-neon); font-size:13px;">${fc.toFixed(1)} MPa</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>P<sub>ult</sub></strong> = Gaya tekan ultimit (${loadKn.toLocaleString('id-ID')} kN = ${(loadKn * 1000).toLocaleString('id-ID')} N)</div>
+                        <div>&bull; <strong>A</strong> = Luas penampang bruto (${isSilinder ? '&frac14;&pi;D&sup2; = ' + areaMm2.toLocaleString('id-ID') + ' mm&sup2;' : 'b &times; h = 200 &times; 200 = 40.000 mm&sup2;'})</div>
+                        <div>&bull; <strong>F<sub>L/D</sub></strong> = Faktor koreksi rasio kelangsingan = 1.00 (L/D = 2.00)</div>
+                    </div>
+                </div>
+
+                <!-- FORMULA CARD 2: KAPASITAS MOMEN LENTUR NOMINAL Mn -->
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 2: KAPASITAS MOMEN LENTUR BALOK (M<sub>n</sub>)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">M<sub>n</sub></span> = <span class="math-var">A<sub>s</sub></span> &cdot; <span class="math-var">f<sub>y</sub></span> &cdot; <span class="math-paren">(</span><span class="math-var">d</span> &minus; <div class="math-frac"><span class="math-num"><span class="math-var">a</span></span><span class="math-den">2</span></div><span class="math-paren">)</span>
+                    </div>
+                    <div class="math-subst-box">
+                        Blok Whitney: <span class="math-var">a</span> = 
+                        <div class="math-frac">
+                            <span class="math-num">${As.toFixed(1)} &times; 420</span>
+                            <span class="math-den">0.85 &times; ${fc.toFixed(1)} &times; ${b}</span>
+                        </div> = <strong>${aWhitney.toFixed(2)} mm</strong>
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">M<sub>n</sub></span> = <strong style="color:var(--accent-gold); font-size:13px;">${MnNominal.toFixed(2)} kN&cdot;m</strong> 
+                        &nbsp;|&nbsp; 
+                        <span class="math-var">&phi;M<sub>n</sub></span> = <strong style="color:var(--accent-emerald); font-size:13px;">${phiMn.toFixed(2)} kN&cdot;m</strong> (&phi; = 0.90)
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>A<sub>s</sub></strong> = Luas tulangan ${nBars}D${diam} = ${As.toFixed(1)} mm&sup2; | <strong>f<sub>y</sub></strong> = ${fy} MPa</div>
+                        <div>&bull; <strong>d</strong> = Tinggi efektif = ${d} mm | <strong>b</strong> = Lebar balok = ${b} mm</div>
+                        <div>&bull; <strong>&phi;</strong> = Faktor reduksi lentur terkendali tarik = 0.90 (SNI 2847 Pasal 21.2.1)</div>
+                    </div>
+                </div>
+
+                <!-- FORMULA CARD 3: PARAMETER ELASTISITAS Ec & RETAK LENTUR fr -->
+                <div class="math-card" style="grid-column: 1 / -1;">
+                    <div class="math-card-badge">PERSAMAAN 3 &amp; 4: PARAMETER ELASTISITAS &amp; RETAK LENTUR (SNI 2847:2019)</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin:6px 0;">
+                        <div class="math-eq-inline">
+                            <span class="math-var">E<sub>c</sub></span> = 4700 &radic;<span class="math-var">f'<sub>c</sub></span> = 4700 &radic;${fc.toFixed(1)} = <strong style="color:var(--accent-gold); font-size:13.5px;">${EcVal.toLocaleString('id-ID')} MPa</strong>
+                        </div>
+                        <div class="math-eq-inline">
+                            <span class="math-var">f<sub>r</sub></span> = 0.62 &radic;<span class="math-var">f'<sub>c</sub></span> = 0.62 &radic;${fc.toFixed(1)} = <strong style="color:#c084fc; font-size:13.5px;">${frVal} MPa</strong>
+                        </div>
+                        <div class="math-eq-inline">
+                            Rasio Tulangan: <span class="math-var">&rho;</span> = A<sub>s</sub> / (b &cdot; d) = <strong style="color:var(--cyan-neon); font-size:13.5px;">${(As / (b * d) * 100).toFixed(2)}%</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 function renderAnalisis() {
+    if (canvasView) canvasView.classList.add("scroll-mode");
     // If no test history yet, automatically populate with benchmark test results (matching Image 1)
     if (testedHistoryList.length === 0) {
         testedHistoryList = [
@@ -2316,7 +2603,7 @@ function renderAnalisis() {
     let ecVal = Math.round(4700 * Math.sqrt(fcNum));
 
     canvasView.innerHTML = `
-        <div style="display: flex; flex-direction: column; width: 100%; height: 100%; overflow-y: auto; padding: 16px;">
+        <div class="analysis-scroll-view" id="analysis-scroll-wrapper">
             <!-- TOP SECTION: 3D FAILURE VISUALIZATION IN CAD VIEWPORT -->
             <div style="position: relative; width: 100%; height: 310px; background: radial-gradient(circle at center, #101e3b 0%, #060b17 100%); border-radius: 12px; border: 1.5px solid var(--border-bright); overflow: hidden; margin-bottom: 20px; box-shadow: 0 0 35px rgba(0, 240, 255, 0.25);">
                 <div class="cad-viewport" id="cad-viewport-container" style="transform: scale(${currentZoom})">
@@ -2427,10 +2714,7 @@ function renderAnalisis() {
                         <span style="color: #f1f5f9; font-family: var(--font-mono); font-size: 11.5px;">${currentRecord.sni}</span>
                     </div>
 
-                    <div class="sni-spec-block" style="border-left-color: #10b981;">
-                        <strong style="color: #34d399;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><path d="M16 10h.01"></path><path d="M12 10h.01"></path><path d="M8 10h.01"></path><path d="M12 14h.01"></path><path d="M8 14h.01"></path><path d="M12 18h.01"></path><path d="M8 18h.01"></path></svg> 2. Rumus Kuat Tekan &amp; Momen Lentur:</strong>
-                        <span style="color: #f1f5f9; font-family: var(--font-mono); font-size: 11.5px;">${currentRecord.formula}</span>
-                    </div>
+${renderTidySNIFormulas(currentRecord, isSilinder)}
 
                     <div class="sni-spec-block" style="border-left-color: #f59e0b;">
                         <strong style="color: #fbbf24;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg> 3. Parameter Mesin Uji TEST MARK:</strong>
@@ -2937,6 +3221,7 @@ function copyTableToClipboard() {
 }
 
 function renderEkspor() {
+    if (canvasView) canvasView.classList.add("scroll-mode");
     canvasView.innerHTML = `
         <div style="display: flex; flex-direction: column; width: 100%; height: 100%; padding: 24px; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -3015,6 +3300,16 @@ function switchTab(element, tabName) {
 
     const sidebar = document.querySelector('.sidebar');
     if (sidebar) sidebar.classList.remove('mobile-open');
+
+    currentActiveTab = tabName;
+    const canvasEl = document.getElementById('canvas-view');
+    if (canvasEl) {
+        if (['analisis', 'ekspor', 'rab', 'karbon'].includes(tabName)) {
+            canvasEl.classList.add('scroll-mode');
+        } else {
+            canvasEl.classList.remove('scroll-mode');
+        }
+    }
 
     if (tabName === 'create') renderCreate();
     else if (tabName === 'loss') renderLossMaterial();
