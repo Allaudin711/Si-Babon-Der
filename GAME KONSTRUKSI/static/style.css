@@ -1279,20 +1279,58 @@ option {
 
 .splash-progress-track {
     width: 100%;
-    height: 7px;
+    height: 8px;
     background: rgba(16, 28, 56, 0.95);
     border-radius: 4px;
     overflow: hidden;
-    margin-bottom: 25px;
+    margin-bottom: 12px;
     border: 1px solid var(--border-dim);
 }
 
 .splash-progress-bar {
     width: 0%;
     height: 100%;
-    background: linear-gradient(90deg, var(--blue-primary), var(--cyan-neon));
-    box-shadow: 0 0 12px var(--cyan-neon);
-    transition: width 0.1s linear;
+    background: linear-gradient(90deg, #2563eb, #00f0ff, #10b981);
+    box-shadow: 0 0 15px var(--cyan-neon);
+    transition: width 0.08s linear;
+}
+
+.splash-telemetry-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 22px;
+    font-family: 'Share Tech Mono', monospace, Consolas;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--cyan-neon);
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+    text-transform: uppercase;
+}
+
+.telemetry-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--cyan-neon);
+    box-shadow: 0 0 10px var(--cyan-neon);
+    animation: telemetryPulse 1s infinite alternate ease-in-out;
+}
+
+@keyframes telemetryPulse {
+    0% { opacity: 0.3; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1.3); }
+}
+
+.blink-cyan {
+    color: #38bdf8;
+    animation: blinkText 1.2s infinite ease-in-out;
+}
+
+@keyframes blinkText {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
 }
 
 .btn-mulai-splash {
@@ -1310,6 +1348,44 @@ option {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+.btn-mulai-splash.btn-splash-locked {
+    opacity: 0.65;
+    cursor: not-allowed !important;
+    background: rgba(15, 23, 42, 0.85) !important;
+    border-color: rgba(0, 240, 255, 0.25) !important;
+    color: var(--text-muted) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
+    transform: none !important;
+}
+
+.btn-mulai-splash.btn-splash-waiting {
+    cursor: pointer !important;
+    background: linear-gradient(135deg, #0284c7 0%, #1e40af 100%) !important;
+    border-color: var(--cyan-neon) !important;
+    animation: buildReadyPulse 1.5s infinite alternate ease-in-out;
+}
+
+.btn-mulai-splash.btn-splash-unlocked {
+    opacity: 1 !important;
+    cursor: pointer !important;
+    background: linear-gradient(135deg, #0284c7 0%, #2563eb 50%, #00f0ff 100%) !important;
+    border-color: #00f0ff !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.7), 0 0 45px rgba(37, 99, 235, 0.5) !important;
+    animation: buildReadyPulse 1.8s infinite alternate ease-in-out;
+}
+
+@keyframes buildReadyPulse {
+    0% {
+        box-shadow: 0 0 15px rgba(0, 240, 255, 0.5), 0 0 25px rgba(37, 99, 235, 0.3);
+        transform: scale(1);
+    }
+    100% {
+        box-shadow: 0 0 32px rgba(0, 240, 255, 0.9), 0 0 55px rgba(37, 99, 235, 0.7);
+        transform: scale(1.03);
+    }
 }
 
 .btn-mulai-splash:hover {
