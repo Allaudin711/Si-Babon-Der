@@ -192,7 +192,246 @@ function initAudio() {
 /* ==========================================================================
    KAMEN RIDER HENSHIN BELT & SCI-FI SOUND SYNTHESIZER (WEB AUDIO API)
    ========================================================================== */
-function playKamenRiderSound(type) {
+
+/* ==========================================================================
+   KAMEN RIDER BUILD (2017) BUILD DRIVER & HENSHIN SCENE AUDIO ENGINE
+   (Synthesizing: Fullbottle Shake, Crank Turn, "Are you ready?!" Standby Riff,
+    Snap-Runner Slam, "Hagane no Moonsault! RabbitTank! Yeah!" & Steam Exhaust)
+   ========================================================================== */
+function playKamenRiderBuildSound(type) {
+    if (!soundEnabled) return;
+    try {
+        initAudio();
+        if (!audioCtx) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+
+        if (type === 'standby' || type === 'crank') {
+            // ==============================================================
+            // BUILD DRIVER CRANK TURN & "ARE YOU READY?!" STANDBY TECHNO RIFF
+            // ==============================================================
+            
+            // 1. Mechanical Crank Ratchet Gear Clicks (krr-krr-krr)
+            for (let i = 0; i < 4; i++) {
+                const oscClick = audioCtx.createOscillator();
+                const gainClick = audioCtx.createGain();
+                oscClick.type = 'square';
+                oscClick.frequency.setValueAtTime(1400 + (i * 120), now + (i * 0.04));
+                gainClick.gain.setValueAtTime(0.08, now + (i * 0.04));
+                gainClick.gain.exponentialRampToValueAtTime(0.001, now + (i * 0.04) + 0.025);
+                oscClick.connect(gainClick);
+                gainClick.connect(audioCtx.destination);
+                oscClick.start(now + (i * 0.04));
+                oscClick.stop(now + (i * 0.04) + 0.025);
+            }
+
+            // 2. Iconic Build Standby Techno Organ Theme Riff (E4 -> G4 -> A4 -> B4 -> D5 -> B4 -> A4 -> G4 -> E4)
+            const standbyNotes = [
+                { note: 329.63, time: 0.16, dur: 0.09 }, // E4
+                { note: 392.00, time: 0.26, dur: 0.09 }, // G4
+                { note: 440.00, time: 0.36, dur: 0.09 }, // A4
+                { note: 493.88, time: 0.46, dur: 0.12 }, // B4
+                { note: 587.33, time: 0.60, dur: 0.14 }, // D5
+                { note: 493.88, time: 0.76, dur: 0.09 }, // B4
+                { note: 440.00, time: 0.86, dur: 0.09 }, // A4
+                { note: 392.00, time: 0.96, dur: 0.09 }, // G4
+                { note: 329.63, time: 1.06, dur: 0.22 }  // E4
+            ];
+
+            standbyNotes.forEach(item => {
+                const osc = audioCtx.createOscillator();
+                const oscSub = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'sawtooth';
+                oscSub.type = 'triangle';
+                
+                osc.frequency.setValueAtTime(item.note, now + item.time);
+                oscSub.frequency.setValueAtTime(item.note / 2, now + item.time);
+                
+                gain.gain.setValueAtTime(0.12, now + item.time);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + item.time + item.dur);
+                
+                osc.connect(gain);
+                oscSub.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start(now + item.time);
+                oscSub.start(now + item.time);
+                osc.stop(now + item.time + item.dur);
+                oscSub.stop(now + item.time + item.dur);
+            });
+
+            // 3. Bubbling fluid mixing pipe sound (Resonant liquid swoosh)
+            const oscFluid = audioCtx.createOscillator();
+            const filterFluid = audioCtx.createBiquadFilter();
+            const gainFluid = audioCtx.createGain();
+            oscFluid.type = 'sawtooth';
+            oscFluid.frequency.setValueAtTime(220, now + 0.2);
+            oscFluid.frequency.linearRampToValueAtTime(580, now + 0.8);
+            filterFluid.type = 'bandpass';
+            filterFluid.frequency.setValueAtTime(600, now + 0.2);
+            filterFluid.frequency.linearRampToValueAtTime(1400, now + 0.8);
+            filterFluid.Q.setValueAtTime(12, now + 0.2);
+            gainFluid.gain.setValueAtTime(0.01, now + 0.2);
+            gainFluid.gain.linearRampToValueAtTime(0.07, now + 0.5);
+            gainFluid.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+            oscFluid.connect(filterFluid);
+            filterFluid.connect(gainFluid);
+            gainFluid.connect(audioCtx.destination);
+            oscFluid.start(now + 0.2);
+            oscFluid.stop(now + 1.2);
+
+        } else if (type === 'henshin') {
+            // ==============================================================
+            // KAMEN RIDER BUILD (2017) RABBIT-TANK HENSHIN TRANSFORMATION!
+            // ==============================================================
+
+            // PART 1: SNAP-RUNNER MOLD SLAM (The plastic runner frame snapping around Sento)
+            const oscSnap1 = audioCtx.createOscillator();
+            const oscSnap2 = audioCtx.createOscillator();
+            const gainSnap = audioCtx.createGain();
+            oscSnap1.type = 'square';
+            oscSnap2.type = 'sawtooth';
+            oscSnap1.frequency.setValueAtTime(800, now);
+            oscSnap1.frequency.exponentialRampToValueAtTime(120, now + 0.15);
+            oscSnap2.frequency.setValueAtTime(1600, now);
+            oscSnap2.frequency.exponentialRampToValueAtTime(240, now + 0.15);
+            gainSnap.gain.setValueAtTime(0.35, now);
+            gainSnap.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+            oscSnap1.connect(gainSnap);
+            oscSnap2.connect(gainSnap);
+            gainSnap.connect(audioCtx.destination);
+            oscSnap1.start(now);
+            oscSnap2.start(now);
+            oscSnap1.stop(now + 0.25);
+            oscSnap2.stop(now + 0.25);
+
+            // Noise crunch for runner impact
+            try {
+                const bufferSize = audioCtx.sampleRate * 0.18;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const noiseFilter = audioCtx.createBiquadFilter();
+                noiseFilter.type = 'bandpass';
+                noiseFilter.frequency.setValueAtTime(1800, now);
+                noiseFilter.Q.setValueAtTime(3, now);
+                const noiseGain = audioCtx.createGain();
+                noiseGain.gain.setValueAtTime(0.22, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                noise.connect(noiseFilter);
+                noiseFilter.connect(noiseGain);
+                noiseGain.connect(audioCtx.destination);
+                noise.start(now);
+            } catch (e) {}
+
+            // PART 2: THE ICONIC BUILD RABBIT-TANK HEROIC FANFARE (Rock Lead Synth)
+            // "Hagane no Moonsault! RabbitTank! YEAHHH!"
+            const fanfareMelody = [
+                // "Ha - ga - ne no"
+                { f: 659.25, t: 0.28, d: 0.12 },  // E5
+                { f: 783.99, t: 0.42, d: 0.12 },  // G5
+                { f: 880.00, t: 0.56, d: 0.12 },  // A5
+                { f: 987.77, t: 0.70, d: 0.16 },  // B5
+                // "Moon - sault!"
+                { f: 1174.66, t: 0.88, d: 0.14 }, // D6
+                { f: 1318.51, t: 1.04, d: 0.22 }, // E6
+                // "Rabbit! Tank!"
+                { f: 1567.98, t: 1.30, d: 0.14 }, // G6
+                { f: 1318.51, t: 1.46, d: 0.20 }  // E6
+            ];
+
+            fanfareMelody.forEach(note => {
+                const oscMain = audioCtx.createOscillator();
+                const oscDetune = audioCtx.createOscillator();
+                const gainNote = audioCtx.createGain();
+                
+                oscMain.type = 'sawtooth';
+                oscDetune.type = 'square';
+                
+                oscMain.frequency.setValueAtTime(note.f, now + note.t);
+                oscDetune.frequency.setValueAtTime(note.f * 1.008, now + note.t); // Rich analog chorus
+                
+                gainNote.gain.setValueAtTime(0.16, now + note.t);
+                gainNote.gain.exponentialRampToValueAtTime(0.001, now + note.t + note.d);
+                
+                oscMain.connect(gainNote);
+                oscDetune.connect(gainNote);
+                gainNote.connect(audioCtx.destination);
+                
+                oscMain.start(now + note.t);
+                oscDetune.start(now + note.t);
+                oscMain.stop(now + note.t + note.d);
+                oscDetune.stop(now + note.t + note.d);
+            });
+
+            // PART 3: CLIMAX POWER CHORD - "YEAHHH!" (t = 1.70s)
+            const yeahChords = [329.63, 659.25, 987.77, 1318.51, 1567.98, 1975.53]; // E Power Chord in multi-octaves
+            yeahChords.forEach(freq => {
+                const oscYeah = audioCtx.createOscillator();
+                const gainYeah = audioCtx.createGain();
+                oscYeah.type = 'sawtooth';
+                oscYeah.frequency.setValueAtTime(freq, now + 1.70);
+                gainYeah.gain.setValueAtTime(0.14, now + 1.70);
+                gainYeah.gain.exponentialRampToValueAtTime(0.001, now + 2.70);
+                oscYeah.connect(gainYeah);
+                gainYeah.connect(audioCtx.destination);
+                oscYeah.start(now + 1.70);
+                oscYeah.stop(now + 2.70);
+            });
+
+            // PART 4: HIGH-PRESSURE STEAM EXHAUST FROM PIPES (TSHHHHH-FWOOOSH!)
+            try {
+                const steamDuration = 1.4;
+                const bufferSize = audioCtx.sampleRate * steamDuration;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.45));
+                }
+                const steamSource = audioCtx.createBufferSource();
+                steamSource.buffer = buffer;
+                
+                const steamFilter = audioCtx.createBiquadFilter();
+                steamFilter.type = 'lowpass';
+                steamFilter.frequency.setValueAtTime(4200, now + 1.70);
+                steamFilter.frequency.exponentialRampToValueAtTime(600, now + 3.1);
+                
+                const steamGain = audioCtx.createGain();
+                steamGain.gain.setValueAtTime(0.3, now + 1.70);
+                steamGain.gain.exponentialRampToValueAtTime(0.001, now + 3.1);
+                
+                steamSource.connect(steamFilter);
+                steamFilter.connect(steamGain);
+                steamGain.connect(audioCtx.destination);
+                steamSource.start(now + 1.70);
+            } catch (e) {}
+
+            // PART 5: DEEP SUB-BASS TRANSFORMATION SHOCKWAVE THUD (KABOOOOM!)
+            const oscSub = audioCtx.createOscillator();
+            const gainSub = audioCtx.createGain();
+            oscSub.type = 'sine';
+            oscSub.frequency.setValueAtTime(170, now + 1.68);
+            oscSub.frequency.exponentialRampToValueAtTime(32, now + 2.9);
+            gainSub.gain.setValueAtTime(0.5, now + 1.68);
+            gainSub.gain.exponentialRampToValueAtTime(0.001, now + 2.9);
+            oscSub.connect(gainSub);
+            gainSub.connect(audioCtx.destination);
+            oscSub.start(now + 1.68);
+            oscSub.stop(now + 2.9);
+        }
+    } catch (e) {
+        // Fallback safely
+    }
+}
+
+function playKamenRiderSound(type) { return playKamenRiderBuildSound(type); }
+function oldPlayKamenRiderSound(type) {
     if (!soundEnabled) return;
     try {
         initAudio();
@@ -435,7 +674,8 @@ function runSplashLoadingSequence() {
             if (btnMulai) {
                 btnMulai.style.display = 'flex';
                 btnMulai.scrollIntoView({ behavior: 'smooth' });
-                btnMulai.onmouseenter = () => playKamenRiderSound('standby');
+                btnMulai.onmouseenter = () => playKamenRiderBuildSound('crank');
+                playKamenRiderBuildSound('standby');
                 playKamenRiderSound('standby');
             }
         }
@@ -444,7 +684,15 @@ function runSplashLoadingSequence() {
 
 function mulaiAplikasi() {
     // Play Kamen Rider Henshin Sound Effect!
-    playKamenRiderSound('henshin');
+    playKamenRiderBuildSound('henshin');
+
+    // Visual Kamen Rider Build (2017) Rabbit-Tank Dual Flash FX
+    let flash = document.createElement('div');
+    flash.className = 'build-henshin-flash';
+    document.body.appendChild(flash);
+    setTimeout(() => { flash.style.opacity = '1'; }, 10);
+    setTimeout(() => { flash.style.opacity = '0'; }, 450);
+    setTimeout(() => { flash.remove(); }, 950);
 
     // Visual Flash FX
     let flash = document.createElement('div');

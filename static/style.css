@@ -3153,3 +3153,32 @@ option {
     opacity: 0;
     transition: opacity 0.5s cubic-bezier(0.1, 0.9, 0.2, 1);
 }
+
+/* ==========================================================================
+   KAMEN RIDER BUILD (2017) RABBIT-TANK HENSHIN DUAL FLASH EFFECT
+   ========================================================================== */
+.build-henshin-flash {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.85) 0%, rgba(255, 255, 255, 0.95) 48%, rgba(0, 240, 255, 0.85) 100%);
+    pointer-events: none;
+    z-index: 999999;
+    opacity: 0;
+    transition: opacity 0.5s cubic-bezier(0.1, 0.9, 0.2, 1);
+    mix-blend-mode: screen;
+}
+
+.build-formula-runner {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(239, 68, 68, 0.15) 0px,
+        rgba(239, 68, 68, 0.15) 20px,
+        rgba(0, 240, 255, 0.15) 20px,
+        rgba(0, 240, 255, 0.15) 40px
+    );
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
