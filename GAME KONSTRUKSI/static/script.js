@@ -693,7 +693,7 @@ function runSplashLoadingSequence() {
         `;
     }
 
-    // Initialize audio element for Kamen Rider Build (2017) Henshin Sequence (Normal speed)
+    // Initialize audio element for Kamen Rider Build (2017) Henshin Standby (1.0x normal speed, 21.46s)
     try {
         splashAudio = new Audio('static/audio/kamen-rider-build.mp3');
         splashAudio.preload = 'auto';
@@ -739,10 +739,10 @@ function runSplashLoadingSequence() {
         if (!splashAudio || splashLoadingCompleted) return;
 
         const cur = splashAudio.currentTime;
-        // Total duration dynamically obtained from audio element (approx ~21.5s)
+        const TARGET_DURATION = 21.46; // Target cut duration: 21 detik 46 milidetik
         const dur = (splashAudio.duration && isFinite(splashAudio.duration) && splashAudio.duration > 0) 
-            ? splashAudio.duration 
-            : 21.5;
+            ? Math.min(TARGET_DURATION, splashAudio.duration) 
+            : TARGET_DURATION;
 
         const rawPct = Math.min(100, (cur / dur) * 100);
         const pctInt = Math.min(100, Math.floor(rawPct));
@@ -765,7 +765,7 @@ function runSplashLoadingSequence() {
             subtitleContainer.classList.add('active-audio');
         }
 
-        // Futuristic Audio Subtitles Synchronized with Kamen Rider Build (2017) Audio
+        // Futuristic Audio Subtitles Synchronized with Kamen Rider Build (2017) Audio (1.0x normal speed)
         if (subtitleEl && !splashLoadingCompleted) {
             if (cur < 3.0) {
                 subtitleEl.innerHTML = '<span>⚡ [FULLBOTTLE INSERTION]</span>';
@@ -788,7 +788,10 @@ function runSplashLoadingSequence() {
             }
         }
 
-        if (rawPct >= 100 || cur >= (dur - 0.15)) {
+        if (rawPct >= 100 || cur >= TARGET_DURATION) {
+            try {
+                splashAudio.pause();
+            } catch (e) {}
             finishSplashLoading();
             return;
         }
@@ -806,7 +809,7 @@ function runSplashLoadingSequence() {
         splashAudio.onerror = function() {
             console.warn('Audio playback error, falling back to simulated loading timer.');
             let simCur = 0;
-            const simDur = 8.0;
+            const simDur = 21.46; // Target duration: 21.46s
             const simInterval = setInterval(() => {
                 simCur += 0.1;
                 const p = Math.min(100, Math.floor((simCur / simDur) * 100));
@@ -814,7 +817,7 @@ function runSplashLoadingSequence() {
                 if (pctEl) pctEl.textContent = p + '%';
                 const btnLabel = document.getElementById('btn-mulai-label');
                 if (btnLabel) btnLabel.textContent = 'MEMUAT SISTEM';
-                if (p >= 100) {
+                if (p >= 100 || simCur >= simDur) {
                     clearInterval(simInterval);
                     finishSplashLoading();
                 }
