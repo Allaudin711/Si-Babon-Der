@@ -693,12 +693,12 @@ function runSplashLoadingSequence() {
         `;
     }
 
-    // Initialize audio element for Kamen Rider Build (2017) Henshin Sequence (1.3x speed)
+    // Initialize audio element for Kamen Rider Build (2017) Henshin Sequence (1.4x speed)
     try {
         splashAudio = new Audio('static/audio/kamen-rider-build.mp3');
         splashAudio.preload = 'auto';
-        splashAudio.playbackRate = 1.3;
-        splashAudio.defaultPlaybackRate = 1.3;
+        splashAudio.playbackRate = 1.4;
+        splashAudio.defaultPlaybackRate = 1.4;
     } catch (e) {
         console.warn('Audio object initialization error:', e);
     }
@@ -821,7 +821,7 @@ function runSplashLoadingSequence() {
         splashAudio.onerror = function() {
             console.warn('Audio playback error, falling back to simulated loading timer.');
             let simCur = 0;
-            const simDur = 6.15; // 8.0 / 1.3x
+            const simDur = 5.71; // 8.0 / 1.4x
             const simInterval = setInterval(() => {
                 simCur += 0.1;
                 const p = Math.min(100, Math.floor((simCur / simDur) * 100));
@@ -833,18 +833,18 @@ function runSplashLoadingSequence() {
                     clearInterval(simInterval);
                     finishSplashLoading();
                 }
-            }, 75);
+            }, 70);
         };
     }
 
     // Function to start audio (handles browser autoplay policy)
     function startAudioPlay() {
         if (splashAudioStarted || !splashAudio) return;
-        splashAudio.playbackRate = 1.3;
+        splashAudio.playbackRate = 1.4;
         const playPromise = splashAudio.play();
         if (playPromise !== undefined) {
             playPromise.then(() => {
-                splashAudio.playbackRate = 1.3;
+                splashAudio.playbackRate = 1.4;
                 splashAudioStarted = true;
                 if (btnMulai && !splashLoadingCompleted) {
                     btnMulai.disabled = true;
