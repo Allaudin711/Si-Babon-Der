@@ -801,6 +801,24 @@ function runSplashLoadingSequence() {
         }
     }
 
+    // Simulated fallback loading timer in case audio fails
+    function startSimulatedLoading() {
+        let simCur = 0;
+        const simDur = 21.46; // Target duration: 21.46s
+        const simInterval = setInterval(() => {
+            simCur += 0.1;
+            const p = Math.min(100, Math.floor((simCur / simDur) * 100));
+            if (progressBar) progressBar.style.width = p + '%';
+            if (pctEl) pctEl.textContent = p + '%';
+            const btnLabel = document.getElementById('btn-mulai-label');
+            if (btnLabel && !splashLoadingCompleted) btnLabel.textContent = 'MEMUAT SISTEM';
+            if (p >= 100 || simCur >= simDur) {
+                clearInterval(simInterval);
+                finishSplashLoading();
+            }
+        }, 100);
+    }
+
     if (splashAudio) {
         splashAudio.onended = function() {
             finishSplashLoading();
@@ -808,97 +826,71 @@ function runSplashLoadingSequence() {
 
         splashAudio.onerror = function() {
             console.warn('Audio playback error, falling back to simulated loading timer.');
-            let simCur = 0;
-            const simDur = 21.46; // Target duration: 21.46s
-            const simInterval = setInterval(() => {
-                simCur += 0.1;
-                const p = Math.min(100, Math.floor((simCur / simDur) * 100));
-                if (progressBar) progressBar.style.width = p + '%';
-                if (pctEl) pctEl.textContent = p + '%';
-                const btnLabel = document.getElementById('btn-mulai-label');
-                if (btnLabel) btnLabel.textContent = 'MEMUAT SISTEM';
-                if (p >= 100 || simCur >= simDur) {
-                    clearInterval(simInterval);
-                    finishSplashLoading();
-                }
-            }, 100);
+            startSimulatedLoading();
         };
     }
 
-    // Function to start audio (handles browser autoplay policy)
+    // Function to start audio & loading sequence (triggered strictly by user pressing the load button)
     function startAudioPlay() {
-        if (splashAudioStarted || !splashAudio) return;
-        splashAudio.playbackRate = 1.0;
-        const playPromise = splashAudio.play();
-        if (playPromise !== undefined) {
-            playPromise.then(() => {
-                splashAudio.playbackRate = 1.0;
-                splashAudioStarted = true;
-                if (btnMulai && !splashLoadingCompleted) {
-                    btnMulai.disabled = true;
-                    btnMulai.classList.remove('btn-splash-waiting');
-                    btnMulai.classList.add('btn-splash-locked');
-                    const btnLabel = document.getElementById('btn-mulai-label');
-                    if (btnLabel) {
-                        btnLabel.textContent = 'MEMUAT SISTEM';
-                    }
-                }
+        if (splashAudioStarted) return;
+        splashAudioStarted = true;
+
+        if (btnMulai && !splashLoadingCompleted) {
+            btnMulai.disabled = true;
+            btnMulai.classList.remove('btn-splash-waiting');
+            btnMulai.classList.add('btn-splash-locked');
+            const btnLabel = document.getElementById('btn-mulai-label');
+            if (btnLabel) {
+                btnLabel.textContent = 'MEMUAT SISTEM';
+            }
+        }
+
+        if (splashAudio) {
+            splashAudio.playbackRate = 1.0;
+            const playPromise = splashAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    splashAudio.playbackRate = 1.0;
+                    requestAnimationFrame(updateLoadingProgress);
+                }).catch((err) => {
+                    console.warn('Audio play failed, falling back to simulated loading:', err);
+                    startSimulatedLoading();
+                });
+            } else {
                 requestAnimationFrame(updateLoadingProgress);
-            }).catch((err) => {
-                console.log('Autoplay waiting for user action:', err);
-                const btnLabel = document.getElementById('btn-mulai-label');
-                if (btnLabel) {
-                    btnLabel.textContent = 'KLIK UNTUK MEMUAT';
-                }
-                if (btnMulai) {
-                    btnMulai.disabled = false;
-                    btnMulai.classList.remove('btn-splash-locked');
-                    btnMulai.classList.add('btn-splash-waiting');
-                }
-            });
+            }
+        } else {
+            startSimulatedLoading();
         }
     }
 
-    // Attempt autoplay immediately on load
-    startAudioPlay();
-
-    // User interaction listeners
+    // User interaction listener: loading dimulai saat menekan tombol memuat
     if (btnMulai) {
-        btnMulai.onclick = function() {
+        btnMulai.onclick = function(e) {
+            if (e) e.stopPropagation();
             if (!splashAudioStarted) {
                 startAudioPlay();
                 return;
             }
             if (!splashLoadingCompleted) {
-                showToast('⏳ Harap tunggu hingga efek suara selesai sebelum masuk!');
+                showToast('⏳ Harap tunggu hingga proses memuat selesai!');
                 return;
             }
             mulaiAplikasi();
         };
     }
 
-    const splashScreenEl = document.getElementById('splash-screen');
-    if (splashScreenEl) {
-        splashScreenEl.onclick = function(e) {
-            if (!splashAudioStarted && !splashLoadingCompleted) {
-                startAudioPlay();
-            }
-        };
-    }
-
-    // Keyboard ENTER listener
+    // Keyboard ENTER listener (starts loading if waiting, enters workspace if completed)
     const handleKeyEnter = function(e) {
         const splash = document.getElementById('splash-screen');
         if (splash && (e.key === 'Enter' || e.code === 'Enter')) {
             if (splashLoadingCompleted) {
                 document.removeEventListener('keydown', handleKeyEnter);
                 mulaiAplikasi();
+            } else if (!splashAudioStarted) {
+                startAudioPlay();
             } else {
-                if (!splashAudioStarted) {
-                    startAudioPlay();
-                } else {
-                    showToast('⏳ Harap tunggu hingga efek suara selesai sebelum masuk!');
-                }
+                showToast('⏳ Harap tunggu hingga proses memuat selesai!');
             }
         }
     };
@@ -906,8 +898,13 @@ function runSplashLoadingSequence() {
 }
 
 function mulaiAplikasi() {
+    if (!splashAudioStarted) {
+        const btnMulai = document.getElementById('btn-mulai-splash');
+        if (btnMulai) btnMulai.click();
+        return;
+    }
     if (!splashLoadingCompleted) {
-        showToast('⏳ Harap tunggu hingga efek suara selesai sebelum masuk!');
+        showToast('⏳ Harap tunggu hingga proses memuat selesai!');
         return;
     }
 
