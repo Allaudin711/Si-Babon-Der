@@ -693,12 +693,12 @@ function runSplashLoadingSequence() {
         `;
     }
 
-    // Initialize audio element for Kamen Rider Build (2017) Henshin Sequence (1.3x speed)
+    // Initialize audio element for Kamen Rider Build (2017) Henshin Sequence (Normal speed)
     try {
         splashAudio = new Audio('static/audio/kamen-rider-build.mp3');
         splashAudio.preload = 'auto';
-        splashAudio.playbackRate = 1.3;
-        splashAudio.defaultPlaybackRate = 1.3;
+        splashAudio.playbackRate = 1.0;
+        splashAudio.defaultPlaybackRate = 1.0;
     } catch (e) {
         console.warn('Audio object initialization error:', e);
     }
@@ -739,10 +739,10 @@ function runSplashLoadingSequence() {
         if (!splashAudio || splashLoadingCompleted) return;
 
         const cur = splashAudio.currentTime;
-        // Total duration dynamically obtained from audio element (approx ~34.5s)
+        // Total duration dynamically obtained from audio element (approx ~21.5s)
         const dur = (splashAudio.duration && isFinite(splashAudio.duration) && splashAudio.duration > 0) 
             ? splashAudio.duration 
-            : 34.5;
+            : 21.5;
 
         const rawPct = Math.min(100, (cur / dur) * 100);
         const pctInt = Math.min(100, Math.floor(rawPct));
@@ -767,7 +767,7 @@ function runSplashLoadingSequence() {
 
         // Futuristic Audio Subtitles Synchronized with Kamen Rider Build (2017) Audio
         if (subtitleEl && !splashLoadingCompleted) {
-            if (cur < 3.2) {
+            if (cur < 3.0) {
                 subtitleEl.innerHTML = '<span>⚡ [FULLBOTTLE INSERTION]</span>';
                 subtitleEl.className = 'splash-audio-subtitle';
             } else if (cur < 4.8) {
@@ -779,27 +779,12 @@ function runSplashLoadingSequence() {
             } else if (cur < 8.8) {
                 subtitleEl.innerHTML = '<span class="subtitle-voice">✨ "BEST MATCH!" (KOMBINASI TERBAIK)</span>';
                 subtitleEl.className = 'splash-audio-subtitle subtitle-voice';
-            } else if (cur < 21.0) {
+            } else if (cur < 19.5) {
                 subtitleEl.innerHTML = '<span>⚙️ [CRANK ROTATION • STANDBY TECHNO RIFF]</span>';
                 subtitleEl.className = 'splash-audio-subtitle';
-            } else if (cur < 23.4) {
-                subtitleEl.innerHTML = '<span class="subtitle-climax">🔥 "ARE YOU READY?!"</span>';
-                subtitleEl.className = 'splash-audio-subtitle subtitle-climax';
-            } else if (cur < 25.4) {
-                subtitleEl.innerHTML = '<span class="subtitle-climax">⚡ "HENSHIN!" [SNAP-RUNNER MOLD SLAM]</span>';
-                subtitleEl.className = 'splash-audio-subtitle subtitle-climax';
-            } else if (cur < 27.6) {
-                subtitleEl.innerHTML = '<span class="subtitle-climax">🌪️ "HAGANE NO MOONSAULT!"</span>';
-                subtitleEl.className = 'splash-audio-subtitle subtitle-climax';
-            } else if (cur < 30.0) {
-                subtitleEl.innerHTML = '<span class="subtitle-climax">⚔️ "RABBIT-TANK!"</span>';
-                subtitleEl.className = 'splash-audio-subtitle subtitle-climax';
-            } else if (cur < 32.2) {
-                subtitleEl.innerHTML = '<span class="subtitle-climax">💥 "YEAHHH!"</span>';
-                subtitleEl.className = 'splash-audio-subtitle subtitle-climax';
             } else {
-                subtitleEl.innerHTML = '<span>💨 [STEAM EXHAUST RELEASE • KERNEL READY]</span>';
-                subtitleEl.className = 'splash-audio-subtitle';
+                subtitleEl.innerHTML = '<span class="subtitle-climax">🔥 "ARE YOU READY?!" [SISTEM SIAP]</span>';
+                subtitleEl.className = 'splash-audio-subtitle subtitle-climax';
             }
         }
 
@@ -821,7 +806,7 @@ function runSplashLoadingSequence() {
         splashAudio.onerror = function() {
             console.warn('Audio playback error, falling back to simulated loading timer.');
             let simCur = 0;
-            const simDur = 6.15; // 8.0 / 1.3x
+            const simDur = 8.0;
             const simInterval = setInterval(() => {
                 simCur += 0.1;
                 const p = Math.min(100, Math.floor((simCur / simDur) * 100));
@@ -833,18 +818,18 @@ function runSplashLoadingSequence() {
                     clearInterval(simInterval);
                     finishSplashLoading();
                 }
-            }, 75);
+            }, 100);
         };
     }
 
     // Function to start audio (handles browser autoplay policy)
     function startAudioPlay() {
         if (splashAudioStarted || !splashAudio) return;
-        splashAudio.playbackRate = 1.3;
+        splashAudio.playbackRate = 1.0;
         const playPromise = splashAudio.play();
         if (playPromise !== undefined) {
             playPromise.then(() => {
-                splashAudio.playbackRate = 1.3;
+                splashAudio.playbackRate = 1.0;
                 splashAudioStarted = true;
                 if (btnMulai && !splashLoadingCompleted) {
                     btnMulai.disabled = true;
