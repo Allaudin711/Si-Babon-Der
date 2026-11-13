@@ -664,21 +664,31 @@ let splashAudio = null;
 let splashLoadingCompleted = false;
 let splashAudioStarted = false;
 
+// Step 1: Initialize Idle State on Web Load / Refresh (Wait for user click)
 function runSplashLoadingSequence() {
+    splashLoadingCompleted = false;
+    splashAudioStarted = false;
+
+    // Ensure any previously playing audio is stopped
+    if (splashAudio) {
+        try {
+            splashAudio.pause();
+            splashAudio.currentTime = 0;
+        } catch (e) {}
+        splashAudio = null;
+    }
+
     const progressBar = document.getElementById('splash-progress-bar');
     const btnMulai = document.getElementById('btn-mulai-splash');
     const pctEl = document.getElementById('splash-progress-pct');
     const subtitleEl = document.getElementById('splash-audio-subtitle');
     const subtitleContainer = document.getElementById('splash-subtitle-container');
 
-    splashLoadingCompleted = false;
-    splashAudioStarted = false;
-
-    // Reset initial UI states
+    // Reset initial UI states to 0% idle
     if (progressBar) progressBar.style.width = '0%';
     if (pctEl) pctEl.textContent = '0%';
     if (subtitleEl) {
-        subtitleEl.textContent = 'AUDIO SUBTITLE STANDBY';
+        subtitleEl.innerHTML = '<span>⚡ [STANDBY • TEKAN TOMBOL MEMUAT]</span>';
         subtitleEl.className = 'splash-audio-subtitle';
     }
     if (subtitleContainer) subtitleContainer.classList.remove('active-audio');
@@ -691,193 +701,7 @@ function runSplashLoadingSequence() {
             <svg class="splash-lock-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
             <span id="btn-mulai-label">KLIK UNTUK MEMUAT</span>
         `;
-    }
-
-    // Initialize audio element for Kamen Rider Build (2017) Henshin Standby (1.0x normal speed, 21.46s)
-    try {
-        splashAudio = new Audio('static/audio/kamen-rider-build.mp3');
-        splashAudio.preload = 'auto';
-        splashAudio.playbackRate = 1.0;
-        splashAudio.defaultPlaybackRate = 1.0;
-    } catch (e) {
-        console.warn('Audio object initialization error:', e);
-    }
-
-    // Function to complete splash loading
-    function finishSplashLoading() {
-        if (splashLoadingCompleted) return;
-        splashLoadingCompleted = true;
-
-        if (progressBar) progressBar.style.width = '100%';
-        if (pctEl) pctEl.textContent = '100%';
-
-        if (subtitleContainer) subtitleContainer.classList.remove('active-audio');
-        if (subtitleEl) {
-            subtitleEl.innerHTML = '<span class="subtitle-success">✓ [SISTEM TERVERIFIKASI • SILAKAN MASUK]</span>';
-            subtitleEl.className = 'splash-audio-subtitle subtitle-success';
-        }
-
-        if (btnMulai) {
-            btnMulai.disabled = false;
-            btnMulai.classList.remove('btn-splash-locked', 'btn-splash-waiting');
-            btnMulai.classList.add('btn-splash-unlocked');
-            btnMulai.innerHTML = `
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-                <span>ENTER CAD WORKSPACE</span>
-            `;
-            btnMulai.title = "Tekan ENTER atau klik untuk membuka workspace";
-            btnMulai.onmouseenter = () => playKamenRiderBuildSound('crank');
-        }
-
-        showToast('Inisialisasi sistem selesai! Tekan ENTER atau klik untuk masuk.');
-    }
-
-    // Function to smoothly update loading bar, percentage, and futuristic audio subtitle
-    function updateLoadingProgress() {
-        if (!splashAudio || splashLoadingCompleted) return;
-
-        const cur = splashAudio.currentTime;
-        const TARGET_DURATION = 21.46; // Target cut duration: 21 detik 46 milidetik
-        const dur = (splashAudio.duration && isFinite(splashAudio.duration) && splashAudio.duration > 0) 
-            ? Math.min(TARGET_DURATION, splashAudio.duration) 
-            : TARGET_DURATION;
-
-        const rawPct = Math.min(100, (cur / dur) * 100);
-        const pctInt = Math.min(100, Math.floor(rawPct));
-
-        if (progressBar) {
-            progressBar.style.width = rawPct.toFixed(1) + '%';
-        }
-
-        if (pctEl) {
-            pctEl.textContent = pctInt + '%';
-        }
-
-        const btnLabel = document.getElementById('btn-mulai-label');
-        if (btnLabel && !splashLoadingCompleted) {
-            btnLabel.textContent = 'MEMUAT SISTEM';
-        }
-
-        // Animated Waveform Indicator
-        if (subtitleContainer && !splashAudio.paused) {
-            subtitleContainer.classList.add('active-audio');
-        }
-
-        // Futuristic Audio Subtitles Synchronized with Kamen Rider Build (2017) Audio (1.0x normal speed)
-        if (subtitleEl && !splashLoadingCompleted) {
-            if (cur < 3.0) {
-                subtitleEl.innerHTML = '<span>⚡ [FULLBOTTLE INSERTION]</span>';
-                subtitleEl.className = 'splash-audio-subtitle';
-            } else if (cur < 4.8) {
-                subtitleEl.innerHTML = '<span class="subtitle-voice">🐰 "RABBIT!" (FULLBOTTLE ENGAGED)</span>';
-                subtitleEl.className = 'splash-audio-subtitle subtitle-voice';
-            } else if (cur < 6.8) {
-                subtitleEl.innerHTML = '<span class="subtitle-voice">🛡️ "TANK!" (FULLBOTTLE ENGAGED)</span>';
-                subtitleEl.className = 'splash-audio-subtitle subtitle-voice';
-            } else if (cur < 8.8) {
-                subtitleEl.innerHTML = '<span class="subtitle-voice">✨ "BEST MATCH!" (KOMBINASI TERBAIK)</span>';
-                subtitleEl.className = 'splash-audio-subtitle subtitle-voice';
-            } else if (cur < 19.5) {
-                subtitleEl.innerHTML = '<span>⚙️ [CRANK ROTATION • STANDBY TECHNO RIFF]</span>';
-                subtitleEl.className = 'splash-audio-subtitle';
-            } else {
-                subtitleEl.innerHTML = '<span class="subtitle-climax">🔥 "ARE YOU READY?!" [SISTEM SIAP]</span>';
-                subtitleEl.className = 'splash-audio-subtitle subtitle-climax';
-            }
-        }
-
-        if (rawPct >= 100 || cur >= TARGET_DURATION) {
-            try {
-                splashAudio.pause();
-            } catch (e) {}
-            finishSplashLoading();
-            return;
-        }
-
-        if (!splashAudio.paused && !splashAudio.ended && cur < dur) {
-            requestAnimationFrame(updateLoadingProgress);
-        }
-    }
-
-    // Simulated fallback loading timer in case audio fails
-    function startSimulatedLoading() {
-        let simCur = 0;
-        const simDur = 21.46; // Target duration: 21.46s
-        const simInterval = setInterval(() => {
-            simCur += 0.1;
-            const p = Math.min(100, Math.floor((simCur / simDur) * 100));
-            if (progressBar) progressBar.style.width = p + '%';
-            if (pctEl) pctEl.textContent = p + '%';
-            const btnLabel = document.getElementById('btn-mulai-label');
-            if (btnLabel && !splashLoadingCompleted) btnLabel.textContent = 'MEMUAT SISTEM';
-            if (p >= 100 || simCur >= simDur) {
-                clearInterval(simInterval);
-                finishSplashLoading();
-            }
-        }, 100);
-    }
-
-    if (splashAudio) {
-        splashAudio.onended = function() {
-            finishSplashLoading();
-        };
-
-        splashAudio.onerror = function() {
-            console.warn('Audio playback error, falling back to simulated loading timer.');
-            startSimulatedLoading();
-        };
-    }
-
-    // Function to start audio & loading sequence (triggered strictly by user pressing the load button)
-    function startAudioPlay() {
-        if (splashAudioStarted) return;
-        splashAudioStarted = true;
-
-        if (btnMulai && !splashLoadingCompleted) {
-            btnMulai.disabled = true;
-            btnMulai.classList.remove('btn-splash-waiting');
-            btnMulai.classList.add('btn-splash-locked');
-            const btnLabel = document.getElementById('btn-mulai-label');
-            if (btnLabel) {
-                btnLabel.textContent = 'MEMUAT SISTEM';
-            }
-        }
-
-        if (splashAudio) {
-            splashAudio.playbackRate = 1.0;
-            const playPromise = splashAudio.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    splashAudio.playbackRate = 1.0;
-                    requestAnimationFrame(updateLoadingProgress);
-                }).catch((err) => {
-                    console.warn('Audio play failed, falling back to simulated loading:', err);
-                    startSimulatedLoading();
-                });
-            } else {
-                requestAnimationFrame(updateLoadingProgress);
-            }
-        } else {
-            startSimulatedLoading();
-        }
-    }
-
-    // User interaction listener: loading dimulai saat menekan tombol memuat
-    if (btnMulai) {
-        btnMulai.onclick = function(e) {
-            if (e) e.stopPropagation();
-            if (!splashAudioStarted) {
-                startAudioPlay();
-                return;
-            }
-            if (!splashLoadingCompleted) {
-                showToast('⏳ Harap tunggu hingga proses memuat selesai!');
-                return;
-            }
-            mulaiAplikasi();
-        };
+        btnMulai.onclick = handleSplashButtonClick;
     }
 
     // Keyboard ENTER listener (starts loading if waiting, enters workspace if completed)
@@ -888,19 +712,223 @@ function runSplashLoadingSequence() {
                 document.removeEventListener('keydown', handleKeyEnter);
                 mulaiAplikasi();
             } else if (!splashAudioStarted) {
-                startAudioPlay();
+                startSplashLoadingSequence();
             } else {
-                showToast('⏳ Harap tunggu hingga proses memuat selesai!');
+                showToast('⏳ Sedang memuat sistem... Harap tunggu hingga selesai!');
             }
         }
     };
     document.addEventListener('keydown', handleKeyEnter);
 }
 
+// Global button handler managing the 3-step lifecycle
+function handleSplashButtonClick(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+
+    // Stage 1: Waiting to load -> user presses "KLIK UNTUK MEMUAT"
+    if (!splashAudioStarted) {
+        startSplashLoadingSequence();
+        return;
+    }
+
+    // Stage 2: Currently loading -> user presses while in progress
+    if (!splashLoadingCompleted) {
+        showToast('⏳ Sedang memuat sistem... Harap tunggu hingga proses selesai!');
+        return;
+    }
+
+    // Stage 3: Loading 100% completed -> user presses "ENTER CAD WORKSPACE"
+    mulaiAplikasi();
+}
+
+// Step 2: Start Audio and Loading Progress Sequence (Triggered ONLY by User Click)
+function startSplashLoadingSequence() {
+    if (splashAudioStarted) return;
+    splashAudioStarted = true;
+
+    const btnMulai = document.getElementById('btn-mulai-splash');
+    const btnLabel = document.getElementById('btn-mulai-label');
+    const progressBar = document.getElementById('splash-progress-bar');
+    const pctEl = document.getElementById('splash-progress-pct');
+
+    // 1. Lock button state
+    if (btnMulai) {
+        btnMulai.disabled = true;
+        btnMulai.classList.remove('btn-splash-waiting');
+        btnMulai.classList.add('btn-splash-locked');
+    }
+    if (btnLabel) {
+        btnLabel.textContent = 'MEMUAT SISTEM';
+    }
+
+    // 2. Initialize and play Kamen Rider Build Standby Audio (1.0x normal speed, 21.46s)
+    try {
+        splashAudio = new Audio('static/audio/kamen-rider-build.mp3');
+        splashAudio.preload = 'auto';
+        splashAudio.playbackRate = 1.0;
+        splashAudio.defaultPlaybackRate = 1.0;
+
+        splashAudio.onended = function() {
+            finishSplashLoading();
+        };
+
+        splashAudio.onerror = function(err) {
+            console.warn('Audio playback error, falling back to simulated loading timer:', err);
+            startSimulatedLoading();
+        };
+
+        const playPromise = splashAudio.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                splashAudio.playbackRate = 1.0;
+                requestAnimationFrame(updateLoadingProgress);
+            }).catch((err) => {
+                console.warn('Audio play rejected, falling back to timer:', err);
+                startSimulatedLoading();
+            });
+        } else {
+            requestAnimationFrame(updateLoadingProgress);
+        }
+    } catch (e) {
+        console.warn('Audio initialization exception, using timer:', e);
+        startSimulatedLoading();
+    }
+}
+
+// Simulated fallback loading timer in case audio playback is unavailable
+function startSimulatedLoading() {
+    let simCur = 0;
+    const simDur = 21.46; // Target duration: 21.46s
+    const progressBar = document.getElementById('splash-progress-bar');
+    const pctEl = document.getElementById('splash-progress-pct');
+    const simInterval = setInterval(() => {
+        simCur += 0.1;
+        const p = Math.min(100, Math.floor((simCur / simDur) * 100));
+        if (progressBar) progressBar.style.width = p + '%';
+        if (pctEl) pctEl.textContent = p + '%';
+        const btnLabel = document.getElementById('btn-mulai-label');
+        if (btnLabel && !splashLoadingCompleted) btnLabel.textContent = 'MEMUAT SISTEM';
+        if (p >= 100 || simCur >= simDur) {
+            clearInterval(simInterval);
+            finishSplashLoading();
+        }
+    }, 100);
+}
+
+// Function to smoothly update loading bar, percentage, and futuristic audio subtitle
+function updateLoadingProgress() {
+    if (!splashAudio || splashLoadingCompleted) return;
+
+    const cur = splashAudio.currentTime;
+    const TARGET_DURATION = 21.46; // Target cut duration: 21 detik 46 milidetik
+    const dur = (splashAudio.duration && isFinite(splashAudio.duration) && splashAudio.duration > 0) 
+        ? Math.min(TARGET_DURATION, splashAudio.duration) 
+        : TARGET_DURATION;
+
+    const rawPct = Math.min(100, (cur / dur) * 100);
+    const pctInt = Math.min(100, Math.floor(rawPct));
+
+    const progressBar = document.getElementById('splash-progress-bar');
+    const pctEl = document.getElementById('splash-progress-pct');
+    const subtitleEl = document.getElementById('splash-audio-subtitle');
+    const subtitleContainer = document.getElementById('splash-subtitle-container');
+
+    if (progressBar) {
+        progressBar.style.width = rawPct.toFixed(1) + '%';
+    }
+
+    if (pctEl) {
+        pctEl.textContent = pctInt + '%';
+    }
+
+    const btnLabel = document.getElementById('btn-mulai-label');
+    if (btnLabel && !splashLoadingCompleted) {
+        btnLabel.textContent = 'MEMUAT SISTEM';
+    }
+
+    // Animated Waveform Indicator
+    if (subtitleContainer && !splashAudio.paused) {
+        subtitleContainer.classList.add('active-audio');
+    }
+
+    // Futuristic Audio Subtitles Synchronized with Kamen Rider Build (2017) Audio (1.0x normal speed)
+    if (subtitleEl && !splashLoadingCompleted) {
+        if (cur < 3.0) {
+            subtitleEl.innerHTML = '<span>⚡ [FULLBOTTLE INSERTION]</span>';
+            subtitleEl.className = 'splash-audio-subtitle';
+        } else if (cur < 4.8) {
+            subtitleEl.innerHTML = '<span class="subtitle-voice">🐰 "RABBIT!" (FULLBOTTLE ENGAGED)</span>';
+            subtitleEl.className = 'splash-audio-subtitle subtitle-voice';
+        } else if (cur < 6.8) {
+            subtitleEl.innerHTML = '<span class="subtitle-voice">🛡️ "TANK!" (FULLBOTTLE ENGAGED)</span>';
+            subtitleEl.className = 'splash-audio-subtitle subtitle-voice';
+        } else if (cur < 8.8) {
+            subtitleEl.innerHTML = '<span class="subtitle-voice">✨ "BEST MATCH!" (KOMBINASI TERBAIK)</span>';
+            subtitleEl.className = 'splash-audio-subtitle subtitle-voice';
+        } else if (cur < 19.5) {
+            subtitleEl.innerHTML = '<span>⚙️ [CRANK ROTATION • STANDBY TECHNO RIFF]</span>';
+            subtitleEl.className = 'splash-audio-subtitle';
+        } else {
+            subtitleEl.innerHTML = '<span class="subtitle-climax">🔥 "ARE YOU READY?!" [SISTEM SIAP]</span>';
+            subtitleEl.className = 'splash-audio-subtitle subtitle-climax';
+        }
+    }
+
+    if (rawPct >= 100 || cur >= TARGET_DURATION) {
+        try {
+            splashAudio.pause();
+        } catch (e) {}
+        finishSplashLoading();
+        return;
+    }
+
+    if (!splashAudio.paused && !splashAudio.ended && cur < dur) {
+        requestAnimationFrame(updateLoadingProgress);
+    }
+}
+
+// Step 3: Complete Splash Loading (Unlock "ENTER CAD WORKSPACE")
+function finishSplashLoading() {
+    if (splashLoadingCompleted) return;
+    splashLoadingCompleted = true;
+
+    const progressBar = document.getElementById('splash-progress-bar');
+    const btnMulai = document.getElementById('btn-mulai-splash');
+    const pctEl = document.getElementById('splash-progress-pct');
+    const subtitleEl = document.getElementById('splash-audio-subtitle');
+    const subtitleContainer = document.getElementById('splash-subtitle-container');
+
+    if (progressBar) progressBar.style.width = '100%';
+    if (pctEl) pctEl.textContent = '100%';
+
+    if (subtitleContainer) subtitleContainer.classList.remove('active-audio');
+    if (subtitleEl) {
+        subtitleEl.innerHTML = '<span class="subtitle-success">✓ [SISTEM TERVERIFIKASI • SILAKAN MASUK]</span>';
+        subtitleEl.className = 'splash-audio-subtitle subtitle-success';
+    }
+
+    if (btnMulai) {
+        btnMulai.disabled = false;
+        btnMulai.classList.remove('btn-splash-locked', 'btn-splash-waiting');
+        btnMulai.classList.add('btn-splash-unlocked');
+        btnMulai.innerHTML = `
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <span id="btn-mulai-label">ENTER CAD WORKSPACE</span>
+        `;
+        btnMulai.title = "Tekan ENTER atau klik untuk membuka workspace";
+        btnMulai.onmouseenter = () => playKamenRiderBuildSound('crank');
+        btnMulai.onclick = handleSplashButtonClick;
+    }
+
+    showToast('Inisialisasi sistem selesai! Tekan ENTER atau klik ENTER CAD WORKSPACE untuk masuk.');
+}
+
+// Step 4: Enter CAD Workspace (Called by "ENTER CAD WORKSPACE" button click)
 function mulaiAplikasi() {
     if (!splashAudioStarted) {
-        const btnMulai = document.getElementById('btn-mulai-splash');
-        if (btnMulai) btnMulai.click();
+        startSplashLoadingSequence();
         return;
     }
     if (!splashLoadingCompleted) {
