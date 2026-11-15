@@ -117,6 +117,7 @@ html, body {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-shrink: 0;
 }
 
 .brand-logo-img {
@@ -154,6 +155,115 @@ html, body {
     color: var(--text-secondary);
     font-weight: 600;
     letter-spacing: 0.6px;
+}
+
+/* ==========================================================================
+   HEADER RUNNING TEXT / TICKER (PENGEMBANGAN FITUR)
+   ========================================================================== */
+.header-ticker-container {
+    flex: 1;
+    min-width: 0;
+    max-width: 820px;
+    margin-left: 20px;
+    display: flex;
+    align-items: center;
+    background: rgba(8, 18, 42, 0.72);
+    border: 1px solid rgba(0, 240, 255, 0.28);
+    border-radius: 24px;
+    height: 34px;
+    padding: 0 10px 0 6px;
+    position: relative;
+    box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.05), 0 2px 8px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.ticker-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.16), rgba(14, 165, 233, 0.25));
+    border: 1px solid rgba(0, 240, 255, 0.45);
+    border-radius: 16px;
+    padding: 3px 9px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: var(--cyan-neon);
+    text-transform: uppercase;
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
+    flex-shrink: 0;
+    z-index: 2;
+    cursor: default;
+}
+
+.ticker-pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #00f0ff;
+    box-shadow: 0 0 8px #00f0ff;
+    animation: tickerPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes tickerPulse {
+    0%, 100% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 3px #00f0ff); }
+    50% { opacity: 0.35; transform: scale(0.8); filter: none; }
+}
+
+.ticker-marquee-wrapper {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    margin-left: 10px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    mask-image: linear-gradient(to right, transparent 0, black 14px, black calc(100% - 14px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 14px, black calc(100% - 14px), transparent 100%);
+}
+
+.ticker-marquee-track {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+    animation: tickerSeamlessScroll 28s linear infinite;
+}
+
+.ticker-marquee-track:hover {
+    animation-play-state: paused;
+}
+
+.ticker-marquee-half {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.ticker-text-item {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.35px;
+    color: #e2e8f0;
+    display: inline-flex;
+    align-items: center;
+}
+
+.ticker-separator {
+    color: var(--cyan-neon);
+    font-size: 9px;
+    margin: 0 20px;
+    opacity: 0.8;
+    text-shadow: 0 0 6px rgba(0, 240, 255, 0.6);
+}
+
+@keyframes tickerSeamlessScroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
 }
 
 /* Header Telemetry */
@@ -2524,6 +2634,39 @@ option {
     .fighter-avatar {
         transform: scale(0.85);
         transform-origin: bottom center;
+    }
+    .header-ticker-container {
+        margin-left: 10px;
+        height: 30px;
+        padding: 0 8px 0 4px;
+    }
+    .ticker-badge {
+        font-size: 9px;
+        padding: 2px 7px;
+    }
+    .ticker-text-item {
+        font-size: 11px;
+    }
+    .ticker-separator {
+        margin: 0 14px;
+    }
+}
+
+@media (max-width: 600px) {
+    .header-ticker-container {
+        margin-left: 6px;
+    }
+    .ticker-badge-text {
+        display: none;
+    }
+    .ticker-badge {
+        padding: 3px 5px;
+    }
+    .ticker-text-item {
+        font-size: 10px;
+    }
+    .ticker-separator {
+        margin: 0 10px;
     }
 }
 

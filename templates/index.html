@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     
     <!-- Custom Engineering Stylesheet -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20261115_02">
 </head>
 <body>
 
@@ -107,6 +107,30 @@
             <div class="brand-titles">
                 <div class="brand-title">SI BABON <span>DER!</span></div>
                 <div class="brand-subtitle">Simulasi Balok Beton &amp; Silinder</div>
+            </div>
+        </div>
+
+        <!-- Teks Berjalan / Marquee Masa Pengembangan -->
+        <div class="header-ticker-container" title="Status Pengembangan Aplikasi">
+            <div class="ticker-badge">
+                <span class="ticker-pulse-dot"></span>
+                <span class="ticker-badge-text">PENGEMBANGAN</span>
+            </div>
+            <div class="ticker-marquee-wrapper">
+                <div class="ticker-marquee-track">
+                    <div class="ticker-marquee-half">
+                        <span class="ticker-text-item">Website ini sedang dalam masa pengembangan, penyesuaian akan segera dilakukan dan fitur akan ditambahkan secara bertahap</span>
+                        <span class="ticker-separator">✦</span>
+                        <span class="ticker-text-item">Website ini sedang dalam masa pengembangan, penyesuaian akan segera dilakukan dan fitur akan ditambahkan secara bertahap</span>
+                        <span class="ticker-separator">✦</span>
+                    </div>
+                    <div class="ticker-marquee-half" aria-hidden="true">
+                        <span class="ticker-text-item">Website ini sedang dalam masa pengembangan, penyesuaian akan segera dilakukan dan fitur akan ditambahkan secara bertahap</span>
+                        <span class="ticker-separator">✦</span>
+                        <span class="ticker-text-item">Website ini sedang dalam masa pengembangan, penyesuaian akan segera dilakukan dan fitur akan ditambahkan secara bertahap</span>
+                        <span class="ticker-separator">✦</span>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
