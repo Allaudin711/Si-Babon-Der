@@ -87,7 +87,7 @@ const panelView = document.getElementById('panel-view');
 const canvasView = document.getElementById('canvas-view');
 
 let elementData = {
-    tipe: 'Ring Balk (Ring Beam)',
+    tipe: 'Beam',
     panjang: 100,
     lebar: 20,
     tinggi: 20,
@@ -1140,30 +1140,54 @@ function calculateAdvancedStrength(item) {
     let normFactor = 28 / (alpha + beta_aci * 28);
     let f_c_t = f_c_mod * (curingFactor / normFactor);
 
-    let Area = item.tipe === 'Silinder Uji' ? Math.PI * Math.pow(item.diameter/2, 2) : item.lebar * item.tinggi;
+    let normTipe = getNormalizedTipe(item.tipe);
+    let b = item.lebar || 20;
+    let h = item.tinggi || 20;
+    let L = item.panjang || 100;
 
-    let n_bars = Math.max(1, parseInt(item.jumlahTulangan) || 4);
-    let r_bar = (item.tulanganDiameter / 10) / 2;
+    let Area = normTipe === 'Cylinder' ? Math.PI * Math.pow((item.diameter || 15) / 2, 2) : b * h;
+
+    let n_bars = Math.max(0, parseInt(item.jumlahTulangan) || (normTipe === 'Cylinder' ? 0 : 4));
+    let r_bar = ((item.tulanganDiameter || 12) / 10) / 2;
     let As = n_bars * Math.PI * Math.pow(r_bar, 2);
     let fy = item.tulanganTipe && item.tulanganTipe.includes('Polos') ? 280 : 420;
-    let d_eff = (item.tipe === 'Silinder Uji' ? item.tinggiSilinder : item.tinggi) - 3;
-    let a = (As * fy) / (0.85 * f_c_t * (item.tipe === 'Silinder Uji' ? item.diameter : item.lebar));
-    let Mn = As * fy * (d_eff - (a/20)) / 100;
+    let d_eff = (normTipe === 'Cylinder' ? (item.tinggiSilinder || 30) : h) - 3;
+    let b_eff = normTipe === 'Cylinder' ? (item.diameter || 15) : b;
+    let a = As > 0 ? (As * fy) / (0.85 * f_c_t * b_eff) : 0;
+    let Mn = As > 0 ? As * fy * (d_eff - (a / 20)) / 100 : 0;
 
-    let Load_kN = (f_c_t * Area / 10) + (Mn * 8);
+    // Structural load capacity according to element type:
+    let Load_kN = 0;
+    if (normTipe === 'Cylinder') {
+        Load_kN = (f_c_t * Area) / 10;
+    } else if (normTipe === 'Column') {
+        let Ag_mm2 = Area * 100;
+        let Ast_mm2 = As * 100;
+        let Pn_N = 0.80 * (0.85 * f_c_t * Math.max(0, Ag_mm2 - Ast_mm2) + fy * Ast_mm2);
+        Load_kN = Pn_N / 1000;
+    } else if (normTipe === 'Shear Wall') {
+        Load_kN = (f_c_t * Area / 10) + (Mn * 6) + (0.17 * Math.sqrt(f_c_t) * Area);
+    } else if (normTipe === 'Slab') {
+        Load_kN = (Mn * 12) + (0.33 * Math.sqrt(f_c_t) * (2 * (b + h) * d_eff) / 10);
+    } else if (normTipe === 'Foundation') {
+        Load_kN = (f_c_t * Area / 7) + (Mn * 10);
+    } else {
+        // Beam / Tie Beam
+        Load_kN = (f_c_t * Area / 10) + (Mn * 8);
+    }
 
     // Kalkulasi Realistis Berat Baja Tulangan (kg)
-    let length_m = (item.tipe === 'Silinder Uji' ? item.tinggiSilinder : item.panjang) / 100;
-    let diam_m = (item.tulanganDiameter / 1000);
+    let length_m = (normTipe === 'Cylinder' ? (item.tinggiSilinder || 30) : L) / 100;
+    let diam_m = ((item.tulanganDiameter || 12) / 1000);
     let vol_longitudinal = n_bars * (Math.PI / 4) * Math.pow(diam_m, 2) * length_m;
     let sengkang_spasi = Math.max(50, item.sengkangJarak || 150);
     let sengkang_count = Math.max(2, Math.floor((length_m * 1000) / sengkang_spasi));
-    let keliling_sengkang = (item.tipe === 'Silinder Uji') 
-        ? Math.PI * ((item.diameter - 4) / 100) 
-        : (2 * ((item.lebar - 4) + (item.tinggi - 4))) / 100;
-    let diam_sengkang_m = (item.sengkangDiameter / 1000);
-    let vol_sengkang = sengkang_count * keliling_sengkang * (Math.PI / 4) * Math.pow(diam_sengkang_m, 2);
-    let beratBajaKg = Math.max(2, Math.round((vol_longitudinal + vol_sengkang) * 7850));
+    let keliling_sengkang = (normTipe === 'Cylinder') 
+        ? Math.PI * (((item.diameter || 15) - 4) / 100) 
+        : (2 * ((b - 4) + (h - 4))) / 100;
+    let diam_sengkang_m = ((item.sengkangDiameter || 8) / 1000);
+    let vol_sengkang = sengkang_count * Math.max(0, keliling_sengkang) * (Math.PI / 4) * Math.pow(diam_sengkang_m, 2);
+    let beratBajaKg = Math.max(normTipe === 'Cylinder' ? 0 : 2, Math.round((vol_longitudinal + vol_sengkang) * 7850));
 
     return {
         wc: w_c.toFixed(2),
@@ -1177,19 +1201,146 @@ function calculateAdvancedStrength(item) {
     };
 }
 
+// Helper to normalize any structural element type name to one of 7 official categories
+function getNormalizedTipe(t) {
+    if (!t) return 'Beam';
+    let s = String(t).toLowerCase();
+    if (s.includes('cylinder') || s.includes('silinder')) return 'Cylinder';
+    if (s.includes('slab') || s.includes('pelat')) return 'Slab';
+    if (s.includes('shear') || s.includes('wall') || s.includes('dinding')) return 'Shear Wall';
+    if (s.includes('column') || s.includes('kolom')) return 'Column';
+    if (s.includes('tie') || s.includes('sloof')) return 'Tie Beam';
+    if (s.includes('foundation') || s.includes('footing') || s.includes('pondasi')) return 'Foundation';
+    if (s.includes('beam') || s.includes('balk')) return 'Beam';
+    return 'Beam';
+}
+
+function getElementDisplayTitle(t) {
+    let norm = getNormalizedTipe(t);
+    switch(norm) {
+        case 'Slab': return 'Slab (Pelat Lantai)';
+        case 'Shear Wall': return 'Shear Wall (Dinding Geser)';
+        case 'Beam': return 'Beam (Balok Beton)';
+        case 'Column': return 'Column (Kolom Beton)';
+        case 'Tie Beam': return 'Tie Beam (Sloof)';
+        case 'Foundation': return 'Foundation (Pondasi Telapak)';
+        case 'Cylinder': return 'Standard Test Cylinder (ASTM C39)';
+        default: return 'Reinforced Concrete Element';
+    }
+}
+
+function getDimensionLabel(tipe) {
+    let norm = getNormalizedTipe(tipe);
+    switch(norm) {
+        case 'Slab':
+            return `Length x Width x Thickness (cm) <span class="label-hint">Panjang x Lebar x Tebal Pelat</span>`;
+        case 'Shear Wall':
+            return `Length x Thickness x Height (cm) <span class="label-hint">Panjang Dinding x Tebal tw x Tinggi hw</span>`;
+        case 'Column':
+            return `Width x Depth x Height (cm) <span class="label-hint">Lebar b x Tebal h x Tinggi Kolom H</span>`;
+        case 'Foundation':
+            return `Length x Width x Thickness (cm) <span class="label-hint">Panjang x Lebar x Tebal Pondasi</span>`;
+        case 'Tie Beam':
+            return `Length x Width x Height (cm) <span class="label-hint">Sloof / Balok Pengikat Dasar</span>`;
+        case 'Beam':
+        default:
+            return `Length x Width x Height (cm) <span class="label-hint">Balok Beton Bertulang (Beam)</span>`;
+    }
+}
+
+function getRebarCountLabel(tipe) {
+    let norm = getNormalizedTipe(tipe);
+    switch(norm) {
+        case 'Slab': return 'Slab Rebar Count / Wiremesh Grid (Bars)';
+        case 'Shear Wall': return 'Vertical & Boundary Rebar Count (Bars)';
+        case 'Column': return 'Column Longitudinal Rebar Count (Bars)';
+        case 'Foundation': return 'Footing Mat Bidirectional Rebar (Bars)';
+        case 'Tie Beam': return 'Tie Beam Longitudinal Rebar (Bars)';
+        case 'Cylinder': return 'Internal Spiral / Tie Bars (ASTM C39)';
+        case 'Beam':
+        default: return 'Main Longitudinal Rebar Count (Bars)';
+    }
+}
+
 function calculateDynamicScale(val) {
     let num = Math.max(1, parseFloat(val) || 10);
     let mapped = 45 + (Math.log10(num) * 48);
     return Math.max(35, Math.min(460, mapped));
 }
 
-function generateRebarsMarkup(nBars) {
+function generateRebarsMarkup(nBars, tipe) {
     let n = Math.max(2, parseInt(nBars) || 4);
+    let norm = getNormalizedTipe(tipe || elementData.tipe);
     let html = '';
+
+    if (norm === 'Slab') {
+        // Two-way top and bottom mesh grid inside slab
+        let linesX = Math.min(10, Math.max(3, Math.ceil(n / 2)));
+        let linesZ = Math.min(8, Math.max(3, Math.floor(n / 2) + 1));
+        for (let i = 0; i < linesZ; i++) {
+            let zRatio = linesZ === 1 ? 0 : (-0.38 + (i * (0.76 / (linesZ - 1))));
+            html += `<div class="rebar-longitudinal" style="top: 75%; left: 4%; width: 92%; transform: translateZ(calc(var(--depth) * ${zRatio.toFixed(3)})); background:#10b981; box-shadow:0 0 8px #10b981;"></div>`;
+        }
+        for (let j = 0; j < linesX; j++) {
+            let leftPct = linesX === 1 ? 50 : (6 + (j * (88 / (linesX - 1))));
+            html += `<div class="stirrup-ring" style="width: calc(var(--depth) * 0.82); height: 4px; top: 78%; left: calc(${leftPct}% - (var(--depth) * 0.82 / 2)); border: 2px solid #00f0ff; border-radius: 2px;"></div>`;
+        }
+        return html;
+    }
+
+    if (norm === 'Shear Wall') {
+        // Double curtain vertical and horizontal bars inside tall shear wall
+        let vertCount = Math.min(16, Math.max(4, n));
+        for (let i = 0; i < vertCount; i++) {
+            let leftPct = vertCount === 1 ? 50 : (6 + (i * (88 / (vertCount - 1))));
+            html += `<div class="rebar-longitudinal" style="top: 50%; left: ${leftPct}%; width: 4px; height: 92%; margin-top: -46%; transform: translateZ(calc(var(--depth) * 0.35)); background:#ff4d4f;"></div>`;
+            html += `<div class="rebar-longitudinal" style="top: 50%; left: ${leftPct}%; width: 4px; height: 92%; margin-top: -46%; transform: translateZ(calc(var(--depth) * -0.35)); background:#ff4d4f;"></div>`;
+        }
+        for (let h = 15; h <= 85; h += 20) {
+            html += `<div class="stirrup-ring" style="width: calc(var(--depth) * 0.82); height: 4px; top: ${h}%; left: calc(50% - (var(--depth) * 0.82 / 2)); border: 2px solid var(--accent-gold);"></div>`;
+        }
+        return html;
+    }
+
+    if (norm === 'Column') {
+        // Vertical column bars at perimeter and corners
+        let topCount = Math.ceil(n / 2);
+        let botCount = Math.floor(n / 2);
+        for (let i = 0; i < topCount; i++) {
+            let zRatio = topCount === 1 ? 0 : (-0.36 + (i * (0.72 / (topCount - 1))));
+            html += `<div class="rebar-longitudinal" style="top: 50%; left: 12%; width: 5px; height: 92%; margin-top: -46%; transform: translateZ(calc(var(--depth) * ${zRatio.toFixed(3)})); background:#ef4444;"></div>`;
+        }
+        for (let i = 0; i < botCount; i++) {
+            let zRatio = botCount === 1 ? 0 : (-0.36 + (i * (0.72 / (botCount - 1))));
+            html += `<div class="rebar-longitudinal" style="top: 50%; left: 88%; width: 5px; height: 92%; margin-top: -46%; transform: translateZ(calc(var(--depth) * ${zRatio.toFixed(3)})); background:#ef4444;"></div>`;
+        }
+        let tieSpacings = [15, 32, 50, 68, 85];
+        tieSpacings.forEach(sp => {
+            html += `<div class="stirrup-ring" style="width: calc(var(--depth) * 0.8); height: calc(var(--width) * 0.8); top: ${sp}%; left: calc(50% - (var(--depth) * 0.8 / 2)); transform: rotateX(90deg); border: 2.5px solid var(--accent-gold);"></div>`;
+        });
+        return html;
+    }
+
+    if (norm === 'Foundation') {
+        // Pad footing bottom mat (two-way grid) + stub starter dowels
+        let matX = Math.min(8, Math.max(3, Math.ceil(n / 2)));
+        let matZ = Math.min(8, Math.max(3, Math.floor(n / 2) + 1));
+        for (let i = 0; i < matZ; i++) {
+            let zRatio = matZ === 1 ? 0 : (-0.38 + (i * (0.76 / (matZ - 1))));
+            html += `<div class="rebar-longitudinal" style="top: 80%; left: 5%; width: 90%; transform: translateZ(calc(var(--depth) * ${zRatio.toFixed(3)})); background:#f59e0b; box-shadow:0 0 6px #f59e0b;"></div>`;
+        }
+        for (let j = 0; j < matX; j++) {
+            let leftPct = matX === 1 ? 50 : (8 + (j * (84 / (matX - 1))));
+            html += `<div class="stirrup-ring" style="width: calc(var(--depth) * 0.84); height: 4px; top: 82%; left: calc(${leftPct}% - (var(--depth) * 0.84 / 2)); border: 2px solid #00f0ff;"></div>`;
+        }
+        html += `<div class="rebar-longitudinal" style="top: 30%; left: 45%; width: 5px; height: 60%; transform: translateZ(calc(var(--depth) * 0.12)); background:#ef4444;"></div>`;
+        html += `<div class="rebar-longitudinal" style="top: 30%; left: 55%; width: 5px; height: 60%; transform: translateZ(calc(var(--depth) * -0.12)); background:#ef4444;"></div>`;
+        return html;
+    }
+
+    // Default: Beam / Tie Beam
     let topCount = Math.ceil(n / 2);
     let botCount = Math.floor(n / 2);
-
-    // Longitudinal bars running along the beam inside the stirrups
     for (let i = 0; i < topCount; i++) {
         let zRatio = topCount === 1 ? 0 : (-0.36 + (i * (0.72 / (topCount - 1))));
         html += `<div class="rebar-longitudinal" style="top: 13%; left: 3%; width: 94%; transform: translateZ(calc(var(--depth) * ${zRatio.toFixed(3)}));"></div>`;
@@ -1198,8 +1349,6 @@ function generateRebarsMarkup(nBars) {
         let zRatio = botCount === 1 ? 0 : (-0.36 + (i * (0.72 / (botCount - 1))));
         html += `<div class="rebar-longitudinal" style="top: 87%; left: 3%; width: 94%; transform: translateZ(calc(var(--depth) * ${zRatio.toFixed(3)}));"></div>`;
     }
-
-    // 5 Stirrup rings (begel / sengkang) strictly inside concrete boundaries (YZ cross-section)
     let stations = [14, 32, 50, 68, 86];
     stations.forEach(st => {
         html += `<div class="stirrup-ring" style="width: calc(var(--depth) * 0.78); height: calc(var(--height) * 0.78); top: 11%; left: calc(${st}% - (var(--depth) * 0.78 / 2));"></div>`;
@@ -1235,16 +1384,21 @@ function updateBoxDimensions() {
         const top = cube.querySelector('.top');
         const bottom = cube.querySelector('.bottom');
 
-        if (front) { front.style.width = scaleW + 'px'; front.style.height = scaleH + 'px'; front.innerHTML = `L: ${elementData.panjang}cm`; }
+        let norm = getNormalizedTipe(elementData.tipe);
+        let pLabel = (norm === 'Column') ? 'b' : (norm === 'Shear Wall' ? 'Lw' : 'L');
+        let lLabel = (norm === 'Shear Wall') ? 'tw' : (norm === 'Column' ? 'h' : 'W');
+        let tLabel = (norm === 'Slab' || norm === 'Foundation') ? 't' : 'H';
+
+        if (front) { front.style.width = scaleW + 'px'; front.style.height = scaleH + 'px'; front.innerHTML = `${pLabel}: ${elementData.panjang}cm`; }
         if (back)  { back.style.width = scaleW + 'px'; back.style.height = scaleH + 'px'; }
-        if (right) { right.style.width = scaleD + 'px'; right.style.height = scaleH + 'px'; right.style.left = (scaleW/2 - scaleD/2) + 'px'; right.innerHTML = `W: ${elementData.lebar}cm`; }
+        if (right) { right.style.width = scaleD + 'px'; right.style.height = scaleH + 'px'; right.style.left = (scaleW/2 - scaleD/2) + 'px'; right.innerHTML = `${lLabel}: ${elementData.lebar}cm`; }
         if (left)  { left.style.width = scaleD + 'px'; left.style.height = scaleH + 'px'; left.style.left = (scaleW/2 - scaleD/2) + 'px'; }
-        if (top)   { top.style.width = scaleW + 'px'; top.style.height = scaleD + 'px'; top.style.top = (scaleH/2 - scaleD/2) + 'px'; top.innerHTML = `H: ${elementData.tinggi}cm`; }
+        if (top)   { top.style.width = scaleW + 'px'; top.style.height = scaleD + 'px'; top.style.top = (scaleH/2 - scaleD/2) + 'px'; top.innerHTML = `${tLabel}: ${elementData.tinggi}cm`; }
         if (bottom){ bottom.style.width = scaleW + 'px'; bottom.style.height = scaleD + 'px'; bottom.style.top = (scaleH/2 - scaleD/2) + 'px'; }
 
         const cage = cube.querySelector('.rebar-cage-3d');
         if (cage) {
-            cage.innerHTML = generateRebarsMarkup(elementData.jumlahTulangan || 4);
+            cage.innerHTML = generateRebarsMarkup(elementData.jumlahTulangan || 4, elementData.tipe);
         }
     }
 }
@@ -1311,7 +1465,50 @@ function updateCylinderDimensions() {
 
 function handleTipeChange(selectObj) {
     playSynthSound('click');
-    elementData.tipe = selectObj.value;
+    let prevNorm = getNormalizedTipe(elementData.tipe);
+    let newTipe = selectObj.value;
+    let newNorm = getNormalizedTipe(newTipe);
+    elementData.tipe = newTipe;
+
+    // Set sensible structural dimensions when switching element types
+    if (newNorm !== prevNorm) {
+        if (newNorm === 'Slab') {
+            elementData.panjang = 250;
+            elementData.lebar = 200;
+            elementData.tinggi = 12;
+            elementData.jumlahTulangan = 8;
+        } else if (newNorm === 'Shear Wall') {
+            elementData.panjang = 200;
+            elementData.lebar = 20;
+            elementData.tinggi = 300;
+            elementData.jumlahTulangan = 8;
+        } else if (newNorm === 'Column') {
+            elementData.panjang = 30;
+            elementData.lebar = 30;
+            elementData.tinggi = 300;
+            elementData.jumlahTulangan = 8;
+        } else if (newNorm === 'Foundation') {
+            elementData.panjang = 100;
+            elementData.lebar = 100;
+            elementData.tinggi = 35;
+            elementData.jumlahTulangan = 8;
+        } else if (newNorm === 'Tie Beam') {
+            elementData.panjang = 300;
+            elementData.lebar = 15;
+            elementData.tinggi = 20;
+            elementData.jumlahTulangan = 4;
+        } else if (newNorm === 'Beam') {
+            elementData.panjang = 100;
+            elementData.lebar = 20;
+            elementData.tinggi = 20;
+            elementData.jumlahTulangan = 4;
+        } else if (newNorm === 'Cylinder') {
+            elementData.diameter = 15;
+            elementData.tinggiSilinder = 30;
+            elementData.jumlahTulangan = 0;
+        }
+    }
+
     renderCreate();
 }
 
@@ -1323,9 +1520,9 @@ function handleInovasiChange(selectObj) {
 function handleJumlahTulanganChange(val) {
     playSynthSound('click');
     let num = parseInt(val) || 4;
-    elementData.jumlahTulangan = Math.max(2, Math.min(24, num));
+    elementData.jumlahTulangan = Math.max(0, Math.min(32, num));
     
-    let r_bar = (elementData.tulanganDiameter / 10) / 2;
+    let r_bar = ((elementData.tulanganDiameter || 12) / 10) / 2;
     let As = elementData.jumlahTulangan * Math.PI * Math.pow(r_bar, 2);
     let asLabel = document.getElementById('label-live-as');
     if (asLabel) asLabel.textContent = As.toFixed(2) + ' cm²';
@@ -1447,7 +1644,8 @@ function createConcreteElement() {
 
 function renderCreate() {
     if (canvasView) canvasView.classList.remove("scroll-mode");
-    let isSilinder = elementData.tipe === 'Silinder Uji';
+    let selectedTipe = getNormalizedTipe(elementData.tipe);
+    let isSilinder = selectedTipe === 'Cylinder';
     let calcInitial = calculateAdvancedStrength(elementData);
 
     let elementMarkup = isSilinder ? generateCylinderMarkup(elementData.diameter || 15, elementData.tinggiSilinder || 30) : `
@@ -1459,7 +1657,7 @@ function renderCreate() {
             <div class="face top"></div>
             <div class="face bottom"></div>
             <div class="rebar-cage-3d">
-                ${generateRebarsMarkup(elementData.jumlahTulangan || 4)}
+                ${generateRebarsMarkup(elementData.jumlahTulangan || 4, elementData.tipe)}
             </div>
         </div>
     `;
@@ -1482,7 +1680,7 @@ function renderCreate() {
         <div class="viewport-hud-bottom">
             <div class="live-render-tag">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg> 
-                <span>CAD VIEWPORT XYZ | Mode: <strong>${isSilinder ? 'Standard Cylinder' : 'Ring Beam'}</strong> | Rebar: <strong>${elementData.jumlahTulangan || 4} Bars</strong></span>
+                <span>CAD VIEWPORT XYZ | Mode: <strong>${getElementDisplayTitle(elementData.tipe)}</strong> | Rebar: <strong>${isSilinder ? 'Plain Specimen / Spiral Tie' : (elementData.jumlahTulangan || 4) + ' Bars'}</strong></span>
             </div>
 
             <div class="viewport-controls-group">
@@ -1528,22 +1726,27 @@ function renderCreate() {
             <div class="input-group">
                 <label>Select Structural Element Type</label>
                 <select class="custom-select" id="input-tipe" onchange="handleTipeChange(this)">
-                    <option value="Ring Balk (Ring Beam)" ${!isSilinder ? 'selected' : ''}>Ring Beam / Reinforced Concrete Beam</option>
-                    <option value="Silinder Uji" ${isSilinder ? 'selected' : ''}>Standard Test Cylinder (ASTM C39)</option>
+                    <option value="Slab" ${selectedTipe === 'Slab' ? 'selected' : ''}>1. Slab (Pelat Lantai)</option>
+                    <option value="Shear Wall" ${selectedTipe === 'Shear Wall' ? 'selected' : ''}>2. Shear Wall (Dinding Geser)</option>
+                    <option value="Beam" ${selectedTipe === 'Beam' ? 'selected' : ''}>3. Beam (Balok Beton Bertulang)</option>
+                    <option value="Column" ${selectedTipe === 'Column' ? 'selected' : ''}>4. Column (Kolom Beton Bertulang)</option>
+                    <option value="Tie Beam" ${selectedTipe === 'Tie Beam' ? 'selected' : ''}>5. Tie Beam (Sloof / Balok Pengikat)</option>
+                    <option value="Foundation" ${selectedTipe === 'Foundation' ? 'selected' : ''}>6. Foundation (Pondasi Telapak)</option>
+                    <option value="Cylinder" ${selectedTipe === 'Cylinder' ? 'selected' : ''}>7. Cylinder (Silinder Uji Standar ASTM C39)</option>
                 </select>
             </div>
 
             ${isSilinder ? `
             <div class="input-group">
-                <label>Diameter x Height (cm) <span class="label-hint">Std: 15 x 30 cm</span></label>
+                <label>Diameter x Height (cm) <span class="label-hint">Std: 15 x 30 cm (ASTM C39)</span></label>
                 <div class="dimensions-grid-cylinder">
-                    <input type="number" id="input-diameter" class="custom-input" value="${elementData.diameter}" oninput="updateCylinderDimensions()" placeholder="Diameter">
-                    <input type="number" id="input-tinggi-silinder" class="custom-input" value="${elementData.tinggiSilinder}" oninput="updateCylinderDimensions()" placeholder="Height">
+                    <input type="number" id="input-diameter" class="custom-input" value="${elementData.diameter || 15}" oninput="updateCylinderDimensions()" placeholder="Diameter">
+                    <input type="number" id="input-tinggi-silinder" class="custom-input" value="${elementData.tinggiSilinder || 30}" oninput="updateCylinderDimensions()" placeholder="Height">
                 </div>
             </div>
             ` : `
             <div class="input-group">
-                <label>Length x Width x Height (cm) <span class="label-hint">Structural Beam</span></label>
+                <label>${getDimensionLabel(selectedTipe)}</label>
                 <div class="dimensions-grid">
                     <input type="number" id="input-panjang" class="custom-input" value="${elementData.panjang}" oninput="updateBoxDimensions()" placeholder="P">
                     <input type="number" id="input-lebar" class="custom-input" value="${elementData.lebar}" oninput="updateBoxDimensions()" placeholder="L">
@@ -1561,9 +1764,9 @@ function renderCreate() {
             </div>
 
             <div class="input-group">
-                <label>Main Longitudinal Rebar Count (Bars) <span class="label-hint">Select or Input</span></label>
+                <label>${getRebarCountLabel(selectedTipe)} <span class="label-hint">Select or Input</span></label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" id="input-tulangan-jumlah" class="custom-input" value="${elementData.jumlahTulangan || 4}" min="2" max="24" oninput="handleJumlahTulanganChange(this.value)">
+                    <input type="number" id="input-tulangan-jumlah" class="custom-input" value="${elementData.jumlahTulangan !== undefined ? elementData.jumlahTulangan : 4}" min="0" max="32" oninput="handleJumlahTulanganChange(this.value)">
                     <select class="custom-select" style="max-width: 140px;" onchange="document.getElementById('input-tulangan-jumlah').value = this.value; handleJumlahTulanganChange(this.value);">
                         <option value="2" ${elementData.jumlahTulangan === 2 ? 'selected' : ''}>2 Bars</option>
                         <option value="4" ${(elementData.jumlahTulangan === 4 || !elementData.jumlahTulangan) ? 'selected' : ''}>4 Bars (Std)</option>
@@ -1571,6 +1774,7 @@ function renderCreate() {
                         <option value="8" ${elementData.jumlahTulangan === 8 ? 'selected' : ''}>8 Bars</option>
                         <option value="10" ${elementData.jumlahTulangan === 10 ? 'selected' : ''}>10 Bars</option>
                         <option value="12" ${elementData.jumlahTulangan === 12 ? 'selected' : ''}>12 Bars</option>
+                        <option value="16" ${elementData.jumlahTulangan === 16 ? 'selected' : ''}>16 Bars</option>
                     </select>
                 </div>
             </div>
@@ -1765,7 +1969,7 @@ function renderLossMaterial() {
     }
 
     let selected = storedConcreteList[activeSelectedIndex];
-    let isSilinder = selected.tipe === 'Silinder Uji';
+    let isSilinder = getNormalizedTipe(selected.tipe) === 'Cylinder';
     let calc = calculateAdvancedStrength(selected);
 
     let elementMarkup = '';
@@ -1784,7 +1988,7 @@ function renderLossMaterial() {
                 <div class="face top" style="width: ${scaleW}px; height: ${scaleD}px; top: ${scaleH/2 - scaleD/2}px;">H: ${selected.tinggi}cm</div>
                 <div class="face bottom" style="width: ${scaleW}px; height: ${scaleD}px; top: ${scaleH/2 - scaleD/2}px;"></div>
                 <div class="rebar-cage-3d">
-                    ${generateRebarsMarkup(selected.jumlahTulangan || 4)}
+                    ${generateRebarsMarkup(selected.jumlahTulangan || 4, selected.tipe)}
                 </div>
             </div>
         `;
@@ -3052,7 +3256,7 @@ function renderAnalisis() {
     }
 
     let currentRecord = testedHistoryList[activeTestedIndex];
-    let isSilinder = currentRecord.materialName.toLowerCase().includes('silinder');
+    let isSilinder = getNormalizedTipe(currentRecord.materialName) === 'Cylinder';
 
     // Build Dropdown for Test History Archive
     let testedDropdownHtml = '';
