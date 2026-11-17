@@ -165,7 +165,6 @@ function saveTestHistory() {
 function clearTestHistory() {
     testedHistoryList = [];
     activeTestedIndex = 0;
-    currentActiveFormulaMethodId = null;
     try {
         localStorage.removeItem(STORAGE_KEY_TEST_HISTORY);
         localStorage.removeItem('testHistory');
@@ -3287,7 +3286,6 @@ function runMulaiUji() {
 /* ==========================================================================
    DYNAMIC 14-METHOD SNI & ASTM MATHEMATICAL FORMULA BUILDER & LOOKUP ENGINE
    ========================================================================== */
-let currentActiveFormulaMethodId = null;
 
 function getMethodIdFromName(name) {
     if (!name) return 1;
@@ -4031,8 +4029,9 @@ const SNI_ASTM_FORMULA_LOOKUP = {
     }
 };
 
-function renderTidySNIFormulas(rec, isSilinder, overrideMethodId) {
-    let methodId = overrideMethodId || currentActiveFormulaMethodId || getMethodIdFromName(rec.method);
+function renderTidySNIFormulas(rec, isSilinder) {
+    if (!rec) return '';
+    let methodId = getMethodIdFromName(rec.method);
     let methodMeta = SNI_ASTM_FORMULA_METHODS.find(m => m.id === methodId) || SNI_ASTM_FORMULA_METHODS[0];
 
     let fc = parseFloat(rec.fcFinal) || 14.8;
@@ -4052,27 +4051,22 @@ function renderTidySNIFormulas(rec, isSilinder, overrideMethodId) {
     let frVal = (0.62 * Math.sqrt(fc)).toFixed(2); // MPa
     let areaMm2 = isSilinder ? Math.round(Math.PI * Math.pow(150, 2) / 4) : (b * h);
 
-    // Build select options
-    let selectOptionsHtml = '';
-    SNI_ASTM_FORMULA_METHODS.forEach(m => {
-        selectOptionsHtml += `<option value="${m.id}" ${m.id === methodId ? 'selected' : ''}>${m.label}</option>`;
-    });
-
     let lookup = SNI_ASTM_FORMULA_LOOKUP[methodId] || SNI_ASTM_FORMULA_LOOKUP[1];
     let formulaContent = lookup.render(fc, loadKn, P_N, As, fy, aWhitney, MnNominal, phiMn, EcVal, frVal, areaMm2, isSilinder, d, b, h);
 
     return `
         <div class="sni-math-container">
-            <!-- Header Title with Dynamic Dropdown Selector -->
+            <!-- Header Title: Read-Only Dynamic Method & Standard Indicators (Synchronized 1-to-1 with Test Record) -->
             <div class="sni-math-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <div class="sni-math-title">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line></svg>
                     <span>2. RUMUS TEKNIS PERHITUNGAN SNI &amp; ASTM</span>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                    <select id="math-method-selector" class="custom-select math-method-dropdown" onchange="handleMathMethodChange(parseInt(this.value))" title="Pilih metode uji untuk merender rumus teknis">
-                        ${selectOptionsHtml}
-                    </select>
+                    <span class="telemetry-chip" style="background: rgba(0, 240, 255, 0.1); color: var(--cyan-neon); border: 1px solid rgba(0, 240, 255, 0.35); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline; margin-right:4px;"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        ${methodMeta.label.split('(')[0].trim()}
+                    </span>
                     <span class="telemetry-chip live-chip"><span class="dot-live"></span>${methodMeta.standard}</span>
                 </div>
             </div>
@@ -4081,18 +4075,6 @@ function renderTidySNIFormulas(rec, isSilinder, overrideMethodId) {
             ${formulaContent}
         </div>
     `;
-}
-
-function handleMathMethodChange(newId) {
-    currentActiveFormulaMethodId = newId;
-    let wrapper = document.getElementById('sni-math-dynamic-wrapper');
-    if (wrapper) {
-        if (!testedHistoryList || testedHistoryList.length === 0) return;
-        let currentRecord = testedHistoryList[activeTestedIndex] || testedHistoryList[0];
-        if (!currentRecord) return;
-        let isSilinder = getNormalizedTipe(currentRecord.materialName) === 'Cylinder';
-        wrapper.innerHTML = renderTidySNIFormulas(currentRecord, isSilinder, newId);
-    }
 }
 
 
@@ -4400,7 +4382,7 @@ function renderAnalisis() {
                         <span style="color: #f1f5f9; font-family: var(--font-mono); font-size: 11.5px;">${currentRecord.sni}</span>
                     </div>
 
-<div id="sni-math-dynamic-wrapper">${renderTidySNIFormulas(currentRecord, isSilinder, currentActiveFormulaMethodId)}</div>
+<div id="sni-math-dynamic-wrapper">${renderTidySNIFormulas(currentRecord, isSilinder)}</div>
 
                     <div class="sni-spec-block" style="border-left-color: #f59e0b;">
                         <strong style="color: #fbbf24;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg> 3. Parameter Mesin Uji TEST MARK:</strong>
@@ -4463,7 +4445,7 @@ function renderAnalisis() {
             </div>
             <div class="input-group">
                 <label>Select Stored Test Result</label>
-                <select class="custom-select" id="analisis-dropdown" onchange="activeTestedIndex = parseInt(this.value) || 0; currentActiveFormulaMethodId = null; renderAnalisis();">
+                <select class="custom-select" id="analisis-dropdown" onchange="activeTestedIndex = parseInt(this.value) || 0; renderAnalisis();">
                     ${testedDropdownHtml}
                 </select>
             </div>
