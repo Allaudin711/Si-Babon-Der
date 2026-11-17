@@ -106,8 +106,59 @@ let elementData = {
     durasi: 5
 };
 
+// LocalStorage persistence keys & helpers
+const STORAGE_KEY_TEST_HISTORY = 'si_babon_der_tested_history_user';
+
+function loadTestHistory() {
+    try {
+        // Clear any old mock keys
+        localStorage.removeItem('si_babon_der_test_history');
+        localStorage.removeItem('si_babon_der_test_history_v1');
+
+        let saved = localStorage.getItem(STORAGE_KEY_TEST_HISTORY);
+        if (saved) {
+            let parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed;
+            }
+        }
+    } catch (e) {
+        console.warn("Storage not accessible:", e);
+    }
+    return [];
+}
+
+function saveTestHistory() {
+    try {
+        localStorage.setItem(STORAGE_KEY_TEST_HISTORY, JSON.stringify(testedHistoryList));
+    } catch (e) {
+        console.warn("Storage save error:", e);
+    }
+}
+
+function clearTestHistory() {
+    testedHistoryList = [];
+    activeTestedIndex = 0;
+    currentActiveFormulaMethodId = null;
+    try {
+        localStorage.removeItem(STORAGE_KEY_TEST_HISTORY);
+    } catch(e) {}
+    renderAnalisis();
+}
+
+function addTestResult(newTest) {
+    if (!newTest) return;
+    if (!newTest.id) {
+        newTest.id = testedHistoryList.length + 1;
+    }
+    testedHistoryList.push(newTest);
+    activeTestedIndex = testedHistoryList.length - 1;
+    saveTestHistory();
+    console.log(`[TEST ARCHIVE] Sukses menambahkan riwayat uji: [Test #${testedHistoryList.length}] ${newTest.method} - ${newTest.materialName}`);
+}
+
 let storedConcreteList = [];
-let testedHistoryList = [];
+let testedHistoryList = loadTestHistory();
 let activeSelectedIndex = 0;
 let activeTestedIndex = 0;
 
@@ -3113,7 +3164,8 @@ function runMulaiUji() {
 
         // Save test record to history archive with dynamic SNI & International metadata
         let meta = getMethodMetadata(testState.selectedMethod, mat, calc);
-        testedHistoryList.push({
+        let newTestRecord = {
+            id: testedHistoryList.length + 1,
             method: testState.selectedMethod,
             materialName: mat.tipe,
             nBars: mat.jumlahTulangan || 4,
@@ -3131,9 +3183,10 @@ function runMulaiUji() {
             wc: calc.wc,
             curing: mat.umurCuring || 7,
             As: calc.As,
-            Mn: calc.Mn
-        });
-        activeTestedIndex = testedHistoryList.length - 1;
+            Mn: calc.Mn,
+            timestamp: new Date().toISOString()
+        };
+        addTestResult(newTestRecord);
 
         setTimeout(() => {
             showToast("Pengujian Selesai! Menampilkan Laporan Analisis...", "fa-solid fa-circle-check");
@@ -3977,83 +4030,147 @@ function handleMathMethodChange(newId) {
     currentActiveFormulaMethodId = newId;
     let wrapper = document.getElementById('sni-math-dynamic-wrapper');
     if (wrapper) {
+        if (!testedHistoryList || testedHistoryList.length === 0) return;
         let currentRecord = testedHistoryList[activeTestedIndex] || testedHistoryList[0];
+        if (!currentRecord) return;
         let isSilinder = getNormalizedTipe(currentRecord.materialName) === 'Cylinder';
         wrapper.innerHTML = renderTidySNIFormulas(currentRecord, isSilinder, newId);
     }
 }
 
 
-function renderAnalisis() {
-    if (canvasView) canvasView.classList.add("scroll-mode");
-    // If no test history yet, automatically populate with benchmark test results (matching Image 1)
-    if (testedHistoryList.length === 0) {
-        testedHistoryList = [
-            {
-                method: "Uji Kuat Tekan Silinder & Balok Beton (SNI 03-1974-2011 / ASTM C39 / ISO 1920-4)",
-                materialName: "Ring Balk (Ring Beam)",
-                nBars: 4,
-                tulanganDiameter: 12,
-                fcFinal: "14.8",
-                Load_kN: 3120,
-                wc: "0.50",
-                curing: 7,
-                inovasi: "Tanpa Bahan Tambahan",
-                inovasiInfo: "Beton mutu normal tanpa bahan tambah, memenuhi kuat tekan batas ultimit ACI 318-19 & SNI 2847.",
-                sni: "SNI 03-1974-2011 / ASTM C39 / ISO 1920-4 (Metode Uji Kuat Tekan Balok & Silinder)",
-                formula: "f'_c = (P_ult / A) * F_L/D (A = 400 cm², F_L/D = 1.00) | M_n = A_s * f_y * (d - a/2)",
-                machine: "Servo-Hydraulic UTM System 2000 kN, ISO 7500-1 Class 1",
-                calibration: "Terkalibrasi KAN / ISO/IEC 17025 Laboratorium Terakreditasi (Akurasi &plusmn;0.5%)",
-                failureDiag: "Retak Geser Diagonal Tipe 1 (Conical Shear Fracture) pada kedua bidang tumpuan beton.",
-                statusText: "Memenuhi spesifikasi batas ultimit SNI 2847:2019",
-                As: "4.52",
-                Mn: "42.8"
-            },
-            {
-                method: "Uji Kuat Tekan Silinder & Balok Beton (SNI 03-1974-2011 / ASTM C39 / ISO 1920-4)",
-                materialName: "Ring Balk (Ring Beam)",
-                nBars: 4,
-                tulanganDiameter: 12,
-                fcFinal: "18.5",
-                Load_kN: 3280,
-                wc: "0.45",
-                curing: 7,
-                inovasi: "Superplasticizer Berbasis Polikarboksilat Eter (PCE)",
-                inovasiInfo: "Admixture polikarboksilat eter mereduksi air hingga 20% dan meningkatkan densitas pasta semen.",
-                sni: "SNI 03-1974-2011 / ASTM C39 / ASTM C494 Type F (Water-Reducing Admixture)",
-                formula: "f'_c = (P_ult / A) * F_L/D | Peningkatan kuat tekan +25% dibanding beton standar",
-                machine: "Servo-Hydraulic UTM System 2000 kN, ISO 7500-1 Class 1",
-                calibration: "Terkalibrasi KAN / ISO/IEC 17025 Laboratorium Terakreditasi (Akurasi &plusmn;0.5%)",
-                failureDiag: "Perilaku daktail mikro-retak geser terkendali berkat matriks pasta semen densifikasi tinggi.",
-                statusText: "Peningkatan daktilitas dan kapasitas beban ultimit terverifikasi",
-                As: "4.52",
-                Mn: "48.2"
-            },
-            {
-                method: "Uji Kuat Tarik Belah Silinder (SNI 2491:2014 / ASTM C496 / EN 12390-6)",
-                materialName: "Silinder Uji",
-                nBars: 4,
-                tulanganDiameter: 12,
-                fcFinal: "18.5",
-                Load_kN: 4371,
-                wc: "0.45",
-                curing: 7,
-                inovasi: "Superplasticizer Berbasis Polikarboksilat Eter (PCE)",
-                inovasiInfo: "Distribusi partikel semen seragam menghasilkan kuat tarik belah silinder yang sangat homogen.",
-                sni: "SNI 2491:2014 / ASTM C496 / EN 12390-6 (Metode Uji Kuat Tarik Belah Silinder Beton)",
-                formula: "f_ct = (2 * P_ult) / (pi * l * d) = 0.56 * sqrt(f'_c)",
-                machine: "UTM Test System 2000 kN with Bearing Strips ISO 7500-1",
-                calibration: "Terkalibrasi KAN / ISO/IEC 17025 Laboratorium Terakreditasi (Akurasi &plusmn;0.5%)",
-                failureDiag: "Retak Belah Bidang Vertikal Murni (Splitting Tensile Plane Fracture) sepanjang sumbu silinder.",
-                statusText: "Rasio tarik belah f_ct >= 10% f'_c tercapai optimal",
-                As: "4.52",
-                Mn: "51.6"
-            }
-        ];
-        activeTestedIndex = 0;
+function printReportPDF() {
+    if (!testedHistoryList || testedHistoryList.length === 0) {
+        showToast("Belum ada data riwayat pengujian untuk dicetak!", "fa-solid fa-triangle-exclamation");
+        return;
+    }
+    playSynthSound('click');
+    window.print();
+}
+
+function renderEmptyAnalisisUI() {
+    if (canvasView) {
+        canvasView.classList.add("scroll-mode");
+        canvasView.innerHTML = `
+            <div class="analysis-scroll-view" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 520px; padding: 40px 20px;">
+                <div class="analysis-empty-container" style="width: 100%; max-width: 780px; background: radial-gradient(circle at center, rgba(16, 30, 59, 0.75) 0%, rgba(6, 11, 23, 0.95) 100%); border-radius: 14px; border: 1.5px dashed rgba(0, 240, 255, 0.35); padding: 40px 24px; text-align: center; box-shadow: 0 0 35px rgba(0, 0, 0, 0.6);">
+                    
+                    <!-- Animated Radar Orbit Icon -->
+                    <div style="position: relative; width: 84px; height: 84px; margin: 0 auto 20px;">
+                        <div style="position: absolute; inset: 0; border-radius: 50%; border: 2px dashed rgba(0, 240, 255, 0.4); animation: hudSpinCW 14s linear infinite;"></div>
+                        <div style="position: absolute; inset: 8px; border-radius: 50%; background: rgba(0, 240, 255, 0.08); border: 1px solid var(--cyan-neon); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px rgba(0, 240, 255, 0.25);">
+                            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-neon)" stroke-width="1.8">
+                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                <line x1="8" y1="21" x2="16" y2="21"></line>
+                                <line x1="12" y1="17" x2="12" y2="21"></line>
+                                <circle cx="8" cy="9" r="1.5" fill="var(--cyan-neon)"></circle>
+                                <circle cx="16" cy="9" r="1.5" fill="var(--cyan-neon)"></circle>
+                                <path d="M7 13 C 9 11, 15 11, 17 13" stroke="var(--cyan-neon)" stroke-width="1.5"></path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <h3 style="color: var(--text-pure); font-size: 19px; font-weight: 800; letter-spacing: 0.8px; margin-bottom: 10px; font-family: var(--font-heading);">
+                        BELUM ADA RIWAYAT PENGUJIAN LABORATORIUM
+                    </h3>
+                    
+                    <p style="font-size: 13px; color: var(--text-secondary); max-width: 540px; line-height: 1.6; margin: 0 auto 24px;">
+                        Belum ada data pengujian. Silakan buat elemen beton dan jalankan pengujian di menu <strong>Lab Testing</strong> untuk melihat visualisasi keruntuhan 3D, evaluasi kapasitas ultimit, kurva tegangan-regangan, dan rumus teknis SNI &amp; ASTM.
+                    </p>
+
+                    <!-- 3 Step Quick Guide Card -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; text-align: left; margin-bottom: 26px;">
+                        <div style="background: rgba(10, 20, 44, 0.7); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 8px; padding: 14px;">
+                            <div style="font-size: 10px; font-weight: 800; color: var(--cyan-neon); letter-spacing: 0.6px; margin-bottom: 4px;">LANGKAH 1</div>
+                            <div style="font-size: 12.5px; font-weight: 700; color: #fff;">Buat Elemen Struktur</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.4;">Tentukan dimensi balok/silinder, diameter tulangan, serta inovasi material.</div>
+                        </div>
+                        <div style="background: rgba(10, 20, 44, 0.7); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 14px;">
+                            <div style="font-size: 10px; font-weight: 800; color: var(--accent-emerald); letter-spacing: 0.6px; margin-bottom: 4px;">LANGKAH 2</div>
+                            <div style="font-size: 12.5px; font-weight: 700; color: #fff;">Uji di Lab Testing</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.4;">Pilih salah satu dari 14 standar uji SNI/ASTM, lalu tekan "Mulai Pengujian Lab".</div>
+                        </div>
+                        <div style="background: rgba(10, 20, 44, 0.7); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 8px; padding: 14px;">
+                            <div style="font-size: 10px; font-weight: 800; color: var(--accent-gold); letter-spacing: 0.6px; margin-bottom: 4px;">LANGKAH 3</div>
+                            <div style="font-size: 12.5px; font-weight: 700; color: #fff;">Arsip Analisis Otomatis</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.4;">Hasil uji otomatis masuk ke Test History Archive &amp; siap dicetak / diekspor.</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;">
+                        <button class="btn-action" style="max-width: 250px; padding: 12px 24px; font-size: 12px; font-weight: 800; background: linear-gradient(135deg, #00f0ff 0%, #0284c7 100%); color: #040914; box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);" onclick="switchTab(document.querySelectorAll('.btn-nav')[2], 'pengujian')">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline; margin-right:6px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            Jalankan Pengujian Lab
+                        </button>
+                        <button class="btn-action" style="max-width: 250px; padding: 12px 22px; font-size: 12px; font-weight: 700; background: rgba(14, 28, 58, 0.9); border: 1px solid var(--border-bright);" onclick="switchTab(document.querySelectorAll('.btn-nav')[0], 'create')">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline; margin-right:6px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                            Buat Elemen Baru
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
-    if (activeTestedIndex >= testedHistoryList.length) {
+    if (panelView) {
+        panelView.innerHTML = `
+            <!-- CARD 1: TEST HISTORY ARCHIVE (DISABLED PLACEHOLDER) -->
+            <div class="panel-card">
+                <div class="card-title">
+                    <span style="display:flex; align-items:center; gap:8px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-neon)" stroke-width="2.2"><path d="M21 8v13H3V8"></path><path d="M1 3h22v5H1z"></path><path d="M10 12h4"></path></svg>
+                        TEST HISTORY ARCHIVE
+                    </span>
+                </div>
+                <div class="input-group">
+                    <label>Select Stored Test Result</label>
+                    <select class="custom-select" id="analisis-dropdown" disabled style="opacity: 0.6; cursor: not-allowed; background: rgba(8, 16, 36, 0.6); color: var(--text-muted);">
+                        <option value="" disabled selected>Belum Ada Riwayat Pengujian</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- CONDITIONAL EMPTY STATE BANNER CARD -->
+            <div class="panel-card empty-history-banner" style="text-align: center; padding: 22px 14px; border: 1.5px dashed rgba(0, 240, 255, 0.35); background: rgba(8, 18, 40, 0.85); border-radius: 10px;">
+                <div style="width: 44px; height: 44px; margin: 0 auto 10px; border-radius: 50%; background: rgba(0, 240, 255, 0.1); border: 1px solid var(--cyan-neon); display: flex; align-items: center; justify-content: center;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-neon)" stroke-width="2"><path d="M21 8v13H3V8"></path><path d="M1 3h22v5H1z"></path><path d="M10 12h4"></path></svg>
+                </div>
+                <div style="color: var(--cyan-neon); font-size: 13px; font-weight: 800; letter-spacing: 0.6px; margin-bottom: 6px; font-family: var(--font-heading);">
+                    BELUM ADA RIWAYAT PENGUJIAN
+                </div>
+                <p style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 12px;">
+                    Belum ada data pengujian. Silakan buat elemen beton dan jalankan pengujian di menu <strong>Lab Testing</strong>.
+                </p>
+                <div style="display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; color: var(--accent-amber); background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 4px; padding: 4px 8px;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    Menunggu Pengujian Lab Pertama
+                </div>
+            </div>
+
+            <!-- QUICK ACTIONS BUTTONS (DISABLED) -->
+            <button class="btn-action" disabled style="margin-bottom: 8px; opacity: 0.45; cursor: not-allowed; filter: grayscale(1); pointer-events: none;" title="Jalankan pengujian terlebih dahulu untuk mencetak laporan">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Cetak Laporan (Print / PDF)
+            </button>
+            <button class="btn-action" disabled style="margin-bottom: 8px; opacity: 0.45; cursor: not-allowed; filter: grayscale(1); pointer-events: none; background: #334155;" title="Jalankan pengujian terlebih dahulu untuk mengekspor data">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Ekspor Data Hasil Uji (.csv)
+            </button>
+            <button class="btn-action" onclick="switchTab(document.querySelectorAll('.btn-nav')[2], 'pengujian')" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); box-shadow: 0 0 15px rgba(2, 132, 199, 0.4);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg> Menuju ke Lab Testing
+            </button>
+        `;
+    }
+}
+
+function renderAnalisis() {
+    if (canvasView) canvasView.classList.add("scroll-mode");
+
+    // Empty State Check: If no tests have been executed by user, display empty state
+    if (!testedHistoryList || testedHistoryList.length === 0) {
+        renderEmptyAnalisisUI();
+        return;
+    }
+
+    if (activeTestedIndex >= testedHistoryList.length || activeTestedIndex < 0) {
         activeTestedIndex = 0;
     }
 
@@ -4061,10 +4178,11 @@ function renderAnalisis() {
     let isSilinder = getNormalizedTipe(currentRecord.materialName) === 'Cylinder';
 
     // Build Dropdown for Test History Archive
+    // Format: [Test #${idx + 1}] {Nama Uji} - {Nama Elemen}
     let testedDropdownHtml = '';
     testedHistoryList.forEach((rec, idx) => {
-        let label = rec.method.split('(')[0].trim();
-        testedDropdownHtml += `<option value="${idx}" ${activeTestedIndex === idx ? 'selected' : ''}>[Test #${idx+1}] ${label} - ${rec.materialName}</option>`;
+        let label = rec.method ? rec.method.split('(')[0].trim() : "Uji Beton";
+        testedDropdownHtml += `<option value="${idx}" ${activeTestedIndex === idx ? 'selected' : ''}>[Test #${idx + 1}] ${label} - ${rec.materialName}</option>`;
     });
 
     // 3D Failure Visualization Markup
