@@ -2979,14 +2979,44 @@ function getMethodMetadata(methodName, mat, calc) {
     }
 }
 
+let activeLabAudio = null;
+
 function runMulaiUji() {
-    if (storedConcreteList.length === 0) {
-        alert('Harap buat dan simpan minimal 1 material beton terlebih dahulu pada menu Create!');
-        return;
+    if (window.isLabTestingRunning) return;
+
+    let mat;
+    if (storedConcreteList.length > 0) {
+        mat = storedConcreteList[testState.selectedMaterialIndex] || storedConcreteList[0];
+    } else {
+        // Auto-create standard specimen from active elementData so user can test directly
+        mat = { ...elementData, nama: elementData.tipe, umurCuring: 28 };
+        storedConcreteList.push(mat);
+        testState.selectedMaterialIndex = 0;
     }
 
-    playSynthSound('hydraulic');
-    let mat = storedConcreteList[testState.selectedMaterialIndex];
+    window.isLabTestingRunning = true;
+
+    // Stop previous audio if any was playing
+    if (activeLabAudio) {
+        try {
+            activeLabAudio.pause();
+            activeLabAudio.currentTime = 0;
+        } catch(e) {}
+    }
+
+    // Initialize and play the newly uploaded Lab Testing audio
+    activeLabAudio = new Audio('static/audio/lab-testing-sound.mp3');
+    activeLabAudio.preload = 'auto';
+    activeLabAudio.playbackRate = 1.0;
+    
+    let playPromise = activeLabAudio.play();
+    if (playPromise !== undefined) {
+        playPromise.catch(err => {
+            console.warn('Audio play notice (fallback sound active):', err);
+            playSynthSound('hydraulic');
+        });
+    }
+
     let calc = calculateAdvancedStrength(mat);
 
     canvasView.innerHTML = `
@@ -3020,7 +3050,7 @@ function runMulaiUji() {
             </div>
 
             <div style="width: 100%; background: rgba(14, 25, 52, 0.8); height: 8px; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-dim); margin-bottom: 12px;">
-                <div id="live-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--cyan-neon), var(--accent-crimson)); transition: width 0.08s linear;"></div>
+                <div id="live-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--cyan-neon), var(--accent-crimson)); transition: width 0.04s linear;"></div>
             </div>
 
             <div id="test-status-text" style="font-size: 12px; font-weight: 700; color: var(--accent-amber); display: flex; align-items: center; justify-content: center; gap: 6px;">
@@ -3040,74 +3070,107 @@ function runMulaiUji() {
         </div>
     `;
 
-    let currentVal = 0;
+    // Exact audio duration synchronization: 3864 ms (3.864 seconds)
+    let totalDuration = 3864;
+    if (activeLabAudio && activeLabAudio.duration && !isNaN(activeLabAudio.duration) && activeLabAudio.duration > 0) {
+        totalDuration = Math.round(activeLabAudio.duration * 1000);
+    }
+
     let targetVal = Math.max(15, Math.round(calc.Load_kN));
+    let startTime = performance.now();
+    let isCompleted = false;
+
+    function finishTest() {
+        if (isCompleted) return;
+        isCompleted = true;
+        clearInterval(testInterval);
+        window.isLabTestingRunning = false;
+
+        playSynthSound('impact');
+
+        let liveCounter = document.getElementById('live-load-counter');
+        if (liveCounter) liveCounter.textContent = targetVal;
+
+        let progressBar = document.getElementById('live-progress-bar');
+        if (progressBar) progressBar.style.width = '100%';
+
+        let gaugeFill = document.getElementById('gauge-fill');
+        if (gaugeFill) {
+            let circumference = 2 * Math.PI * 70;
+            gaugeFill.style.strokeDashoffset = circumference - (circumference * 0.75);
+        }
+
+        let statusText = document.getElementById('test-status-text');
+        if (statusText) {
+            // INLINE VECTOR CHECKMARK - NEVER TOFU [ ] BOX
+            statusText.innerHTML = `
+                <span style="color: var(--accent-emerald); font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle><polyline points="16 10 11 15 8 12"></polyline></svg>
+                    Beban Ultimit Tercapai! Menyusun Lembar Laporan Analisis...
+                </span>
+            `;
+        }
+
+        // Save test record to history archive with dynamic SNI & International metadata
+        let meta = getMethodMetadata(testState.selectedMethod, mat, calc);
+        testedHistoryList.push({
+            method: testState.selectedMethod,
+            materialName: mat.tipe,
+            nBars: mat.jumlahTulangan || 4,
+            tulanganDiameter: mat.tulanganDiameter || 12,
+            fcFinal: calc.fcFinal,
+            Load_kN: calc.Load_kN,
+            sni: meta.sni,
+            formula: meta.formula,
+            machine: meta.machine,
+            calibration: meta.calibration,
+            failureDiag: meta.failureDiag,
+            statusText: meta.status,
+            inovasi: mat.inovasi,
+            inovasiInfo: "Formulasi spesimen terverifikasi dengan evaluasi batas ultimit SNI & ASTM.",
+            wc: calc.wc,
+            curing: mat.umurCuring || 7,
+            As: calc.As,
+            Mn: calc.Mn
+        });
+        activeTestedIndex = testedHistoryList.length - 1;
+
+        setTimeout(() => {
+            showToast("Pengujian Selesai! Menampilkan Laporan Analisis...", "fa-solid fa-circle-check");
+            switchTab(document.querySelectorAll('.btn-nav')[3], 'analisis');
+        }, 1500);
+    }
+
+    if (activeLabAudio) {
+        activeLabAudio.onended = () => {
+            finishTest();
+        };
+    }
 
     let testInterval = setInterval(() => {
-        currentVal += Math.max(1, Math.round(targetVal / 35));
-        if (currentVal >= targetVal) {
-            currentVal = targetVal;
-            clearInterval(testInterval);
-            playSynthSound('impact');
-
-            let statusText = document.getElementById('test-status-text');
-            if (statusText) {
-                // INLINE VECTOR CHECKMARK - NEVER TOFU [ ] BOX
-                statusText.innerHTML = `
-                    <span style="color: var(--accent-emerald); font-weight: 800; display: inline-flex; align-items: center; gap: 6px;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle><polyline points="16 10 11 15 8 12"></polyline></svg>
-                        Beban Ultimit Tercapai! Menyusun Lembar Laporan Analisis...
-                    </span>
-                `;
-            }
-
-            // Save test record to history archive with dynamic SNI & International metadata
-            let meta = getMethodMetadata(testState.selectedMethod, mat, calc);
-            testedHistoryList.push({
-                method: testState.selectedMethod,
-                materialName: mat.tipe,
-                nBars: mat.jumlahTulangan || 4,
-                tulanganDiameter: mat.tulanganDiameter || 12,
-                fcFinal: calc.fcFinal,
-                Load_kN: calc.Load_kN,
-                sni: meta.sni,
-                formula: meta.formula,
-                machine: meta.machine,
-                calibration: meta.calibration,
-                failureDiag: meta.failureDiag,
-                statusText: meta.status,
-                inovasi: mat.inovasi,
-                inovasiInfo: "Formulasi spesimen terverifikasi dengan evaluasi batas ultimit SNI & ASTM.",
-                wc: calc.wc,
-                curing: mat.umurCuring || 7,
-                As: calc.As,
-                Mn: calc.Mn
-            });
-            activeTestedIndex = testedHistoryList.length - 1;
-
-            setTimeout(() => {
-                showToast("Pengujian Selesai! Menampilkan Laporan Analisis...", "fa-solid fa-circle-check");
-                switchTab(document.querySelectorAll('.btn-nav')[3], 'analisis');
-            }, 1800);
-            return;
-        }
+        let elapsed = performance.now() - startTime;
+        let progress = Math.min(1.0, elapsed / totalDuration);
+        let currentVal = Math.round(progress * targetVal);
 
         let liveCounter = document.getElementById('live-load-counter');
         if (liveCounter) liveCounter.textContent = currentVal;
 
         let progressBar = document.getElementById('live-progress-bar');
         if (progressBar) {
-            let pct = Math.min(100, Math.round((currentVal / targetVal) * 100));
-            progressBar.style.width = pct + '%';
+            progressBar.style.width = (progress * 100).toFixed(1) + '%';
         }
 
         let gaugeFill = document.getElementById('gauge-fill');
         if (gaugeFill) {
             let circumference = 2 * Math.PI * 70;
-            let offset = circumference - ((currentVal / targetVal) * circumference * 0.75);
+            let offset = circumference - (progress * circumference * 0.75);
             gaugeFill.style.strokeDashoffset = offset;
         }
-    }, 38);
+
+        if (progress >= 1.0) {
+            finishTest();
+        }
+    }, 25);
 }
 
 
