@@ -2791,14 +2791,37 @@ function updateHpUI() {
    ========================================================================== */
 function renderPengujian() {
     if (canvasView) canvasView.classList.remove("scroll-mode");
+    let hasSpecimen = storedConcreteList && storedConcreteList.length > 0;
     let materialOptionsHtml = '';
-    if (storedConcreteList.length === 0) {
-        materialOptionsHtml = `<option value="">Belum ada elemen beton (buat di menu Create)</option>`;
+    
+    if (!hasSpecimen) {
+        materialOptionsHtml = `<option value="" disabled selected>Belum ada elemen beton (buat di menu Create)</option>`;
     } else {
         storedConcreteList.forEach((item, idx) => {
             let itemCalc = calculateAdvancedStrength(item);
             materialOptionsHtml += `<option value="${idx}" ${testState.selectedMaterialIndex === idx ? 'selected' : ''}>[#${idx+1}] ${item.tipe} - ${item.jumlahTulangan||4}D${item.tulanganDiameter} (K: ${itemCalc.fcFinal} MPa)</option>`;
         });
+    }
+
+    let startButtonHtml = '';
+    if (hasSpecimen) {
+        startButtonHtml = `
+            <button class="btn-action" style="max-width: 280px; margin: 0 auto; background: linear-gradient(135deg, var(--accent-crimson) 0%, #b91c1c 100%); box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);" onclick="runMulaiUji()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="display:inline; margin-right:6px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Mulai Pengujian Lab
+            </button>
+        `;
+    } else {
+        startButtonHtml = `
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                <button class="btn-action btn-test-disabled" disabled style="max-width: 280px; margin: 0 auto; background: #334155; opacity: 0.45; cursor: not-allowed; filter: grayscale(1); box-shadow: none; pointer-events: none;" title="Silakan buat elemen beton di menu Create Element terlebih dahulu">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="display:inline; margin-right:6px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Mulai Pengujian Lab
+                </button>
+                <div style="padding: 10px 16px; background: rgba(239, 68, 68, 0.12); border: 1px dashed rgba(239, 68, 68, 0.45); border-radius: 8px; font-size: 11.5px; color: #fca5a5; display: inline-flex; align-items: center; justify-content: center; gap: 8px; max-width: 520px; line-height: 1.4;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <span>Belum ada spesimen beton. Buat elemen terlebih dahulu di menu <strong>Create Element</strong> sebelum melakukan pengujian lab.</span>
+                </div>
+            </div>
+        `;
     }
 
     canvasView.innerHTML = `
@@ -2827,9 +2850,7 @@ function renderPengujian() {
                 Pastikan tumpuan bola (spherical seating) terpasang seimbang dan sensor load cell ter-nolkan. Klik <strong>"Mulai Pengujian Lab"</strong> untuk menyalurkan pembebanan kuasi-statik hidrolik (0.25 MPa/s) hingga keruntuhan ultimit spesimen.
             </p>
 
-            <button class="btn-action" style="max-width: 280px; margin: 0 auto; background: linear-gradient(135deg, var(--accent-crimson) 0%, #b91c1c 100%); box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);" onclick="runMulaiUji()">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="display:inline; margin-right:6px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Mulai Pengujian Lab
-            </button>
+            ${startButtonHtml}
         </div>
     `;
 
@@ -2840,10 +2861,15 @@ function renderPengujian() {
             </div>
             <div class="input-group">
                 <label>Pilih Spesimen Tersimpan</label>
-                <select class="custom-select" id="test-material" onchange="testState.selectedMaterialIndex = parseInt(this.value) || 0">
+                <select class="custom-select" id="test-material" ${!hasSpecimen ? 'disabled style="opacity: 0.65; cursor: not-allowed; background: rgba(8, 16, 36, 0.6); color: var(--text-muted);"' : ''} onchange="testState.selectedMaterialIndex = parseInt(this.value) || 0">
                     ${materialOptionsHtml}
                 </select>
             </div>
+            ${!hasSpecimen ? `
+                <button class="btn-action" style="margin-top: 10px; padding: 9px 14px; font-size: 11px; font-weight: 700; background: rgba(14, 28, 58, 0.95); border: 1px solid var(--border-bright);" onclick="switchTab(document.querySelectorAll('.btn-nav')[0], 'create')">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline; margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg> Ke Menu Create Element
+                </button>
+            ` : ''}
         </div>
 
         <div class="panel-card">
@@ -3035,15 +3061,17 @@ let activeLabAudio = null;
 function runMulaiUji() {
     if (window.isLabTestingRunning) return;
 
-    let mat;
-    if (storedConcreteList.length > 0) {
-        mat = storedConcreteList[testState.selectedMaterialIndex] || storedConcreteList[0];
-    } else {
-        // Auto-create standard specimen from active elementData so user can test directly
-        mat = { ...elementData, nama: elementData.tipe, umurCuring: 28 };
-        storedConcreteList.push(mat);
-        testState.selectedMaterialIndex = 0;
+    // Specimen Validation Guard: Ensure valid stored specimen exists
+    let hasSpecimen = storedConcreteList && storedConcreteList.length > 0;
+    let selectedSpecimen = hasSpecimen ? (storedConcreteList[testState.selectedMaterialIndex] || storedConcreteList[0]) : null;
+
+    if (!hasSpecimen || !selectedSpecimen) {
+        showToast("Silakan buat elemen beton terlebih dahulu di menu Create Element sebelum melakukan pengujian lab!", "fa-solid fa-triangle-exclamation");
+        alert("Silakan buat elemen beton terlebih dahulu di menu Create Element sebelum melakukan pengujian lab!");
+        return;
     }
+
+    let mat = selectedSpecimen;
 
     window.isLabTestingRunning = true;
 
