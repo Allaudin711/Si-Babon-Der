@@ -3175,38 +3175,50 @@ function runMulaiUji() {
 
 
 /* ==========================================================================
-   TIDIED & STRUCTURED MATHEMATICAL FORMULA BUILDER (SNI & ASTM COMPLIANT)
+   DYNAMIC 14-METHOD SNI & ASTM MATHEMATICAL FORMULA BUILDER & LOOKUP ENGINE
    ========================================================================== */
-function renderTidySNIFormulas(rec, isSilinder) {
-    let fc = parseFloat(rec.fcFinal) || 14.8;
-    let loadKn = parseFloat(rec.Load_kN) || 3120;
-    let nBars = parseInt(rec.nBars) || 4;
-    let diam = parseFloat(rec.tulanganDiameter) || 12;
-    let b = 200; // mm (lebar balok)
-    let h = 200; // mm (tinggi balok)
-    let d = 160; // mm (tinggi efektif d = h - 40mm cover)
-    let fy = 420; // MPa (BJTS 420B SNI 2052:2017)
-    let As = nBars * (Math.PI * Math.pow(diam, 2) / 4); // mm²
-    let aWhitney = (As * fy) / (0.85 * Math.max(10, fc) * b); // mm
-    let MnNominal = (As * fy * (d - (aWhitney / 2))) / 1e6; // kNm
-    let phiMn = 0.90 * MnNominal; // kNm (reduksi lentur tarik terkendali)
-    let EcVal = Math.round(4700 * Math.sqrt(fc)); // MPa (SNI 2847 Pasal 19.2.2.1)
-    let frVal = (0.62 * Math.sqrt(fc)).toFixed(2); // MPa (modulus runtuh)
-    let areaMm2 = isSilinder ? Math.round(Math.PI * Math.pow(150, 2) / 4) : (b * h);
+let currentActiveFormulaMethodId = null;
 
-    return `
-        <div class="sni-math-container">
-            <!-- Header Title -->
-            <div class="sni-math-header">
-                <div class="sni-math-title">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line></svg>
-                    <span>2. RUMUS TEKNIS PERHITUNGAN SNI &amp; ASTM (KUAT TEKAN &amp; MOMEN LENTUR)</span>
-                </div>
-                <span class="telemetry-chip live-chip"><span class="dot-live"></span>SNI 2847:2019 / ASTM C39</span>
-            </div>
+function getMethodIdFromName(name) {
+    if (!name) return 1;
+    let n = name.toLowerCase();
+    if (n.includes('tarik belah') || n.includes('c496') || n.includes('2491')) return 2;
+    if (n.includes('lentur') || n.includes('c78') || n.includes('4431')) return 3;
+    if (n.includes('core drill') || n.includes('bor inti') || n.includes('c42') || n.includes('2492')) return 4;
+    if (n.includes('hammer') || n.includes('palu') || n.includes('schmidt') || n.includes('c805') || n.includes('4430')) return 5;
+    if (n.includes('upvt') || n.includes('ultrasonik') || n.includes('c597')) return 6;
+    if (n.includes('covermeter') || n.includes('profometer') || n.includes('1881:part 204')) return 7;
+    if (n.includes('karbonasi') || n.includes('cpc-18') || n.includes('phenolphthalein') || n.includes('6805')) return 8;
+    if (n.includes('half-cell') || n.includes('korosi') || n.includes('c876')) return 9;
+    if (n.includes('rcpt') || n.includes('klorida') || n.includes('c1202') || n.includes('t277')) return 10;
+    if (n.includes('kedap air') || n.includes('permeabilitas') || n.includes('din 1048')) return 11;
+    if (n.includes('tarik baja') || n.includes('tulangan deform') || n.includes('2052') || n.includes('a615')) return 12;
+    if (n.includes('slump') || n.includes('kelecakan') || n.includes('1972') || n.includes('c143')) return 13;
+    if (n.includes('poisson') || n.includes('modulus elastisitas statis') || n.includes('c469')) return 14;
+    return 1;
+}
 
+const SNI_ASTM_FORMULA_METHODS = [
+    { id: 1, label: "1. Uji Kuat Tekan Silinder Beton (SNI 03-1974-2011 / ASTM C39 / ISO 1920-4)", standard: "SNI 03-1974-2011 / ASTM C39" },
+    { id: 2, label: "2. Uji Kuat Tarik Belah Silinder (SNI 2491:2014 / ASTM C496 / EN 12390-6)", standard: "SNI 2491:2014 / ASTM C496" },
+    { id: 3, label: "3. Uji Kuat Lentur Balok 4-Titik (SNI 4431:2011 / ASTM C78 / EN 12390-5)", standard: "SNI 4431:2011 / ASTM C78" },
+    { id: 4, label: "4. Uji Bor Inti / Core Drill Beton (SNI 03-2492-2002 / ASTM C42 / EN 12504-1)", standard: "SNI 03-2492-2002 / ASTM C42" },
+    { id: 5, label: "5. Uji Palu Pantul Schmidt Rebound Hammer (SNI 03-4430-1997 / ASTM C805 / EN 12504-2)", standard: "SNI 03-4430-1997 / ASTM C805" },
+    { id: 6, label: "6. Uji Cepat Rambat Ultrasonik UPVT Non-Destruktif (ASTM C597 / BS 1881-203)", standard: "ASTM C597 / BS 1881-203" },
+    { id: 7, label: "7. Uji Covermeter & Pemetaan Tulangan (BS 1881:Part 204 / DIN 1048-1)", standard: "BS 1881:Part 204 / DIN 1048-1" },
+    { id: 8, label: "8. Uji Kedalaman Karbonasi Kimia Phenolphthalein (RILEM CPC-18 / SNI 03-6805)", standard: "RILEM CPC-18 / SNI 03-6805" },
+    { id: 9, label: "9. Uji Potensial Korosi Sel Separuh Half-Cell (ASTM C876-15 / RILEM TC 154)", standard: "ASTM C876-15 / RILEM TC 154" },
+    { id: 10, label: "10. Uji Penetrasi Klorida Cepat / RCPT (ASTM C1202 / AASHTO T277)", standard: "ASTM C1202 / AASHTO T277" },
+    { id: 11, label: "11. Uji Kedap Air Permeabilitas Tekanan Tinggi (DIN 1048 Part 5 / EN 12390-8)", standard: "DIN 1048 Part 5 / EN 12390-8" },
+    { id: 12, label: "12. Uji Kuat Tarik Baja Tulangan Deform (SNI 2052:2017 / ASTM A615 / ISO 6935-2)", standard: "SNI 2052:2017 / ASTM A615" },
+    { id: 13, label: "13. Uji Slump & Kelecakan Beton Segar (SNI 1972:2008 / ASTM C143 / EN 12350-2)", standard: "SNI 1972:2008 / ASTM C143" },
+    { id: 14, label: "14. Uji Modulus Elastisitas Statis & Angka Poisson (ASTM C469 / ISO 1920-10)", standard: "ASTM C469 / ISO 1920-10" }
+];
+
+const SNI_ASTM_FORMULA_LOOKUP = {
+    1: {
+        render: (fc, loadKn, P_N, As, fy, aWhitney, MnNominal, phiMn, EcVal, frVal, areaMm2, isSilinder, d, b, h) => `
             <div class="sni-math-grid">
-                <!-- FORMULA CARD 1: KUAT TEKAN f'c -->
                 <div class="math-card">
                     <div class="math-card-badge">PERSAMAAN 1: KUAT TEKAN KARAKTERISTIK (f'c)</div>
                     <div class="math-eq-box">
@@ -3220,19 +3232,18 @@ function renderTidySNIFormulas(rec, isSilinder) {
                     <div class="math-subst-box">
                         <span class="math-var">f'<sub>c</sub></span> = 
                         <div class="math-frac">
-                            <span class="math-num">${(loadKn * 1000).toLocaleString('id-ID')} N</span>
+                            <span class="math-num">${P_N.toLocaleString('id-ID')} N</span>
                             <span class="math-den">${areaMm2.toLocaleString('id-ID')} mm&sup2;</span>
                         </div>
-                        &times; 1.00 = <strong class="math-result" style="color:var(--cyan-neon); font-size:13px;">${fc.toFixed(1)} MPa</strong>
+                        &times; 1.00 = <strong class="math-result" style="color:var(--cyan-neon); font-size:13.5px;">${fc.toFixed(1)} MPa</strong>
                     </div>
                     <div class="math-notes">
-                        <div>&bull; <strong>P<sub>ult</sub></strong> = Gaya tekan ultimit (${loadKn.toLocaleString('id-ID')} kN = ${(loadKn * 1000).toLocaleString('id-ID')} N)</div>
-                        <div>&bull; <strong>A</strong> = Luas penampang bruto (${isSilinder ? '&frac14;&pi;D&sup2; = ' + areaMm2.toLocaleString('id-ID') + ' mm&sup2;' : 'b &times; h = 200 &times; 200 = 40.000 mm&sup2;'})</div>
+                        <div>&bull; <strong>P<sub>ult</sub></strong> = Gaya tekan ultimit (${loadKn.toLocaleString('id-ID')} kN = ${P_N.toLocaleString('id-ID')} N)</div>
+                        <div>&bull; <strong>A</strong> = Luas penampang bruto (${isSilinder ? '&frac14;&pi;D&sup2; = ' + areaMm2.toLocaleString('id-ID') + ' mm&sup2;' : 'b &times; h = ' + b + ' &times; ' + h + ' = ' + areaMm2.toLocaleString('id-ID') + ' mm&sup2;'})</div>
                         <div>&bull; <strong>F<sub>L/D</sub></strong> = Faktor koreksi rasio kelangsingan = 1.00 (L/D = 2.00)</div>
                     </div>
                 </div>
 
-                <!-- FORMULA CARD 2: KAPASITAS MOMEN LENTUR NOMINAL Mn -->
                 <div class="math-card">
                     <div class="math-card-badge">PERSAMAAN 2: KAPASITAS MOMEN LENTUR BALOK (M<sub>n</sub>)</div>
                     <div class="math-eq-box">
@@ -3251,13 +3262,12 @@ function renderTidySNIFormulas(rec, isSilinder) {
                         <span class="math-var">&phi;M<sub>n</sub></span> = <strong style="color:var(--accent-emerald); font-size:13px;">${phiMn.toFixed(2)} kN&cdot;m</strong> (&phi; = 0.90)
                     </div>
                     <div class="math-notes">
-                        <div>&bull; <strong>A<sub>s</sub></strong> = Luas tulangan ${nBars}D${diam} = ${As.toFixed(1)} mm&sup2; | <strong>f<sub>y</sub></strong> = ${fy} MPa</div>
-                        <div>&bull; <strong>d</strong> = Tinggi efektif = ${d} mm | <strong>b</strong> = Lebar balok = ${b} mm</div>
-                        <div>&bull; <strong>&phi;</strong> = Faktor reduksi lentur terkendali tarik = 0.90 (SNI 2847 Pasal 21.2.1)</div>
+                        <div>&bull; <strong>A<sub>s</sub></strong> = Luas tulangan terpasang = ${As.toFixed(1)} mm&sup2; | <strong>f<sub>y</sub></strong> = ${fy} MPa</div>
+                        <div>&bull; <strong>d</strong> = Tinggi efektif = ${d} mm | <strong>b</strong> = Lebar penampang = ${b} mm</div>
+                        <div>&bull; <strong>&phi;</strong> = Faktor reduksi lentur tarik terkendali = 0.90 (SNI 2847 Pasal 21.2.1)</div>
                     </div>
                 </div>
 
-                <!-- FORMULA CARD 3: PARAMETER ELASTISITAS Ec & RETAK LENTUR fr -->
                 <div class="math-card" style="grid-column: 1 / -1;">
                     <div class="math-card-badge">PERSAMAAN 3 &amp; 4: PARAMETER ELASTISITAS &amp; RETAK LENTUR (SNI 2847:2019)</div>
                     <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; margin:6px 0;">
@@ -3268,14 +3278,711 @@ function renderTidySNIFormulas(rec, isSilinder) {
                             <span class="math-var">f<sub>r</sub></span> = 0.62 &radic;<span class="math-var">f'<sub>c</sub></span> = 0.62 &radic;${fc.toFixed(1)} = <strong style="color:#c084fc; font-size:13.5px;">${frVal} MPa</strong>
                         </div>
                         <div class="math-eq-inline">
-                            Rasio Tulangan: <span class="math-var">&rho;</span> = A<sub>s</sub> / (b &cdot; d) = <strong style="color:var(--cyan-neon); font-size:13.5px;">${(As / (b * d) * 100).toFixed(2)}%</strong>
+                            Pola Retak Tekan: <strong style="color:var(--accent-emerald); font-size:13px;">Tipe 1 (Conical Shear Fracture 45&deg;)</strong>
                         </div>
                     </div>
                 </div>
             </div>
+        `
+    },
+    2: {
+        render: (fc, loadKn, P_N) => {
+            let P_split = Math.round(P_N * 0.108); // Beban belah ~10.8% dari beban tekan
+            let L_cyl = 300; // mm
+            let D_cyl = 150; // mm
+            let fct = (2 * P_split) / (Math.PI * L_cyl * D_cyl);
+            let fctTheor = 0.56 * Math.sqrt(fc);
+            let ratio = ((fct / Math.max(1, fc)) * 100).toFixed(1);
+            return `
+            <div class="sni-math-grid">
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 1: KUAT TARIK BELAH SILINDER (f_ct)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">f<sub>ct</sub></span> = 
+                        <div class="math-frac">
+                            <span class="math-num">2 &cdot; P</span>
+                            <span class="math-den">&pi; &cdot; L &cdot; D</span>
+                        </div>
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">f<sub>ct</sub></span> = 
+                        <div class="math-frac">
+                            <span class="math-num">2 &times; ${P_split.toLocaleString('id-ID')} N</span>
+                            <span class="math-den">&pi; &times; ${L_cyl} mm &times; ${D_cyl} mm</span>
+                        </div>
+                        = <strong class="math-result" style="color:var(--cyan-neon); font-size:13.5px;">${fct.toFixed(2)} MPa</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>P</strong> = Beban belah puncak maksimum = ${P_split.toLocaleString('id-ID')} N (${(P_split/1000).toFixed(1)} kN)</div>
+                        <div>&bull; <strong>L</strong> = Panjang spesimen silinder uji = ${L_cyl} mm</div>
+                        <div>&bull; <strong>D</strong> = Diameter penampang silinder = ${D_cyl} mm</div>
+                    </div>
+                </div>
+
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 2: KORELASI TEORITIS KUAT TARIK SNI 2847</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">f<sub>ct,theor</sub></span> = 0.56 &radic;<span class="math-var">f'<sub>c</sub></span> &nbsp;|&nbsp; Rasio = <div class="math-frac"><span class="math-num">f<sub>ct</sub></span><span class="math-den">f'<sub>c</sub></span></div> &times; 100%
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">f<sub>ct,theor</sub></span> = 0.56 &radic;${fc.toFixed(1)} = <strong style="color:var(--accent-gold); font-size:13px;">${fctTheor.toFixed(2)} MPa</strong>
+                    </div>
+                    <div class="math-subst-box">
+                        Rasio Tarik terhadap Tekan: <strong style="color:var(--accent-emerald); font-size:13px;">${ratio}%</strong> (&ge; 10.0% Standar Daktil)
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>Pola Keruntuhan</strong>: Splitting Tensile Plane Fracture sepanjang sumbu vertikal silinder</div>
+                        <div>&bull; <strong>Evaluasi</strong>: Kuat tarik belah mencukupi kontrol retak lentur geser beton bertulang</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    },
+    3: {
+        render: (fc, loadKn, P_N) => {
+            let P_flex = Math.round(P_N * 0.082); // Beban lentur balok 4-titik
+            let L_span = 450; // mm
+            let b_beam = 150; // mm
+            let h_beam = 150; // mm
+            let fr = (P_flex * L_span) / (b_beam * Math.pow(h_beam, 2));
+            let frMin = 0.62 * Math.sqrt(fc);
+            let safety = ((fr / Math.max(0.1, frMin)) * 100).toFixed(0);
+            return `
+            <div class="sni-math-grid">
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 1: MODULUS KERUNTUHAN LENTUR BALOK (f_r)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">f<sub>r</sub></span> = 
+                        <div class="math-frac">
+                            <span class="math-num">P &cdot; L</span>
+                            <span class="math-den">b &cdot; h&sup2;</span>
+                        </div>
+                        <span style="font-size:11px; color:#94a3b8;">(Patah di sepertiga tengah bentang: a &ge; L/3)</span>
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">f<sub>r</sub></span> = 
+                        <div class="math-frac">
+                            <span class="math-num">${P_flex.toLocaleString('id-ID')} N &times; ${L_span} mm</span>
+                            <span class="math-den">${b_beam} mm &times; (${h_beam} mm)&sup2;</span>
+                        </div>
+                        = <strong class="math-result" style="color:var(--cyan-neon); font-size:13.5px;">${fr.toFixed(2)} MPa</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>P</strong> = Beban patah lentur maksimum = ${P_flex.toLocaleString('id-ID')} N (${(P_flex/1000).toFixed(1)} kN)</div>
+                        <div>&bull; <strong>L</strong> = Jarak bentang tumpuan = ${L_span} mm | <strong>b</strong> = ${b_beam} mm | <strong>h</strong> = ${h_beam} mm</div>
+                        <div>&bull; <strong>a</strong> = Jarak retak dari tumpuan = 160 mm (&ge; 150 mm &implies; Zona Lentur Murni)</div>
+                    </div>
+                </div>
+
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 2: AMBANG BATAS RETAK LENTUR SNI 2847:2019</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">f<sub>r,min</sub></span> = 0.62 &radic;<span class="math-var">f'<sub>c</sub></span> &nbsp;|&nbsp; Efisiensi = <div class="math-frac"><span class="math-num">f<sub>r</sub></span><span class="math-den">f<sub>r,min</sub></span></div> &times; 100%
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">f<sub>r,min</sub></span> = 0.62 &radic;${fc.toFixed(1)} = <strong style="color:var(--accent-gold); font-size:13px;">${frMin.toFixed(2)} MPa</strong>
+                    </div>
+                    <div class="math-subst-box">
+                        Safety Margin: <strong style="color:var(--accent-emerald); font-size:13px;">${safety}%</strong> (&ge; 100% Memenuhi Batas Retak)
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>Lokasi Patah</strong>: Sepertiga Tengah Bentang (Third-Point Middle Zone)</div>
+                        <div>&bull; <strong>Kesesuaian</strong>: Memenuhi syarat ketahanan lentur struktur pelat &amp; balok jembatan</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    },
+    4: {
+        render: (fc, loadKn, P_N) => {
+            let P_core = Math.round(P_N * 0.45); // Beban hancur core drill
+            let d_core = 100; // mm
+            let A_core = Math.round(Math.PI * Math.pow(d_core, 2) / 4); // 7854 mm2
+            let f_LD = 0.98;
+            let f_dia = 1.00;
+            let f_cur = 1.00;
+            let f_reb = 1.00;
+            let fc_core = (P_core / A_core) * f_LD * f_dia * f_cur * f_reb;
+            let fc_insitu = fc_core / 0.85;
+            let limit85 = 0.85 * fc;
+            let pass = fc_core >= limit85;
+            return `
+            <div class="sni-math-grid">
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 1: KUAT TEKAN KOREKSI CORE DRILL (f_c,core)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">f<sub>c,core</sub></span> = 
+                        <div class="math-frac"><span class="math-num">P</span><span class="math-den">A</span></div>
+                        &times; <span class="math-var">F<sub>L/D</sub></span> &times; <span class="math-var">F<sub>dia</sub></span> &times; <span class="math-var">F<sub>cur</sub></span> &times; <span class="math-var">F<sub>reb</sub></span>
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">f<sub>c,core</sub></span> = 
+                        <div class="math-frac"><span class="math-num">${P_core.toLocaleString('id-ID')} N</span><span class="math-den">${A_core.toLocaleString('id-ID')} mm&sup2;</span></div>
+                        &times; 0.98 &times; 1.00 &times; 1.00 &times; 1.00 = <strong class="math-result" style="color:var(--cyan-neon); font-size:13.5px;">${fc_core.toFixed(2)} MPa</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>P</strong> = Beban hancur sampel core = ${P_core.toLocaleString('id-ID')} N | <strong>A</strong> = Luas core (&phi;100 mm) = ${A_core.toLocaleString('id-ID')} mm&sup2;</div>
+                        <div>&bull; <strong>Faktor Koreksi</strong>: F_L/D = 0.98 (L/D = 1.75) | F_dia = 1.00 | F_cur = 1.00 | F_reb = 1.00</div>
+                    </div>
+                </div>
+
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 2: EVALUASI KELAIKAN IN-SITU (ACI 214.4R &amp; SNI 2847)</div>
+                    <div class="math-eq-box">
+                        Syarat Penerimaan: <span class="math-var">f<sub>c,core</sub></span> &ge; 0.85 <span class="math-var">f'<sub>c</sub></span> &nbsp;|&nbsp; <span class="math-var">f<sub>eq,silinder</sub></span> = <div class="math-frac"><span class="math-num">f<sub>c,core</sub></span><span class="math-den">0.85</span></div>
+                    </div>
+                    <div class="math-subst-box">
+                        Batas Minimum: 0.85 &times; ${fc.toFixed(1)} = <strong>${limit85.toFixed(2)} MPa</strong> &implies; Teruji: <strong style="color:${pass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'}; font-size:13px;">${fc_core.toFixed(2)} MPa (${pass ? 'LULUS / MEMENUHI' : 'TIDAK MEMENUHI'})</strong>
+                    </div>
+                    <div class="math-subst-box">
+                        Proyeksi In-situ Equivalent Strength: <strong style="color:var(--accent-gold); font-size:13px;">${fc_insitu.toFixed(2)} MPa</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>Status Kelaikan</strong>: Core drill mewakili kekuatan beton in-situ pada elemen struktur terpasang</div>
+                        <div>&bull; <strong>SNI 2847 Pasal 26.12.4</strong>: Tidak ada satu sampel pun yang bernilai &lt; 0.75 f'c</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    },
+    5: {
+        render: (fc) => {
+            let R_val = Math.min(52, Math.max(24, Math.round(18 + fc * 0.95)));
+            let fc_est = (0.027 * Math.pow(R_val, 2)) + (0.35 * R_val) - 4.2;
+            let cov = 3.2; // %
+            return `
+            <div class="sni-math-grid">
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 1: ANGKA PANTULAN REBOUND RATA-RATA (R_avg)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">R<sub>avg</sub></span> = 
+                        <div class="math-frac">
+                            <span class="math-num">&sum; R<sub>i</sub></span>
+                            <span class="math-den">n</span>
+                        </div>
+                        <span style="font-size:11px; color:#94a3b8;">(Eliminasi Outlier &Delta;R &gt; 6 dari Nilai Mean)</span>
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">R<sub>avg</sub></span> = 
+                        <div class="math-frac"><span class="math-num">${R_val * 10}</span><span class="math-den">10</span></div>
+                        = <strong class="math-result" style="color:var(--cyan-neon); font-size:14px;">${R_val}.0</strong> (Sudut Tembak &theta; = 0&deg; Horizontal)
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>R<sub>i</sub></strong> = Nilai pantulan 10 titik tembak valid pada permukaan beton bebas pori</div>
+                        <div>&bull; <strong>Anvil Kalibrasi</strong>: Nilai pantul baja anvil terkalibrasi = 80 &plusmn; 2 (ISO 1920-7)</div>
+                    </div>
+                </div>
+
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 2: ESTIMASI KUAT TEKAN PERMUKAAN (f'c)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">f'<sub>c</sub></span> = 0.027 <span class="math-var">R<sub>avg</sub>&sup2;</span> + 0.35 <span class="math-var">R<sub>avg</sub></span> &minus; 4.2 &nbsp;|&nbsp; CoV = <div class="math-frac"><span class="math-num">SD</span><span class="math-den">R<sub>avg</sub></span></div> &times; 100%
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">f'<sub>c,est</sub></span> = 0.027(${R_val})&sup2; + 0.35(${R_val}) - 4.2 = <strong style="color:var(--accent-gold); font-size:13.5px;">${fc_est.toFixed(1)} MPa</strong>
+                    </div>
+                    <div class="math-subst-box">
+                        Koefisien Variasi (CoV): <strong style="color:var(--accent-emerald); font-size:13px;">${cov}%</strong> (&le; 10.0% Homogenitas Tinggi)
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>Homogenitas</strong>: Nilai CoV &lt; 5% menunjukkan mutu permukaan sangat merata</div>
+                        <div>&bull; <strong>Aplikasi</strong>: Validasi keseragaman mutu beton elemen struktural tanpa merusak spesimen</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    },
+    6: {
+        render: (fc) => {
+            let L_m = 0.200; // 200 mm
+            let T_us = 46.5; // us
+            let V_kms = (L_m / (T_us * 1e-6)) / 1000;
+            let Ed = Math.round(2400 * Math.pow(V_kms * 1000, 2) * 1e-9); // GPa
+            let integritas = V_kms >= 4.0 ? "KUALITAS SANGAT BAIK (EXCELLENT)" : "KUALITAS BAIK (GOOD)";
+            return `
+            <div class="sni-math-grid">
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 1: KECEPATAN RAMBAT GELOMBANG ULTRASONIK (V)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">V</span> = 
+                        <div class="math-frac">
+                            <span class="math-num">L</span>
+                            <span class="math-den">T</span>
+                        </div>
+                        <span style="font-size:11px; color:#94a3b8;">(Metode Direct Transmission - P-Wave)</span>
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">V</span> = 
+                        <div class="math-frac"><span class="math-num">${L_m.toFixed(3)} m</span><span class="math-den">${T_us} &times; 10<sup>-6</sup> s</span></div>
+                        = <strong class="math-result" style="color:var(--cyan-neon); font-size:14px;">${V_kms.toFixed(2)} km/s</strong> (${(V_kms * 1000).toFixed(0)} m/s)
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>L</strong> = Jarak lintasan antar transduser transmitter-receiver = ${L_m.toFixed(3)} m (${(L_m * 1000).toFixed(0)} mm)</div>
+                        <div>&bull; <strong>T</strong> = Waktu tempuh pulsa ultrasonik (transit time) = ${T_us} &mu;s</div>
+                        <div>&bull; <strong>Frekuensi</strong>: Transduser piezoelektrik standar 54 kHz</div>
+                    </div>
+                </div>
+
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 2: MODULUS ELASTISITAS DINAMIK &amp; INTEGRITAS</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">E<sub>d</sub></span> = &rho; &cdot; <span class="math-var">V&sup2;</span> &nbsp;|&nbsp; Kriteria Kerapatan Struktur (ASTM C597)
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">E<sub>d</sub></span> = 2400 kg/m&sup3; &times; (${(V_kms * 1000).toFixed(0)} m/s)&sup2; = <strong style="color:var(--accent-gold); font-size:13.5px;">${Ed} GPa</strong>
+                    </div>
+                    <div class="math-subst-box">
+                        Klasifikasi Mutu Integritas: <strong style="color:var(--accent-emerald); font-size:13px;">${integritas}</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>Kerapatan Struktur</strong>: Nilai V &gt; 4.0 km/s mengindikasikan beton padat bebas rongga udara</div>
+                        <div>&bull; <strong>Estimated Voids</strong>: Porositas rongga terdeteksi &lt; 1.0% (Sangat Solid)</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    },
+    7: {
+        render: (fc, loadKn, P_N, As, fy, aWhitney, MnNominal, phiMn, EcVal, frVal, areaMm2, isSilinder, d, b, h) => {
+            let c_actual = 42.0; // mm
+            let c_min = 40.0; // mm (SNI 2847)
+            let delta_c = c_actual - c_min;
+            let diam_det = 12; // mm
+            let spasi = 150; // mm
+            return `
+            <div class="sni-math-grid">
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 1: PENGUKURAN TEBAL SELIMUT BETON (c)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">c</span> = f(H<sub>mV</sub>, &phi;<sub>est</sub>) &nbsp;|&nbsp; Respon Induksi Medan Eddy Current
+                    </div>
+                    <div class="math-subst-box">
+                        Tebal Selimut Terukur: <span class="math-var">c</span> = <strong class="math-result" style="color:var(--cyan-neon); font-size:14px;">${c_actual.toFixed(1)} mm</strong>
+                    </div>
+                    <div class="math-subst-box">
+                        Diameter Tulangan Terdeteksi: <strong style="color:var(--accent-gold); font-size:13px;">&phi; ${diam_det} mm (D12)</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>c</strong> = Jarak selimut dari tepi luar permukaan beton ke sisi terluar tulangan = ${c_actual.toFixed(1)} mm</div>
+                        <div>&bull; <strong>H<sub>mV</sub></strong> = Sinyal elektromagnetik probe induksi eddy current berakurasi &plusmn;1 mm</div>
+                    </div>
+                </div>
+
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 2: EVALUASI PERSYARATAN SELIMUT MINIMUM SNI 2847</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">c</span> &ge; <span class="math-var">c<sub>min</sub></span> &nbsp;|&nbsp; &Delta;c = <span class="math-var">c<sub>aktual</sub></span> &minus; <span class="math-var">c<sub>min</sub></span>
+                    </div>
+                    <div class="math-subst-box">
+                        ${c_actual.toFixed(1)} mm &ge; ${c_min.toFixed(1)} mm &implies; &Delta;c = <strong style="color:var(--accent-emerald); font-size:13.5px;">+${delta_c.toFixed(1)} mm (MEMENUHI SYARAT)</strong>
+                    </div>
+                    <div class="math-subst-box">
+                        Spasi Tulangan Terdeteksi: <strong style="color:var(--accent-gold); font-size:13px;">s = ${spasi} mm</strong> (Distribusi Seragam)
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>SNI 2847 Pasal 20.6.1</strong>: Selimut minimum balok &amp; kolom eksterior = 40 mm</div>
+                        <div>&bull; <strong>Proteksi Korosi</strong>: Ketebalan selimut cukup melindungi tulangan dari penetrasi karbonasi &amp; klorida</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    },
+    8: {
+        render: (fc) => {
+            let dc = 4.2; // mm
+            let t_yr = 7.0; // tahun
+            let K = dc / Math.sqrt(t_yr);
+            let c_cover = 40.0; // mm
+            let t_rebar = Math.round(Math.pow(c_cover / K, 2));
+            let sisa_cover = (c_cover - dc).toFixed(1);
+            return `
+            <div class="sni-math-grid">
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 1: KEDALAMAN KARBONASI RATA-RATA (d_c)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">d<sub>c</sub></span> = 
+                        <div class="math-frac"><span class="math-num">&sum; d<sub>cj</sub></span><span class="math-den">k</span></div>
+                        &implies; Prediksi Difusi: <span class="math-var">d<sub>c</sub></span> = <span class="math-var">K</span> &cdot; &radic;<span class="math-var">t</span>
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">d<sub>c</sub></span> = 
+                        <div class="math-frac"><span class="math-num">4.2 + 4.0 + 4.5 + 4.1</span><span class="math-den">4</span></div>
+                        = <strong class="math-result" style="color:var(--cyan-neon); font-size:14px;">${dc.toFixed(2)} mm</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>d<sub>c</sub></strong> = Kedalaman zona netralisasi karbonasi terukur dari permukaan spesimen</div>
+                        <div>&bull; <strong>Indikator</strong>: Fenolftalein 1% (Warna ungu magenta: pH &gt; 9.2 | Bening: pH &lt; 9.0)</div>
+                        <div>&bull; <strong>t</strong> = Umur struktur beton = ${t_yr.toFixed(1)} tahun</div>
+                    </div>
+                </div>
+
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 2: LAJU PENETRASI &amp; SISA MASA PASIVASI REBAR</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">K</span> = <div class="math-frac"><span class="math-num">d<sub>c</sub></span><span class="math-den">&radic;t</span></div> &nbsp;|&nbsp; <span class="math-var">t<sub>korosi</sub></span> = <span class="math-paren">(</span><div class="math-frac"><span class="math-num">c<sub>cover</sub></span><span class="math-den">K</span></div><span class="math-paren">&sup2;</span>)
+                    </div>
+                    <div class="math-subst-box">
+                        Koefisien Laju Karbonasi: <span class="math-var">K</span> = <strong style="color:var(--accent-gold); font-size:13px;">${K.toFixed(2)} mm/tahun<sup>0.5</sup></strong>
+                    </div>
+                    <div class="math-subst-box">
+                        Estimasi Waktu Menembus Selimut (40 mm): <strong style="color:var(--accent-emerald); font-size:13px;">${t_rebar} Tahun</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>Sisa Selimut Bebas Karbonasi</strong>: c_rem = 40 mm - 4.2 mm = <strong>${sisa_cover} mm</strong></div>
+                        <div>&bull; <strong>Status Proteksi</strong>: Tulangan baja berada dalam lingkungan alkalin kuat (Aman dari korosi)</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    },
+    9: {
+        render: () => {
+            let E_cell = -145.0; // mV vs CSE
+            let grad = 12.5; // mV/m
+            let risk = "PROBABILITAS KOROSI < 10% (KONDISI PASIF STABIL)";
+            return `
+            <div class="sni-math-grid">
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 1: BEDA POTENSIAL ELEKTROKIMIA (E_cell)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">E<sub>cell</sub></span> = <span class="math-var">E<sub>rebar</sub></span> &minus; <span class="math-var">E<sub>ref</sub></span> &nbsp;|&nbsp; Elektroda Cu/CuSO<sub>4</sub> (CSE)
+                    </div>
+                    <div class="math-subst-box">
+                        Potensial Terukur: <span class="math-var">E<sub>cell</sub></span> = <strong class="math-result" style="color:var(--cyan-neon); font-size:14px;">${E_cell.toFixed(1)} mV vs CSE</strong>
+                    </div>
+                    <div class="math-subst-box">
+                        Gradien Kontur Potensial: <strong style="color:var(--accent-gold); font-size:13px;">&nabla;E = ${grad.toFixed(1)} mV/m</strong> (Distribusi Homogen)
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>E<sub>cell</sub></strong> = Beda potensial listrik antara baja tulangan dan elektroda referensi CSE tembaga jenuh</div>
+                        <div>&bull; <strong>E<sub>ref</sub></strong> = Potensial baku elektroda Cu/CuSO4 (+316 mV vs Standar Hidrogen)</div>
+                    </div>
+                </div>
+
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 2: KRITERIA RISIKO KOROSI AKTIF ASTM C876-15</div>
+                    <div class="math-eq-box">
+                        E<sub>cell</sub> &gt; &minus;200 mV &implies; &lt; 10% | &minus;200 s/d &minus;350 mV &implies; Uncertain | &lt; &minus;350 mV &implies; &gt; 90%
+                    </div>
+                    <div class="math-subst-box">
+                        Evaluasi Hasil: <span class="math-var">${E_cell.toFixed(1)} mV &gt; &minus;200 mV</span> &implies; <strong style="color:var(--accent-emerald); font-size:13px;">${risk}</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>Status Pasivasi</strong>: Lapisan oksida pasif Gamma-Fe2O3 pada permukaan baja tulangan utuh sempurna</div>
+                        <div>&bull; <strong>Kesimpulan</strong>: Tidak terdeteksi aktivitas korosi galvanik pada seluruh grid pengujian</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    },
+    10: {
+        render: () => {
+            let Q_val = 890; // Coulomb
+            let D_nssm = 2.4e-12; // m2/s
+            let rating = "SANGAT RENDAH (VERY LOW PERMEABILITY)";
+            return `
+            <div class="sni-math-grid">
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 1: TOTAL MUATAN LISTRIK TERLEWATKAN (Q)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">Q</span> = 900 &times; <span class="math-paren">(</span><span class="math-var">I<sub>0</sub></span> + 2<span class="math-var">I<sub>30</sub></span> + &dots; + 2<span class="math-var">I<sub>330</sub></span> + <span class="math-var">I<sub>360</sub></span><span class="math-paren">)</span>
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">Q</span> = 900 &times; (0.038 + 2(0.442) + 0.052) = <strong class="math-result" style="color:var(--cyan-neon); font-size:14px;">${Q_val} Coulomb</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>Q</strong> = Muatan listrik kumulatif yang dilewatkan spesimen selama 6 jam pada tegangan 60 V DC</div>
+                        <div>&bull; <strong>I<sub>t</sub></strong> = Arus listrik terukur tiap 30 menit (Spesimen silinder &phi;100 mm tebal 50 mm)</div>
+                        <div>&bull; <strong>Larutan Sel</strong>: Katoda 3.0% NaCl | Anoda 0.3 N NaOH</div>
+                    </div>
+                </div>
+
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 2: TINGKAT PERMEABILITAS ION KLORIDA (ASTM C1202)</div>
+                    <div class="math-eq-box">
+                        Q &lt; 1000 C &implies; Sangat Rendah | 1000-2000 C &implies; Rendah | 2000-4000 C &implies; Sedang
+                    </div>
+                    <div class="math-subst-box">
+                        Tingkat Permeabilitas Klorida: <strong style="color:var(--accent-emerald); font-size:13.5px;">${rating}</strong>
+                    </div>
+                    <div class="math-subst-box">
+                        Koefisien Migrasi Klorida Terestimasi: <strong style="color:var(--accent-gold); font-size:13px;">D<sub>nssm</sub> = ${D_nssm.toExponential(2)} m&sup2;/s</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>Ketahanan Kimia</strong>: Struktur sangat tahan terhadap penetrasi garam dan lingkungan air laut agresif</div>
+                        <div>&bull; <strong>Kesesuaian SNI 2847</strong>: Memenuhi spesifikasi paparan kelas klorida C2</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    },
+    11: {
+        render: () => {
+            let e_max = 16.0; // mm
+            let e_avg = 14.0; // mm
+            let limit = 20.0; // mm DIN 1048
+            let pass = e_max <= limit;
+            let kw = 1.8e-13; // m/s
+            return `
+            <div class="sni-math-grid">
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 1: KEDALAMAN PENETRASI AIR MAKSIMUM (e_max)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">e<sub>max</sub></span> = max(h<sub>1</sub>, h<sub>2</sub>, &dots;, h<sub>n</sub>) &nbsp;|&nbsp; Tekanan 5 Bar (500 kPa) selama 72 Jam
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">e<sub>max</sub></span> = max(12, 14, 16, 15, 13) mm = <strong class="math-result" style="color:var(--cyan-neon); font-size:14px;">${e_max.toFixed(1)} mm</strong>
+                    </div>
+                    <div class="math-subst-box">
+                        Penetrasi Air Rata-rata: <strong style="color:var(--accent-gold); font-size:13px;">e<sub>avg</sub> = ${e_avg.toFixed(1)} mm</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>e<sub>max</sub></strong> = Kedalaman perembesan air maksimum pada penampang belahan kubus/silinder beton</div>
+                        <div>&bull; <strong>Kondisi Uji</strong>: Tekanan air konstan 0.5 MPa (5 bar) dipertahankan selama 3 hari penuh (72 jam)</div>
+                    </div>
+                </div>
+
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 2: EVALUASI KEKEDAPAN AIR (DIN 1048 PART 5)</div>
+                    <div class="math-eq-box">
+                        e<sub>max</sub> &le; 20 mm &implies; Sangat Kedap (Waterproof) | 20-50 mm &implies; Cukup Kedap
+                    </div>
+                    <div class="math-subst-box">
+                        Evaluasi Hasil: <span class="math-var">${e_max.toFixed(1)} mm &le; ${limit.toFixed(1)} mm</span> &implies; <strong style="color:${pass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'}; font-size:13.5px;">${pass ? 'BETON KEDAP AIR TINGGI (WATERPROOF)' : 'PERMEABEL'}</strong>
+                    </div>
+                    <div class="math-subst-box">
+                        Koefisien Permeabilitas Hidraulik: <strong style="color:var(--accent-gold); font-size:13px;">k<sub>w</sub> = ${kw.toExponential(2)} m/s</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>Aplikasi</strong>: Memenuhi kriteria kedap air untuk basement gedung, terowongan, &amp; reservoir air</div>
+                        <div>&bull; <strong>Integritas Matriks</strong>: Tidak ada jalur kebocoran atau kapilaritas terhubung tembus</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    },
+    12: {
+        render: (fc, loadKn, P_N, As, fy) => {
+            let db = 12; // mm
+            let Ao = Math.PI * Math.pow(db, 2) / 4; // 113.1 mm2
+            let Py = 48200; // N
+            let Pmax = 62800; // N
+            let fy_act = Py / Ao; // 426.2 MPa
+            let fu_act = Pmax / Ao; // 555.3 MPa
+            let ratio = fu_act / fy_act; // 1.30
+            let Lo = 5 * db; // 60 mm
+            let Lu = 70.2; // mm
+            let eps = ((Lu - Lo) / Lo) * 100; // 17.0%
+            return `
+            <div class="sni-math-grid">
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 1: KUAT LELEH &amp; KUAT TARIK ULTIMIT BAJA (f_y &amp; f_u)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">f<sub>y</sub></span> = <div class="math-frac"><span class="math-num">P<sub>y</sub></span><span class="math-den">A<sub>o</sub></span></div> 
+                        &nbsp;|&nbsp; 
+                        <span class="math-var">f<sub>u</sub></span> = <div class="math-frac"><span class="math-num">P<sub>max</sub></span><span class="math-den">A<sub>o</sub></span></div>
+                    </div>
+                    <div class="math-subst-box">
+                        Tegangan Leleh: <span class="math-var">f<sub>y</sub></span> = <div class="math-frac"><span class="math-num">${Py.toLocaleString('id-ID')} N</span><span class="math-den">${Ao.toFixed(1)} mm&sup2;</span></div> = <strong class="math-result" style="color:var(--cyan-neon); font-size:13.5px;">${fy_act.toFixed(1)} MPa</strong>
+                    </div>
+                    <div class="math-subst-box">
+                        Tegangan Tarik Ultimit: <span class="math-var">f<sub>u</sub></span> = <div class="math-frac"><span class="math-num">${Pmax.toLocaleString('id-ID')} N</span><span class="math-den">${Ao.toFixed(1)} mm&sup2;</span></div> = <strong style="color:var(--accent-gold); font-size:13.5px;">${fu_act.toFixed(1)} MPa</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>P<sub>y</sub></strong> = Beban leleh tarik = ${Py.toLocaleString('id-ID')} N | <strong>P<sub>max</sub></strong> = Beban tarik puncak = ${Pmax.toLocaleString('id-ID')} N</div>
+                        <div>&bull; <strong>A<sub>o</sub></strong> = Luas penampang nominal tulangan sirip D${db} = ${Ao.toFixed(1)} mm&sup2; (&frac14;&pi;d&sup2;)</div>
+                    </div>
+                </div>
+
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 2: RASIO SEISMIK &amp; REGANGAN PUTUS ELONGASI</div>
+                    <div class="math-eq-box">
+                        Rasio = <div class="math-frac"><span class="math-num">f<sub>u</sub></span><span class="math-den">f<sub>y</sub></span></div> &ge; 1.25 &nbsp;|&nbsp; &epsilon; = <div class="math-frac"><span class="math-num">L<sub>u</sub> &minus; L<sub>o</sub></span><span class="math-den">L<sub>o</sub></span></div> &times; 100%
+                    </div>
+                    <div class="math-subst-box">
+                        Rasio Kuat Tarik Seismik: <strong style="color:var(--accent-emerald); font-size:13.5px;">${ratio.toFixed(2)}</strong> (&ge; 1.25 Syarat SNI 2847 Gempa Terpenuhi)
+                    </div>
+                    <div class="math-subst-box">
+                        Regangan Putus (Elongasi): <strong style="color:#c084fc; font-size:13px;">&epsilon; = ${eps.toFixed(1)}%</strong> (&ge; 12.0% Standar BjTS 420B)
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>Klasifikasi Mutu</strong>: BjTS 420B (Baja Tulangan Sirip Ulir SNI 2052:2017)</div>
+                        <div>&bull; <strong>Pola Keruntuhan</strong>: Daktail dengan penyempitan leher jelas (Cup-and-Cone Fracture)</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    },
+    13: {
+        render: () => {
+            let H_mold = 300; // mm
+            let H_concrete = 180; // mm
+            let S_val = H_mold - H_concrete; // 120 mm
+            let target_min = 100;
+            let target_max = 140;
+            let pass = S_val >= target_min && S_val <= target_max;
+            return `
+            <div class="sni-math-grid">
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 1: NILAI SLUMP KELECAKAN BETON SEGAR (S)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">S</span> = <span class="math-var">H<sub>cetakan</sub></span> &minus; <span class="math-var">H<sub>beton</sub></span>
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">S</span> = ${H_mold} mm &minus; ${H_concrete} mm = <strong class="math-result" style="color:var(--cyan-neon); font-size:14px;">${S_val} mm (${(S_val/10).toFixed(1)} cm)</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>H<sub>cetakan</sub></strong> = Tinggi awal kerucut terpancung Abrams = 300 mm (D_atas: 100 mm, D_bawah: 200 mm)</div>
+                        <div>&bull; <strong>H<sub>beton</sub></strong> = Tinggi titik tengah permukaan atas beton setelah kerucut diangkat = ${H_concrete} mm</div>
+                        <div>&bull; <strong>Metode Pemadatan</strong>: Penusukan 25 kali tiap 3 lapis menggunakan batang baja &phi;16 mm</div>
+                    </div>
+                </div>
+
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 2: TIPE BENTUK SLUMP &amp; WORKABILITAS MIX DESIGN</div>
+                    <div class="math-eq-box">
+                        Bentuk Slump: True Slump &nbsp;|&nbsp; Toleransi Rencana: 120 &plusmn; 20 mm
+                    </div>
+                    <div class="math-subst-box">
+                        Tipe Keruntuhan Slump: <strong style="color:var(--accent-emerald); font-size:13.5px;">TRUE SLUMP (RUNTUH SEJATI SIMETRIS)</strong>
+                    </div>
+                    <div class="math-subst-box">
+                        Kesesuaian Workabilitas: <strong style="color:${pass ? 'var(--accent-emerald)' : 'var(--accent-gold)'}; font-size:13px;">${pass ? 'OPTIMAL & MUDAH DIPOMPA (PUMPABLE)' : 'PERLU PENYESUAIAN'}</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>Kondisi Campuran</strong>: Homogen tanpa segregasi agregat kasar maupun bleeding berlebih</div>
+                        <div>&bull; <strong>Aplikasi</strong>: Ideal untuk pengecoran elemen kolom, balok, dan pelat bertulang rapat</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    },
+    14: {
+        render: (fc) => {
+            let S2 = 0.40 * fc;
+            let S1 = 1.20;
+            let eps2 = 0.000780;
+            let eps1 = 0.000050;
+            let Ec_calc = Math.round((S2 - S1) / (eps2 - eps1));
+            let Ec_sni = Math.round(4700 * Math.sqrt(fc));
+            let eps_t2 = 0.000149;
+            let eps_t1 = 0.000018;
+            let nu = (eps_t2 - eps_t1) / (eps2 - eps1);
+            return `
+            <div class="sni-math-grid">
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 1: MODULUS ELASTISITAS STATIS (E_c)</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">E<sub>c</sub></span> = 
+                        <div class="math-frac">
+                            <span class="math-num">S<sub>2</sub> &minus; S<sub>1</sub></span>
+                            <span class="math-den">&epsilon;<sub>2</sub> &minus; 0.000050</span>
+                        </div>
+                        <span style="font-size:11px; color:#94a3b8;">(Regio Elastis Linier Aksial Hingga 40% Beban Ultimit)</span>
+                    </div>
+                    <div class="math-subst-box">
+                        <span class="math-var">E<sub>c</sub></span> = 
+                        <div class="math-frac">
+                            <span class="math-num">(${S2.toFixed(2)} &minus; ${S1.toFixed(2)}) MPa</span>
+                            <span class="math-den">0.000780 &minus; 0.000050</span>
+                        </div>
+                        = <strong class="math-result" style="color:var(--cyan-neon); font-size:14px;">${Ec_calc.toLocaleString('id-ID')} MPa (${(Ec_calc/1000).toFixed(2)} GPa)</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>S<sub>2</sub></strong> = Tegangan pada 40% beban tekan ultimit = ${S2.toFixed(2)} MPa</div>
+                        <div>&bull; <strong>S<sub>1</sub></strong> = Tegangan pada regangan aksial 0.000050 = ${S1.toFixed(2)} MPa</div>
+                        <div>&bull; <strong>&epsilon;<sub>2</sub></strong> = Regangan longitudinal terukur pada tegangan S2 = 0.000780</div>
+                    </div>
+                </div>
+
+                <div class="math-card">
+                    <div class="math-card-badge">PERSAMAAN 2: ANGKA POISSON &amp; KORELASI EMPIRIS SNI 2847</div>
+                    <div class="math-eq-box">
+                        <span class="math-var">&mu;</span> = 
+                        <div class="math-frac">
+                            <span class="math-num">&epsilon;<sub>t2</sub> &minus; &epsilon;<sub>t1</sub></span>
+                            <span class="math-den">&epsilon;<sub>2</sub> &minus; 0.000050</span>
+                        </div>
+                        &nbsp;|&nbsp; <span class="math-var">E<sub>c,SNI</sub></span> = 4700 &radic;<span class="math-var">f'<sub>c</sub></span>
+                    </div>
+                    <div class="math-subst-box">
+                        Rasio Poisson (Lateral/Axial): <strong style="color:var(--accent-gold); font-size:13.5px;">&mu; = ${nu.toFixed(2)}</strong> (Rentang Normal: 0.15 &ndash; 0.22)
+                    </div>
+                    <div class="math-subst-box">
+                        Modulus Empiris SNI 2847: 4700 &radic;${fc.toFixed(1)} = <strong style="color:var(--accent-emerald); font-size:13px;">${Ec_sni.toLocaleString('id-ID')} MPa</strong>
+                    </div>
+                    <div class="math-notes">
+                        <div>&bull; <strong>&epsilon;<sub>t</sub></strong> = Regangan transversal lateral terukur dengan dual-ring compressometer-extensometer</div>
+                        <div>&bull; <strong>Kesesuaian</strong>: Rasio kesesuaian nilai uji statis terhadap rumus empiris SNI = <strong>${((Ec_calc/Math.max(1, Ec_sni))*100).toFixed(1)}%</strong></div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    }
+};
+
+function renderTidySNIFormulas(rec, isSilinder, overrideMethodId) {
+    let methodId = overrideMethodId || currentActiveFormulaMethodId || getMethodIdFromName(rec.method);
+    let methodMeta = SNI_ASTM_FORMULA_METHODS.find(m => m.id === methodId) || SNI_ASTM_FORMULA_METHODS[0];
+
+    let fc = parseFloat(rec.fcFinal) || 14.8;
+    let loadKn = parseFloat(rec.Load_kN) || 3120;
+    let P_N = loadKn * 1000;
+    let nBars = parseInt(rec.nBars) || 4;
+    let diam = parseFloat(rec.tulanganDiameter) || 12;
+    let b = 200; // mm (lebar balok)
+    let h = 200; // mm (tinggi balok)
+    let d = 160; // mm (tinggi efektif d = h - 40mm cover)
+    let fy = 420; // MPa (BJTS 420B SNI 2052:2017)
+    let As = nBars * (Math.PI * Math.pow(diam, 2) / 4); // mm²
+    let aWhitney = (As * fy) / (0.85 * Math.max(10, fc) * b); // mm
+    let MnNominal = (As * fy * (d - (aWhitney / 2))) / 1e6; // kNm
+    let phiMn = 0.90 * MnNominal; // kNm
+    let EcVal = Math.round(4700 * Math.sqrt(fc)); // MPa
+    let frVal = (0.62 * Math.sqrt(fc)).toFixed(2); // MPa
+    let areaMm2 = isSilinder ? Math.round(Math.PI * Math.pow(150, 2) / 4) : (b * h);
+
+    // Build select options
+    let selectOptionsHtml = '';
+    SNI_ASTM_FORMULA_METHODS.forEach(m => {
+        selectOptionsHtml += `<option value="${m.id}" ${m.id === methodId ? 'selected' : ''}>${m.label}</option>`;
+    });
+
+    let lookup = SNI_ASTM_FORMULA_LOOKUP[methodId] || SNI_ASTM_FORMULA_LOOKUP[1];
+    let formulaContent = lookup.render(fc, loadKn, P_N, As, fy, aWhitney, MnNominal, phiMn, EcVal, frVal, areaMm2, isSilinder, d, b, h);
+
+    return `
+        <div class="sni-math-container">
+            <!-- Header Title with Dynamic Dropdown Selector -->
+            <div class="sni-math-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div class="sni-math-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line></svg>
+                    <span>2. RUMUS TEKNIS PERHITUNGAN SNI &amp; ASTM</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <select id="math-method-selector" class="custom-select math-method-dropdown" onchange="handleMathMethodChange(parseInt(this.value))" title="Pilih metode uji untuk merender rumus teknis">
+                        ${selectOptionsHtml}
+                    </select>
+                    <span class="telemetry-chip live-chip"><span class="dot-live"></span>${methodMeta.standard}</span>
+                </div>
+            </div>
+
+            <!-- Dynamic Mathematical Formula Cards Grid -->
+            ${formulaContent}
         </div>
     `;
 }
+
+function handleMathMethodChange(newId) {
+    currentActiveFormulaMethodId = newId;
+    let wrapper = document.getElementById('sni-math-dynamic-wrapper');
+    if (wrapper) {
+        let currentRecord = testedHistoryList[activeTestedIndex] || testedHistoryList[0];
+        let isSilinder = getNormalizedTipe(currentRecord.materialName) === 'Cylinder';
+        wrapper.innerHTML = renderTidySNIFormulas(currentRecord, isSilinder, newId);
+    }
+}
+
 
 function renderAnalisis() {
     if (canvasView) canvasView.classList.add("scroll-mode");
@@ -3518,7 +4225,7 @@ function renderAnalisis() {
                         <span style="color: #f1f5f9; font-family: var(--font-mono); font-size: 11.5px;">${currentRecord.sni}</span>
                     </div>
 
-${renderTidySNIFormulas(currentRecord, isSilinder)}
+<div id="sni-math-dynamic-wrapper">${renderTidySNIFormulas(currentRecord, isSilinder, currentActiveFormulaMethodId)}</div>
 
                     <div class="sni-spec-block" style="border-left-color: #f59e0b;">
                         <strong style="color: #fbbf24;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg> 3. Parameter Mesin Uji TEST MARK:</strong>
@@ -3577,7 +4284,7 @@ ${renderTidySNIFormulas(currentRecord, isSilinder)}
             </div>
             <div class="input-group">
                 <label>Select Stored Test Result</label>
-                <select class="custom-select" id="analisis-dropdown" onchange="activeTestedIndex = parseInt(this.value) || 0; renderAnalisis();">
+                <select class="custom-select" id="analisis-dropdown" onchange="activeTestedIndex = parseInt(this.value) || 0; currentActiveFormulaMethodId = null; renderAnalisis();">
                     ${testedDropdownHtml}
                 </select>
             </div>

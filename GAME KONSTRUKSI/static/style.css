@@ -3356,6 +3356,8 @@ option {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
     margin-bottom: 14px;
     border-bottom: 1px solid rgba(16, 185, 129, 0.25);
     padding-bottom: 10px;
@@ -3370,6 +3372,35 @@ option {
     color: #34d399;
     letter-spacing: 0.6px;
     font-family: var(--font-heading);
+}
+
+.math-method-dropdown {
+    background: rgba(10, 20, 44, 0.95) !important;
+    border: 1px solid var(--cyan-neon, #00f0ff) !important;
+    color: #f1f5f9 !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    padding: 5px 10px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    outline: none !important;
+    max-width: 420px !important;
+    width: auto !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.18) !important;
+}
+
+.math-method-dropdown:focus, .math-method-dropdown:hover {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.4) !important;
+    background: rgba(14, 30, 64, 0.98) !important;
+}
+
+.math-method-dropdown option {
+    background: #091328;
+    color: #f1f5f9;
+    padding: 6px 10px;
+    font-size: 11.5px;
 }
 
 .sni-math-grid {
