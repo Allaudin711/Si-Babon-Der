@@ -106,20 +106,46 @@ let elementData = {
     durasi: 5
 };
 
-// LocalStorage persistence keys & helpers
-const STORAGE_KEY_TEST_HISTORY = 'si_babon_der_tested_history_user';
+// ==========================================================================
+// STRICT EMPTY STATE & LOCALSTORAGE PURGE CONTROLLER
+// ==========================================================================
+const STORAGE_KEY_TEST_HISTORY = 'si_babon_der_history_records_v5';
+
+// Immediately purge all legacy/mock test history keys on startup
+try {
+    const legacyHistoryKeys = [
+        'testHistory',
+        'test_history',
+        'testedHistory',
+        'testedHistoryList',
+        'historyArchive',
+        'si_babon_der_test_history',
+        'si_babon_der_test_history_v1',
+        'si_babon_der_test_history_v2',
+        'si_babon_der_test_history_v3',
+        'si_babon_der_tested_history_user'
+    ];
+    legacyHistoryKeys.forEach(k => {
+        try { localStorage.removeItem(k); } catch(err) {}
+    });
+} catch (e) {
+    console.warn("Storage purge notice:", e);
+}
 
 function loadTestHistory() {
     try {
-        // Clear any old mock keys
-        localStorage.removeItem('si_babon_der_test_history');
-        localStorage.removeItem('si_babon_der_test_history_v1');
+        localStorage.removeItem('testHistory');
+        localStorage.removeItem('si_babon_der_tested_history_user');
 
         let saved = localStorage.getItem(STORAGE_KEY_TEST_HISTORY);
         if (saved) {
             let parsed = JSON.parse(saved);
             if (Array.isArray(parsed) && parsed.length > 0) {
-                return parsed;
+                // Only load authentic user-executed tests that have valid properties
+                let valid = parsed.filter(item => 
+                    item && typeof item === 'object' && item.method && item.materialName && item.timestamp
+                );
+                return valid;
             }
         }
     } catch (e) {
@@ -142,7 +168,10 @@ function clearTestHistory() {
     currentActiveFormulaMethodId = null;
     try {
         localStorage.removeItem(STORAGE_KEY_TEST_HISTORY);
+        localStorage.removeItem('testHistory');
+        localStorage.removeItem('si_babon_der_tested_history_user');
     } catch(e) {}
+    showToast("Riwayat pengujian berhasil dibersihkan!", "fa-solid fa-trash-can");
     renderAnalisis();
 }
 
@@ -158,7 +187,7 @@ function addTestResult(newTest) {
 }
 
 let storedConcreteList = [];
-let testedHistoryList = loadTestHistory();
+let testedHistoryList = loadTestHistory(); // Strictly empty array [] on initial load
 let activeSelectedIndex = 0;
 let activeTestedIndex = 0;
 
@@ -4153,7 +4182,7 @@ function renderEmptyAnalisisUI() {
                 <div class="input-group">
                     <label>Select Stored Test Result</label>
                     <select class="custom-select" id="analisis-dropdown" disabled style="opacity: 0.6; cursor: not-allowed; background: rgba(8, 16, 36, 0.6); color: var(--text-muted);">
-                        <option value="" disabled selected>Belum Ada Riwayat Pengujian</option>
+                        <option value="" disabled selected>Belum ada riwayat pengujian</option>
                     </select>
                 </div>
             </div>
@@ -4422,11 +4451,15 @@ function renderAnalisis() {
     panelView.innerHTML = `
         <!-- CARD 1: TEST HISTORY ARCHIVE -->
         <div class="panel-card">
-            <div class="card-title">
+            <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="display:flex; align-items:center; gap:8px;">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-neon)" stroke-width="2.2"><path d="M21 8v13H3V8"></path><path d="M1 3h22v5H1z"></path><path d="M10 12h4"></path></svg>
                     TEST HISTORY ARCHIVE
                 </span>
+                <button onclick="clearTestHistory()" title="Bersihkan Seluruh Riwayat Pengujian" style="background:rgba(239, 68, 68, 0.15); border:1px solid rgba(239, 68, 68, 0.35); color:#fca5a5; cursor:pointer; font-size:10.5px; font-weight:700; display:flex; align-items:center; gap:4px; padding:3px 8px; border-radius:5px; transition:all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.35)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    Reset
+                </button>
             </div>
             <div class="input-group">
                 <label>Select Stored Test Result</label>
