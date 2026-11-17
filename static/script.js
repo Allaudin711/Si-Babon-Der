@@ -1233,32 +1233,62 @@ function getDimensionLabel(tipe) {
     let norm = getNormalizedTipe(tipe);
     switch(norm) {
         case 'Slab':
-            return `Length x Width x Thickness (cm) <span class="label-hint">Panjang x Lebar x Tebal Pelat</span>`;
+            return `<span>Dimensi Pelat</span> <span class="label-hint">Lx × Ly × ts (cm)</span>`;
         case 'Shear Wall':
-            return `Length x Thickness x Height (cm) <span class="label-hint">Panjang Dinding x Tebal tw x Tinggi hw</span>`;
+            return `<span>Dimensi Dinding Geser</span> <span class="label-hint">Lw × tw × hw (cm)</span>`;
         case 'Column':
-            return `Width x Depth x Height (cm) <span class="label-hint">Lebar b x Tebal h x Tinggi Kolom H</span>`;
+            return `<span>Dimensi Kolom</span> <span class="label-hint">b × h × H (cm)</span>`;
         case 'Foundation':
-            return `Length x Width x Thickness (cm) <span class="label-hint">Panjang x Lebar x Tebal Pondasi</span>`;
+            return `<span>Dimensi Pondasi</span> <span class="label-hint">Bx × By × hf (cm)</span>`;
         case 'Tie Beam':
-            return `Length x Width x Height (cm) <span class="label-hint">Sloof / Balok Pengikat Dasar</span>`;
+            return `<span>Dimensi Sloof</span> <span class="label-hint">L × b × h (cm)</span>`;
+        case 'Cylinder':
+            return `<span>Dimensi Silinder</span> <span class="label-hint">D × H (cm)</span>`;
         case 'Beam':
         default:
-            return `Length x Width x Height (cm) <span class="label-hint">Balok Beton Bertulang (Beam)</span>`;
+            return `<span>Dimensi Balok</span> <span class="label-hint">L × b × h (cm)</span>`;
     }
+}
+
+function getDimensionInputsMarkup(tipe) {
+    let norm = getNormalizedTipe(tipe);
+    let labels = {
+        'Slab': ['Lx (Bentang X)', 'Ly (Bentang Y)', 'ts (Tebal)'],
+        'Shear Wall': ['Lw (Panjang)', 'tw (Tebal)', 'hw (Tinggi)'],
+        'Column': ['b (Lebar)', 'h (Tebal)', 'H (Tinggi)'],
+        'Foundation': ['Bx (Panjang)', 'By (Lebar)', 'hf (Tebal)'],
+        'Tie Beam': ['L (Panjang)', 'b (Lebar)', 'h (Tinggi)'],
+        'Beam': ['L (Panjang)', 'b (Lebar)', 'h (Tinggi)']
+    }[norm] || ['L (Panjang)', 'b (Lebar)', 'h (Tinggi)'];
+
+    return `
+    <div class="dimensions-grid">
+        <div class="dim-col">
+            <span class="dim-micro-label">${labels[0]}</span>
+            <input type="number" id="input-panjang" class="custom-input" value="${elementData.panjang}" oninput="updateBoxDimensions()" placeholder="P">
+        </div>
+        <div class="dim-col">
+            <span class="dim-micro-label">${labels[1]}</span>
+            <input type="number" id="input-lebar" class="custom-input" value="${elementData.lebar}" oninput="updateBoxDimensions()" placeholder="L">
+        </div>
+        <div class="dim-col">
+            <span class="dim-micro-label">${labels[2]}</span>
+            <input type="number" id="input-tinggi" class="custom-input" value="${elementData.tinggi}" oninput="updateBoxDimensions()" placeholder="T">
+        </div>
+    </div>`;
 }
 
 function getRebarCountLabel(tipe) {
     let norm = getNormalizedTipe(tipe);
     switch(norm) {
-        case 'Slab': return 'Slab Rebar Count / Wiremesh Grid (Bars)';
-        case 'Shear Wall': return 'Vertical & Boundary Rebar Count (Bars)';
-        case 'Column': return 'Column Longitudinal Rebar Count (Bars)';
-        case 'Foundation': return 'Footing Mat Bidirectional Rebar (Bars)';
-        case 'Tie Beam': return 'Tie Beam Longitudinal Rebar (Bars)';
-        case 'Cylinder': return 'Internal Spiral / Tie Bars (ASTM C39)';
+        case 'Slab': return '<span>Tulangan Pelat</span> <span class="label-hint">Wiremesh (Batang)</span>';
+        case 'Shear Wall': return '<span>Tulangan Dinding</span> <span class="label-hint">Curtain & Boundary</span>';
+        case 'Column': return '<span>Tulangan Kolom</span> <span class="label-hint">Longitudinal (Batang)</span>';
+        case 'Foundation': return '<span>Tulangan Pondasi</span> <span class="label-hint">Footing Mat (Batang)</span>';
+        case 'Tie Beam': return '<span>Tulangan Sloof</span> <span class="label-hint">Longitudinal (Batang)</span>';
+        case 'Cylinder': return '<span>Internal Spiral / Tie</span> <span class="label-hint">ASTM C39 (Batang)</span>';
         case 'Beam':
-        default: return 'Main Longitudinal Rebar Count (Bars)';
+        default: return '<span>Tulangan Utama</span> <span class="label-hint">Longitudinal (Batang)</span>';
     }
 }
 
@@ -1738,20 +1768,22 @@ function renderCreate() {
 
             ${isSilinder ? `
             <div class="input-group">
-                <label>Diameter x Height (cm) <span class="label-hint">Std: 15 x 30 cm (ASTM C39)</span></label>
+                <label>${getDimensionLabel('Cylinder')}</label>
                 <div class="dimensions-grid-cylinder">
-                    <input type="number" id="input-diameter" class="custom-input" value="${elementData.diameter || 15}" oninput="updateCylinderDimensions()" placeholder="Diameter">
-                    <input type="number" id="input-tinggi-silinder" class="custom-input" value="${elementData.tinggiSilinder || 30}" oninput="updateCylinderDimensions()" placeholder="Height">
+                    <div class="dim-col">
+                        <span class="dim-micro-label">Diameter (D)</span>
+                        <input type="number" id="input-diameter" class="custom-input" value="${elementData.diameter || 15}" oninput="updateCylinderDimensions()" placeholder="15">
+                    </div>
+                    <div class="dim-col">
+                        <span class="dim-micro-label">Tinggi (H)</span>
+                        <input type="number" id="input-tinggi-silinder" class="custom-input" value="${elementData.tinggiSilinder || 30}" oninput="updateCylinderDimensions()" placeholder="30">
+                    </div>
                 </div>
             </div>
             ` : `
             <div class="input-group">
                 <label>${getDimensionLabel(selectedTipe)}</label>
-                <div class="dimensions-grid">
-                    <input type="number" id="input-panjang" class="custom-input" value="${elementData.panjang}" oninput="updateBoxDimensions()" placeholder="P">
-                    <input type="number" id="input-lebar" class="custom-input" value="${elementData.lebar}" oninput="updateBoxDimensions()" placeholder="L">
-                    <input type="number" id="input-tinggi" class="custom-input" value="${elementData.tinggi}" oninput="updateBoxDimensions()" placeholder="T">
-                </div>
+                ${getDimensionInputsMarkup(selectedTipe)}
             </div>
             `}
         </div>
@@ -1764,7 +1796,7 @@ function renderCreate() {
             </div>
 
             <div class="input-group">
-                <label>${getRebarCountLabel(selectedTipe)} <span class="label-hint">Select or Input</span></label>
+                <label>${getRebarCountLabel(selectedTipe)}</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <input type="number" id="input-tulangan-jumlah" class="custom-input" value="${elementData.jumlahTulangan !== undefined ? elementData.jumlahTulangan : 4}" min="0" max="32" oninput="handleJumlahTulanganChange(this.value)">
                     <select class="custom-select" style="max-width: 140px;" onchange="document.getElementById('input-tulangan-jumlah').value = this.value; handleJumlahTulanganChange(this.value);">
