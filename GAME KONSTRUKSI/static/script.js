@@ -107,13 +107,11 @@ let elementData = {
 };
 
 // ==========================================================================
-// STRICT EMPTY STATE & LOCALSTORAGE PURGE CONTROLLER
+// STRICT ZERO-DUMMY EMPTY INITIAL STATE & STORAGE PURGE CONTROLLER
 // ==========================================================================
-const STORAGE_KEY_TEST_HISTORY = 'si_babon_der_history_records_v5';
-
-// Immediately purge all legacy/mock test history keys on startup
+// Immediately purge all legacy, mock, or previously saved test history keys on startup/refresh
 try {
-    const legacyHistoryKeys = [
+    const keysToPurge = [
         'testHistory',
         'test_history',
         'testedHistory',
@@ -123,51 +121,36 @@ try {
         'si_babon_der_test_history_v1',
         'si_babon_der_test_history_v2',
         'si_babon_der_test_history_v3',
-        'si_babon_der_tested_history_user'
+        'si_babon_der_tested_history_user',
+        'si_babon_der_history_records_v4',
+        'si_babon_der_history_records_v5',
+        'si_babon_der_history_records_v6',
+        'si_babon_der_history_records_v7',
+        'si_babon_der_test_history_archive'
     ];
-    legacyHistoryKeys.forEach(k => {
+    keysToPurge.forEach(k => {
         try { localStorage.removeItem(k); } catch(err) {}
+        try { sessionStorage.removeItem(k); } catch(err) {}
     });
 } catch (e) {
     console.warn("Storage purge notice:", e);
 }
 
 function loadTestHistory() {
-    try {
-        localStorage.removeItem('testHistory');
-        localStorage.removeItem('si_babon_der_tested_history_user');
-
-        let saved = localStorage.getItem(STORAGE_KEY_TEST_HISTORY);
-        if (saved) {
-            let parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-                // Only load authentic user-executed tests that have valid properties
-                let valid = parsed.filter(item => 
-                    item && typeof item === 'object' && item.method && item.materialName && item.timestamp
-                );
-                return valid;
-            }
-        }
-    } catch (e) {
-        console.warn("Storage not accessible:", e);
-    }
+    // Return empty array [] on initial load (pure empty state, no mock/dummy data)
     return [];
 }
 
 function saveTestHistory() {
-    try {
-        localStorage.setItem(STORAGE_KEY_TEST_HISTORY, JSON.stringify(testedHistoryList));
-    } catch (e) {
-        console.warn("Storage save error:", e);
-    }
+    // In-memory runtime session management; prevents stale mock data from re-appearing on refresh
 }
 
 function clearTestHistory() {
     testedHistoryList = [];
     activeTestedIndex = 0;
     try {
-        localStorage.removeItem(STORAGE_KEY_TEST_HISTORY);
         localStorage.removeItem('testHistory');
+        localStorage.removeItem('si_babon_der_history_records_v5');
         localStorage.removeItem('si_babon_der_tested_history_user');
     } catch(e) {}
     showToast("Riwayat pengujian berhasil dibersihkan!", "fa-solid fa-trash-can");
@@ -181,12 +164,11 @@ function addTestResult(newTest) {
     }
     testedHistoryList.push(newTest);
     activeTestedIndex = testedHistoryList.length - 1;
-    saveTestHistory();
     console.log(`[TEST ARCHIVE] Sukses menambahkan riwayat uji: [Test #${testedHistoryList.length}] ${newTest.method} - ${newTest.materialName}`);
 }
 
 let storedConcreteList = [];
-let testedHistoryList = loadTestHistory(); // Strictly empty array [] on initial load
+let testedHistoryList = []; // Pure empty array [] by default on initial load (equivalent to useState([]))
 let activeSelectedIndex = 0;
 let activeTestedIndex = 0;
 
@@ -4155,16 +4137,20 @@ function renderEmptyAnalisisUI() {
         panelView.innerHTML = `
             <!-- CARD 1: TEST HISTORY ARCHIVE (DISABLED PLACEHOLDER) -->
             <div class="panel-card">
-                <div class="card-title">
+                <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
                     <span style="display:flex; align-items:center; gap:8px;">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-neon)" stroke-width="2.2"><path d="M21 8v13H3V8"></path><path d="M1 3h22v5H1z"></path><path d="M10 12h4"></path></svg>
                         TEST HISTORY ARCHIVE
                     </span>
+                    <button disabled title="Arsip riwayat pengujian masih kosong" style="opacity:0.4; cursor:not-allowed; background:rgba(239, 68, 68, 0.08); border:1px solid rgba(239, 68, 68, 0.2); color:#94a3b8; font-size:10.5px; font-weight:700; display:flex; align-items:center; gap:4px; padding:3px 8px; border-radius:5px; pointer-events:none;">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        Reset
+                    </button>
                 </div>
                 <div class="input-group">
                     <label>Select Stored Test Result</label>
                     <select class="custom-select" id="analisis-dropdown" disabled style="opacity: 0.6; cursor: not-allowed; background: rgba(8, 16, 36, 0.6); color: var(--text-muted);">
-                        <option value="" disabled selected>Belum ada riwayat pengujian</option>
+                        <option value="" disabled selected>Belum Ada Riwayat Pengujian</option>
                     </select>
                 </div>
             </div>
