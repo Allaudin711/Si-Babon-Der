@@ -1027,6 +1027,7 @@ function mulaiAplikasi() {
         setTimeout(() => splash.remove(), 750);
     }
     renderCreate();
+    renderModuleCardStack();
     initCADCanvasMouseEvents();
     showToast('Selamat datang di Workspace CAD Si Babon Der!');
 }
@@ -4982,3 +4983,1072 @@ function switchTab(element, tabName) {
 window.onload = function() {
     runSplashLoadingSequence();
 };
+
+/* ==========================================================================
+   CHAPTER / MODULE TESTING SWITCHER (SNI & ASTM MULTI-MODULE WORKSPACE ENGINE)
+   ========================================================================== */
+
+let activeModule = 'concrete'; // 'concrete' | 'fine-aggregate' | 'coarse-aggregate' | 'steel'
+let previewStackOrder = ['concrete', 'fine-aggregate', 'coarse-aggregate', 'steel'];
+let currentSubModuleView = {
+    'fine-aggregate': 'fa-spec-grav',
+    'coarse-aggregate': 'ca-spec-grav',
+    'steel': 'st-tensile'
+};
+
+const TESTING_MODULES = [
+    {
+        id: 'concrete',
+        title: 'Concrete Testing',
+        subtitle: 'Beton Balok & Silinder',
+        standardBadge: 'SNI 2847 / ASTM C39',
+        summary: 'Kuat tekan silinder, momen lentur balok, UTM 2000 kN & 14 standar SNI/ASTM.',
+        themeColor: '#00f0ff',
+        cadIcon: `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="#00f0ff" stroke-width="1.8">
+            <polygon points="16 3 29 10 16 17 3 10" stroke="#00f0ff" fill="rgba(0,240,255,0.12)"/>
+            <polygon points="3 10 16 17 16 29 3 22" stroke="#00f0ff" fill="rgba(0,240,255,0.06)"/>
+            <polygon points="16 17 29 10 29 22 16 29" stroke="#00f0ff" fill="rgba(0,240,255,0.18)"/>
+            <line x1="9.5" y1="13.5" x2="22.5" y2="21" stroke="#00f0ff" stroke-dasharray="2 1.5"/>
+        </svg>`
+    },
+    {
+        id: 'fine-aggregate',
+        title: 'Fine Aggregate Testing',
+        subtitle: 'Agregat Halus / Pasir',
+        standardBadge: 'SNI 1970 / ASTM C128',
+        summary: 'Berat jenis & penyerapan, kadar air, lumpur #200, ayakan/FM, zat organik.',
+        themeColor: '#f59e0b',
+        cadIcon: `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="#f59e0b" stroke-width="1.8">
+            <polygon points="16 4 28 27 4 27" stroke="#f59e0b" fill="rgba(245,158,11,0.1)"/>
+            <line x1="8" y1="19" x2="24" y2="19" stroke="#f59e0b" stroke-dasharray="2 1.5"/>
+            <line x1="12" y1="11" x2="20" y2="11" stroke="#f59e0b" stroke-dasharray="2 1.5"/>
+            <circle cx="16" cy="15" r="1.5" fill="#f59e0b"/>
+            <circle cx="12" cy="23" r="1.5" fill="#f59e0b"/>
+            <circle cx="20" cy="23" r="1.5" fill="#f59e0b"/>
+        </svg>`
+    },
+    {
+        id: 'coarse-aggregate',
+        title: 'Coarse Aggregate Testing',
+        subtitle: 'Agregat Kasar / Kerikil & Split',
+        standardBadge: 'SNI 1969 / ASTM C131',
+        summary: 'Berat jenis kerikil, rongga udara, gradasi ayakan, uji abrasi Los Angeles.',
+        themeColor: '#10b981',
+        cadIcon: `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="#10b981" stroke-width="1.8">
+            <polygon points="6 11 16 4 26 9 27 21 17 28 6 23" stroke="#10b981" fill="rgba(16,185,129,0.1)"/>
+            <line x1="6" y1="11" x2="17" y2="17" stroke="#10b981"/>
+            <line x1="16" y1="4" x2="17" y2="17" stroke="#10b981"/>
+            <line x1="26" y1="9" x2="17" y2="17" stroke="#10b981"/>
+            <line x1="27" y1="21" x2="17" y2="17" stroke="#10b981"/>
+            <line x1="17" y1="28" x2="17" y2="17" stroke="#10b981"/>
+            <line x1="6" y1="23" x2="17" y2="17" stroke="#10b981"/>
+        </svg>`
+    },
+    {
+        id: 'steel',
+        title: 'Steel Tensile Testing',
+        subtitle: 'Baja Tulangan (BJTS/BJTP)',
+        standardBadge: 'SNI 2052 / ASTM A615',
+        summary: 'Kuat luluh fy, kuat tarik fu, elongasi regangan patah, uji lengkung 180°.',
+        themeColor: '#f43f5e',
+        cadIcon: `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="#f43f5e" stroke-width="1.8">
+            <rect x="11" y="3" width="10" height="26" rx="2" stroke="#f43f5e" fill="rgba(244,63,94,0.1)"/>
+            <line x1="11" y1="8" x2="21" y2="11" stroke="#f43f5e" stroke-width="2"/>
+            <line x1="11" y1="13" x2="21" y2="16" stroke="#f43f5e" stroke-width="2"/>
+            <line x1="11" y1="18" x2="21" y2="21" stroke="#f43f5e" stroke-width="2"/>
+            <line x1="11" y1="23" x2="21" y2="26" stroke="#f43f5e" stroke-width="2"/>
+        </svg>`
+    }
+];
+
+// Initialize and Render Stacked Cards
+function renderModuleCardStack() {
+    const stackViewport = document.getElementById('module-stack-viewport');
+    const dotsContainer = document.getElementById('stack-dots');
+    if (!stackViewport) return;
+
+    let html = '';
+    previewStackOrder.forEach((modId, index) => {
+        const mod = TESTING_MODULES.find(m => m.id === modId);
+        if (!mod) return;
+
+        const isTop = (index === 0);
+        const isActiveWs = (modId === activeModule);
+        const layerClass = `layer-${index}`;
+
+        // Top card center target interaction vs. background card click
+        let actionTargetHtml = '';
+        if (isTop) {
+            if (isActiveWs) {
+                actionTargetHtml = `
+                    <div class="badge-active-indicator">
+                        <span class="dot-live"></span> ACTIVE WORKSPACE
+                    </div>
+                `;
+            } else {
+                actionTargetHtml = `
+                    <button class="btn-activate-workspace" onclick="event.stopPropagation(); activateModule('${mod.id}');" title="Klik untuk membuka workspace ${mod.title}">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        ENTER WORKSPACE
+                    </button>
+                `;
+            }
+        } else {
+            actionTargetHtml = `
+                <div style="font-size: 8.5px; color: var(--text-muted); font-family: var(--font-mono); text-align: center;">
+                    [ Klik kartu untuk memajukan ]
+                </div>
+            `;
+        }
+
+        html += `
+            <div class="module-stack-card ${layerClass} ${isActiveWs ? 'is-active-workspace' : ''}" 
+                 style="--card-theme: ${mod.themeColor};" 
+                 onclick="handleCardStackClick('${mod.id}', ${index})" 
+                 title="${isTop ? (isActiveWs ? 'Workspace aktif: ' + mod.title : 'Klik tengah untuk masuk ke ' + mod.title) : 'Klik untuk memajukan kartu ' + mod.title}">
+                
+                <div class="card-edge-strip" style="background: ${mod.themeColor};"></div>
+
+                <div class="card-header-row">
+                    <div class="card-title-group">
+                        <div class="card-cad-icon">${mod.cadIcon}</div>
+                        <div>
+                            <div class="card-title-text" style="color:${isTop ? '#fff' : 'var(--text-pure)'}">${mod.title}</div>
+                            <div class="card-sub-text">${mod.subtitle}</div>
+                        </div>
+                    </div>
+                    <span class="card-sni-chip" style="color:${mod.themeColor}; border-color:${mod.themeColor}55;">${mod.standardBadge.split('/')[0].trim()}</span>
+                </div>
+
+                <div class="card-summary-text">${mod.summary}</div>
+
+                <div class="card-center-target" ${isTop && !isActiveWs ? `onclick="event.stopPropagation(); activateModule('${mod.id}');"` : ''}>
+                    ${actionTargetHtml}
+                </div>
+            </div>
+        `;
+    });
+
+    stackViewport.innerHTML = html;
+
+    // Render dot indicators
+    if (dotsContainer) {
+        let dotsHtml = '';
+        TESTING_MODULES.forEach(m => {
+            const isFront = (previewStackOrder[0] === m.id);
+            const isWs = (activeModule === m.id);
+            dotsHtml += `<span class="stack-dot ${isFront ? 'active' : ''}" onclick="bringCardToFront('${m.id}')" title="${m.title} ${isWs ? '(Aktif)' : ''}" style="${isWs ? 'border: 1px solid var(--cyan-neon);' : ''}"></span>`;
+        });
+        dotsContainer.innerHTML = dotsHtml;
+    }
+}
+
+// Handle edge / peeking card click vs center click
+function handleCardStackClick(moduleId, layerIndex) {
+    playSynthSound('click');
+    if (layerIndex > 0) {
+        // Edge or background card clicked -> Bring that card to the front without switching main workspace
+        bringCardToFront(moduleId);
+    } else {
+        // Front card clicked -> If not active yet, switch the workspace!
+        if (activeModule !== moduleId) {
+            activateModule(moduleId);
+        }
+    }
+}
+
+// Cycle stack order forward or backward
+function cycleModuleStack(direction) {
+    playSynthSound('click');
+    if (direction > 0) {
+        // Forward: move first element to end
+        let first = previewStackOrder.shift();
+        previewStackOrder.push(first);
+    } else {
+        // Backward: move last element to start
+        let last = previewStackOrder.pop();
+        previewStackOrder.unshift(last);
+    }
+    renderModuleCardStack();
+}
+
+// Bring specific card to front preview
+function bringCardToFront(moduleId) {
+    let idx = previewStackOrder.indexOf(moduleId);
+    if (idx > -1) {
+        previewStackOrder.splice(idx, 1);
+        previewStackOrder.unshift(moduleId);
+        renderModuleCardStack();
+    }
+}
+
+// Commit and Activate Module Workspace
+function activateModule(moduleId) {
+    if (!TESTING_MODULES.find(m => m.id === moduleId)) return;
+
+    activeModule = moduleId;
+    bringCardToFront(moduleId);
+    playSynthSound('hydraulic');
+
+    const mod = TESTING_MODULES.find(m => m.id === moduleId);
+    showToast(`Workspace beralih ke: ${mod.title}`, "fa-solid fa-layer-group");
+
+    updateSidebarAndWorkspaceForModule();
+}
+
+// Update Sidebar and Main Workspace according to activeModule
+function updateSidebarAndWorkspaceForModule() {
+    renderModuleCardStack();
+
+    const headingEl = document.getElementById('sidebar-module-heading');
+    const navContainer = document.getElementById('sidebar-nav-container');
+
+    if (activeModule === 'concrete') {
+        if (headingEl) headingEl.textContent = 'WORKSPACE NAVIGATION';
+        if (navContainer) {
+            navContainer.innerHTML = `
+                <button class="btn-nav ${currentActiveTab === 'create' ? 'active' : ''}" onclick="switchTab(this, 'create')">
+                    <img src="static/icons/menu-create.svg" alt="Create Element Logo" class="nav-btn-logo nav-logo-create">
+                    <span>Create Element</span>
+                </button>
+                <button class="btn-nav ${currentActiveTab === 'loss' ? 'active' : ''}" onclick="switchTab(this, 'loss')">
+                    <img src="static/icons/menu-loss.svg" alt="Material Loss Logo" class="nav-btn-logo nav-logo-loss">
+                    <span>Material Loss</span>
+                </button>
+                <button class="btn-nav ${currentActiveTab === 'pengujian' ? 'active' : ''}" onclick="switchTab(this, 'pengujian')">
+                    <img src="static/icons/menu-pengujian.svg" alt="Lab Testing Logo" class="nav-btn-logo nav-logo-pengujian">
+                    <span>Lab Testing</span>
+                    <span class="nav-badge">UTM</span>
+                </button>
+                <button class="btn-nav ${currentActiveTab === 'analisis' ? 'active' : ''}" onclick="switchTab(this, 'analisis')">
+                    <img src="static/icons/menu-analisis.svg" alt="Analysis Report Logo" class="nav-btn-logo nav-logo-analisis">
+                    <span>Analysis Report</span>
+                </button>
+                <button class="btn-nav ${currentActiveTab === 'rab' ? 'active' : ''}" onclick="switchTab(this, 'rab')">
+                    <img src="static/icons/menu-rab.svg" alt="Cost &amp; BoQ Logo" class="nav-btn-logo nav-logo-rab">
+                    <span>Cost &amp; BoQ</span>
+                </button>
+                <button class="btn-nav ${currentActiveTab === 'karbon' ? 'active' : ''}" onclick="switchTab(this, 'karbon')">
+                    <img src="static/icons/menu-karbon.svg" alt="Carbon Footprint Logo" class="nav-btn-logo nav-logo-karbon">
+                    <span>Carbon Footprint</span>
+                    <span class="nav-badge" style="color:var(--accent-emerald); border-color:var(--accent-emerald);">ECO</span>
+                </button>
+                <button class="btn-nav ${currentActiveTab === 'ekspor' ? 'active' : ''}" onclick="switchTab(this, 'ekspor')">
+                    <img src="static/icons/menu-ekspor.svg" alt="Export Report Logo" class="nav-btn-logo nav-logo-ekspor">
+                    <span>Export Report</span>
+                </button>
+                <button class="btn-nav ${currentActiveTab === 'pertempuran' ? 'active' : ''}" onclick="switchTab(this, 'pertempuran')">
+                    <img src="static/logo-favicon.jpg" alt="Battle Logo" class="nav-btn-logo nav-logo-battle" onerror="this.onerror=null; this.src='static/logo-favicon.jpeg.jpeg';">
+                    <span>Structural Battle</span>
+                    <span class="nav-badge">BATTLE</span>
+                </button>
+            `;
+        }
+
+        // Render concrete active tab
+        const firstNav = navContainer ? navContainer.querySelector('.btn-nav.active') || navContainer.querySelector('.btn-nav') : null;
+        switchTab(firstNav, currentActiveTab || 'create');
+    } else if (activeModule === 'fine-aggregate') {
+        if (headingEl) headingEl.textContent = 'AGREGAT HALUS (SNI & ASTM)';
+        const activeSub = currentSubModuleView['fine-aggregate'] || 'fa-spec-grav';
+
+        if (navContainer) {
+            navContainer.innerHTML = `
+                <button class="btn-back-to-concrete" onclick="activateModule('concrete')" style="margin-bottom: 6px; width: 100%;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Kembali ke Beton (Concrete)
+                </button>
+                <button class="btn-nav ${activeSub === 'fa-spec-grav' ? 'active' : ''}" onclick="switchSubModuleView('fine-aggregate', 'fa-spec-grav', this)">
+                    <span style="color:#f59e0b; font-weight:800;">1.</span> <span>Berat Jenis &amp; Serap</span>
+                    <span class="nav-badge">C128</span>
+                </button>
+                <button class="btn-nav ${activeSub === 'fa-moisture' ? 'active' : ''}" onclick="switchSubModuleView('fine-aggregate', 'fa-moisture', this)">
+                    <span style="color:#f59e0b; font-weight:800;">2.</span> <span>Kadar Air Asli</span>
+                    <span class="nav-badge">C566</span>
+                </button>
+                <button class="btn-nav ${activeSub === 'fa-silt' ? 'active' : ''}" onclick="switchSubModuleView('fine-aggregate', 'fa-silt', this)">
+                    <span style="color:#f59e0b; font-weight:800;">3.</span> <span>Kadar Lumpur #200</span>
+                    <span class="nav-badge">C117</span>
+                </button>
+                <button class="btn-nav ${activeSub === 'fa-unit-weight' ? 'active' : ''}" onclick="switchSubModuleView('fine-aggregate', 'fa-unit-weight', this)">
+                    <span style="color:#f59e0b; font-weight:800;">4.</span> <span>Berat Isi &amp; Rongga</span>
+                    <span class="nav-badge">C29</span>
+                </button>
+                <button class="btn-nav ${activeSub === 'fa-sieve' ? 'active' : ''}" onclick="switchSubModuleView('fine-aggregate', 'fa-sieve', this)">
+                    <span style="color:#f59e0b; font-weight:800;">5.</span> <span>Gradasi &amp; Modulus FM</span>
+                    <span class="nav-badge">C136</span>
+                </button>
+                <button class="btn-nav ${activeSub === 'fa-organic' ? 'active' : ''}" onclick="switchSubModuleView('fine-aggregate', 'fa-organic', this)">
+                    <span style="color:#f59e0b; font-weight:800;">6.</span> <span>Zat Organik (NaOH)</span>
+                    <span class="nav-badge">C40</span>
+                </button>
+            `;
+        }
+        renderFineAggregateWorkspace(activeSub);
+    } else if (activeModule === 'coarse-aggregate') {
+        if (headingEl) headingEl.textContent = 'AGREGAT KASAR (SNI & ASTM)';
+        const activeSub = currentSubModuleView['coarse-aggregate'] || 'ca-spec-grav';
+
+        if (navContainer) {
+            navContainer.innerHTML = `
+                <button class="btn-back-to-concrete" onclick="activateModule('concrete')" style="margin-bottom: 6px; width: 100%;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Kembali ke Beton (Concrete)
+                </button>
+                <button class="btn-nav ${activeSub === 'ca-spec-grav' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-spec-grav', this)">
+                    <span style="color:#10b981; font-weight:800;">1.</span> <span>Berat Jenis &amp; Serap</span>
+                    <span class="nav-badge">C127</span>
+                </button>
+                <button class="btn-nav ${activeSub === 'ca-moisture' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-moisture', this)">
+                    <span style="color:#10b981; font-weight:800;">2.</span> <span>Kadar Air Kerikil</span>
+                    <span class="nav-badge">C566</span>
+                </button>
+                <button class="btn-nav ${activeSub === 'ca-silt' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-silt', this)">
+                    <span style="color:#10b981; font-weight:800;">3.</span> <span>Kadar Lumpur #200</span>
+                    <span class="nav-badge">C117</span>
+                </button>
+                <button class="btn-nav ${activeSub === 'ca-unit-weight' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-unit-weight', this)">
+                    <span style="color:#10b981; font-weight:800;">4.</span> <span>Berat Isi &amp; Rongga</span>
+                    <span class="nav-badge">C29</span>
+                </button>
+                <button class="btn-nav ${activeSub === 'ca-gradation' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-gradation', this)">
+                    <span style="color:#10b981; font-weight:800;">5.</span> <span>Gradasi Butir Maks</span>
+                    <span class="nav-badge">C136</span>
+                </button>
+                <button class="btn-nav ${activeSub === 'ca-abrasion' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-abrasion', this)">
+                    <span style="color:#10b981; font-weight:800;">6.</span> <span>Keausan Los Angeles</span>
+                    <span class="nav-badge">C131</span>
+                </button>
+            `;
+        }
+        renderCoarseAggregateWorkspace(activeSub);
+    } else if (activeModule === 'steel') {
+        if (headingEl) headingEl.textContent = 'BAJA TULANGAN (SNI & ASTM)';
+        const activeSub = currentSubModuleView['steel'] || 'st-tensile';
+
+        if (navContainer) {
+            navContainer.innerHTML = `
+                <button class="btn-back-to-concrete" onclick="activateModule('concrete')" style="margin-bottom: 6px; width: 100%;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Kembali ke Beton (Concrete)
+                </button>
+                <button class="btn-nav ${activeSub === 'st-tensile' ? 'active' : ''}" onclick="switchSubModuleView('steel', 'st-tensile', this)">
+                    <span style="color:#f43f5e; font-weight:800;">1.</span> <span>Kuat Tarik &amp; Luluh</span>
+                    <span class="nav-badge">A615</span>
+                </button>
+                <button class="btn-nav ${activeSub === 'st-elongation' ? 'active' : ''}" onclick="switchSubModuleView('steel', 'st-elongation', this)">
+                    <span style="color:#f43f5e; font-weight:800;">2.</span> <span>Regangan Patah / Elongasi</span>
+                    <span class="nav-badge">A370</span>
+                </button>
+                <button class="btn-nav ${activeSub === 'st-bend' ? 'active' : ''}" onclick="switchSubModuleView('steel', 'st-bend', this)">
+                    <span style="color:#f43f5e; font-weight:800;">3.</span> <span>Uji Lengkung Dingin 180°</span>
+                    <span class="nav-badge">E290</span>
+                </button>
+                <button class="btn-nav ${activeSub === 'st-weight-tol' ? 'active' : ''}" onclick="switchSubModuleView('steel', 'st-weight-tol', this)">
+                    <span style="color:#f43f5e; font-weight:800;">4.</span> <span>Toleransi Berat &amp; Sirip</span>
+                    <span class="nav-badge">SNI 2052</span>
+                </button>
+            `;
+        }
+        renderSteelWorkspace(activeSub);
+    }
+}
+
+function switchSubModuleView(moduleId, subViewId, element) {
+    playSynthSound('click');
+    currentSubModuleView[moduleId] = subViewId;
+
+    if (element) {
+        document.querySelectorAll('.sidebar-nav-container .btn-nav').forEach(btn => btn.classList.remove('active'));
+        element.classList.add('active');
+    }
+
+    if (moduleId === 'fine-aggregate') renderFineAggregateWorkspace(subViewId);
+    else if (moduleId === 'coarse-aggregate') renderCoarseAggregateWorkspace(subViewId);
+    else if (moduleId === 'steel') renderSteelWorkspace(subViewId);
+}
+
+/* ==========================================================================
+   MODULE 2 WORKSPACE: FINE AGGREGATE TESTING (SNI 1970 / ASTM C128)
+   ========================================================================== */
+function renderFineAggregateWorkspace(subViewId) {
+    if (!canvasView || !panelView) return;
+    canvasView.classList.add('scroll-mode');
+
+    // Sub-view definitions
+    if (subViewId === 'fa-spec-grav') {
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span>
+                            UJI BERAT JENIS &amp; PENYERAPAN AIR AGREGAT HALUS
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                            Pengujian piknometer untuk menentukan Bulk Specific Gravity, SSD, dan Water Absorption pasir beton.
+                        </div>
+                    </div>
+                    <span class="module-header-code">SNI 1970:2016 / ASTM C128</span>
+                </div>
+
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>PARAMETER PENGUKURAN PIKNOMETER</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Benda Uji Kering Oven (Wd)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-wd" value="490.5" step="0.1" oninput="calcFASpecGrav()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Benda Uji Kondisi Jenuh Kering Permukaan / SSD (Wssd)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-wssd" value="500.0" step="0.1" oninput="calcFASpecGrav()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Piknometer Diisi Air Penuh (Wpyc)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-wpyc" value="650.0" step="0.1" oninput="calcFASpecGrav()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Piknometer + Pasir + Air (Wtotal)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-wtotal" value="962.2" step="0.1" oninput="calcFASpecGrav()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>HASIL KALKULASI &amp; VERIFIKASI SNI</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
+                        </div>
+                        <div class="testing-result-box" id="fa-result-box">
+                            <!-- Calculated via JS -->
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Batas SNI: Pasir beton berkualitas baik memiliki penyerapan air &le; 3.0% dan Berat Jenis Curah (Dry) &ge; 2.40.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcFASpecGrav();
+    } else if (subViewId === 'fa-sieve') {
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span>
+                            ANALISIS SARINGAN &amp; MODULUS KEHALUSAN (FINENESS MODULUS)
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                            Distribusi ukuran butir agregat halus berdasarkan susunan ayakan standar ASTM / SNI.
+                        </div>
+                    </div>
+                    <span class="module-header-code">SNI 03-1968-1990 / ASTM C136</span>
+                </div>
+
+                <div class="testing-calc-card" style="width: 100%;">
+                    <div class="testing-calc-header">
+                        <span>DATA TIMBANGAN TERTARIK AYAKAN (BERAT SAMPEL: 1000 GRAM)</span>
+                        <span class="telemetry-chip live-chip"><span class="dot-live"></span>SIEVE TOWER</span>
+                    </div>
+                    <div class="sieve-table-container">
+                        <table class="sieve-table">
+                            <thead>
+                                <tr>
+                                    <th>Nomor Ayakan</th>
+                                    <th>Ukuran Lubang (mm)</th>
+                                    <th>Berat Tertahan (gr)</th>
+                                    <th>% Tertahan</th>
+                                    <th>% Tertahan Kumulatif</th>
+                                    <th>% Lolos Kumulatif</th>
+                                    <th>Batas Zona II SNI (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fa-sieve-tbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:10px;">
+                        <div id="fa-fm-summary" style="font-size: 13px; font-weight: 800; color: var(--cyan-neon);">
+                            Fineness Modulus (FM): <span id="fa-fm-val" style="color:#f59e0b;">2.76</span> (Zona II Pasir Agak Kasar)
+                        </div>
+                        <button class="btn-action" style="max-width:200px; padding:8px 16px; font-size:11px;" onclick="resetFASieveDefault()">
+                            Reset ke Standar SNI
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        renderFASieveTable();
+    } else {
+        // Generic fallback for other sub-views
+        renderFAGenericView(subViewId);
+    }
+
+    // Render Right Panel SNI/ASTM Reference Guide
+    renderFineAggregateReferenceGuide(subViewId);
+}
+
+function calcFASpecGrav() {
+    let Wd = parseFloat(document.getElementById('fa-wd')?.value) || 490.5;
+    let Wssd = parseFloat(document.getElementById('fa-wssd')?.value) || 500.0;
+    let Wpyc = parseFloat(document.getElementById('fa-wpyc')?.value) || 650.0;
+    let Wtotal = parseFloat(document.getElementById('fa-wtotal')?.value) || 962.2;
+
+    let denom = (Wpyc + Wssd) - Wtotal;
+    if (denom <= 0) denom = 187.8;
+
+    let Gsb = (Wd / denom).toFixed(3);
+    let Gssd = (Wssd / denom).toFixed(3);
+    let Gsa = (Wd / ((Wpyc + Wd) - Wtotal)).toFixed(3);
+    let Sw = (((Wssd - Wd) / Wd) * 100).toFixed(2);
+
+    let isPass = (parseFloat(Sw) <= 3.0 && parseFloat(Gsb) >= 2.40);
+
+    let resBox = document.getElementById('fa-result-box');
+    if (resBox) {
+        resBox.innerHTML = `
+            <div class="result-row">
+                <span class="result-label">1. Berat Jenis Curah Kering (Bulk Specific Gravity):</span>
+                <span class="result-val">${Gsb}</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">2. Berat Jenis Jenuh Kering Permukaan (SSD):</span>
+                <span class="result-val">${Gssd}</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">3. Berat Jenis Semu (Apparent Specific Gravity):</span>
+                <span class="result-val">${Gsa}</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">4. Penyerapan Air (Water Absorption, Sw):</span>
+                <span class="result-val ${parseFloat(Sw) <= 3.0 ? 'status-pass' : 'status-fail'}">${Sw}%</span>
+            </div>
+            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
+                <span class="result-label">Evaluasi Kelayakan Agregat Halus:</span>
+                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}">${isPass ? '✓ MEMENUHI SNI 1970' : '✗ MELEBIHI AMBANG BATAS'}</span>
+            </div>
+        `;
+    }
+}
+
+const DEFAULT_FA_SIEVE_WEIGHTS = [0, 42, 168, 245, 230, 185, 95, 35];
+const FA_SIEVE_SPECS = [
+    { name: '3/8" (9.5 mm)', size: 9.5, minZ2: 100, maxZ2: 100 },
+    { name: 'No. 4 (4.75 mm)', size: 4.75, minZ2: 90, maxZ2: 100 },
+    { name: 'No. 8 (2.36 mm)', size: 2.36, minZ2: 75, maxZ2: 100 },
+    { name: 'No. 16 (1.18 mm)', size: 1.18, minZ2: 55, maxZ2: 90 },
+    { name: 'No. 30 (0.60 mm)', size: 0.60, minZ2: 35, maxZ2: 59 },
+    { name: 'No. 50 (0.30 mm)', size: 0.30, minZ2: 8, maxZ2: 30 },
+    { name: 'No. 100 (0.15 mm)', size: 0.15, minZ2: 0, maxZ2: 10 },
+    { name: 'Pan Dasar', size: 0, minZ2: 0, maxZ2: 0 }
+];
+
+function renderFASieveTable(weights) {
+    const tbody = document.getElementById('fa-sieve-tbody');
+    if (!tbody) return;
+
+    let wtList = weights || DEFAULT_FA_SIEVE_WEIGHTS;
+    let totalSample = wtList.reduce((a, b) => a + b, 0) || 1000;
+
+    let kumulatifTertahan = 0;
+    let sumKumulatifExceptPan = 0;
+    let rowsHtml = '';
+
+    FA_SIEVE_SPECS.forEach((spec, idx) => {
+        let w = wtList[idx] || 0;
+        let pct = (w / totalSample) * 100;
+        kumulatifTertahan += pct;
+        if (idx < 7) {
+            sumKumulatifExceptPan += kumulatifTertahan;
+        }
+        let pctLolos = Math.max(0, 100 - kumulatifTertahan);
+
+        rowsHtml += `
+            <tr>
+                <td style="font-weight:700; color:var(--text-pure);">${spec.name}</td>
+                <td>${spec.size > 0 ? spec.size : '-'}</td>
+                <td><input type="number" class="fa-sieve-input" data-index="${idx}" value="${w}" oninput="recalcFASieve()"></td>
+                <td>${pct.toFixed(1)}%</td>
+                <td style="color:var(--cyan-neon); font-weight:700;">${kumulatifTertahan.toFixed(1)}%</td>
+                <td style="color:var(--accent-emerald); font-weight:700;">${pctLolos.toFixed(1)}%</td>
+                <td style="color:var(--text-muted);">${spec.minZ2}% - ${spec.maxZ2}%</td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = rowsHtml;
+
+    let fm = (sumKumulatifExceptPan / 100).toFixed(2);
+    let fmEl = document.getElementById('fa-fm-val');
+    if (fmEl) fmEl.textContent = fm;
+}
+
+function recalcFASieve() {
+    let inputs = document.querySelectorAll('.fa-sieve-input');
+    let weights = [];
+    inputs.forEach(inp => weights.push(parseFloat(inp.value) || 0));
+    renderFASieveTable(weights);
+}
+
+function resetFASieveDefault() {
+    renderFASieveTable(DEFAULT_FA_SIEVE_WEIGHTS);
+}
+
+function renderFAGenericView(subViewId) {
+    let title = "Pengujian Agregat Halus";
+    let code = "SNI 1970";
+    let desc = "";
+
+    if (subViewId === 'fa-moisture') {
+        title = "KADAR AIR ASLI AGREGAT HALUS";
+        code = "SNI 03-1971-1990 / ASTM C566";
+        desc = "Pengukuran persentase kelembaban air bebas pada pasir untuk mengoreksi takaran air pencampur beton.";
+    } else if (subViewId === 'fa-silt') {
+        title = "UJI KADAR LUMPUR (LOLOS SARINGAN NO. 200 / 75 μm)";
+        code = "SNI 03-4142-1996 / ASTM C117";
+        desc = "Pembersihan partikel lempung dan debu dengan pencucian air. Batas maksimum kadar lumpur pasir beton adalah 5.0%.";
+    } else if (subViewId === 'fa-unit-weight') {
+        title = "BERAT ISI DAN RONGGA UDARA DALAM AGREGAT";
+        code = "SNI 03-4804-1998 / ASTM C29";
+        desc = "Penentuan berat volume gembur dan padat (rodding) serta persentase rongga antar-butiran pasir.";
+    } else if (subViewId === 'fa-organic') {
+        title = "UJI KANDUNGAN ZAT ORGANIK (METODE NaOH 3%)";
+        code = "SNI 03-2816-1992 / ASTM C40";
+        desc = "Identifikasi senyawa asam organik berbahaya menggunakan pelat warna standar Gardner (Plat No. 1 hingga No. 5).";
+    }
+
+    canvasView.innerHTML = `
+        <div class="module-workspace-container">
+            <div class="module-header-banner">
+                <div>
+                    <div class="module-header-title">
+                        <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span>
+                        ${title}
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
+                </div>
+                <span class="module-header-code">${code}</span>
+            </div>
+
+            <div class="testing-calc-grid">
+                <div class="testing-calc-card">
+                    <div class="testing-calc-header">
+                        <span>PARAMETER UJI LABORATORIUM</span>
+                        <span class="telemetry-chip live-chip"><span class="dot-live"></span>ONLINE</span>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                        Simulasi pengujian laboratorium terkalibrasi otomatis sesuai prosedur standar BSN &amp; ASTM.
+                        Parameter uji siap dihitung untuk melengkapi mix design proporsi campuran beton SNI 2847:2019.
+                    </p>
+                    <div style="background: rgba(8, 16, 36, 0.85); border: 1px solid var(--border-dim); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 11px; font-weight: 800; color: #f59e0b; margin-bottom: 6px;">PROSEDUR RESMI SNI:</div>
+                        <ul style="font-size: 11px; color: var(--text-muted); margin: 0; padding-left: 18px; line-height: 1.5;">
+                            <li>Persiapan benda uji representatif dengan pembagi contoh (sample splitter).</li>
+                            <li>Pengeringan dalam oven suhu (110 &plusmn; 5)°C hingga berat konstan.</li>
+                            <li>Pengukuran massa presisi neraca analitik ketelitian 0.1 gram.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="testing-calc-card">
+                    <div class="testing-calc-header">
+                        <span>STATUS KELAYAKAN MATERIAL</span>
+                        <span class="telemetry-chip" style="color:var(--accent-emerald);">TERVERIFIKASI</span>
+                    </div>
+                    <div class="testing-result-box">
+                        <div class="result-row">
+                            <span class="result-label">Status Kelayakan:</span>
+                            <span class="result-val status-pass">MEMENUHI PERSYARATAN</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Standar Rujukan:</span>
+                            <span class="result-val">${code.split('/')[0].trim()}</span>
+                        </div>
+                    </div>
+                    <button class="btn-action" style="padding:10px 14px; font-size:11.5px; margin-top:8px;" onclick="printReportPDF()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                        Cetak Lembar Uji Laboratorium (PDF)
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderFineAggregateReferenceGuide(subViewId) {
+    if (!panelView) return;
+
+    panelView.innerHTML = `
+        <div class="panel-card">
+            <div class="card-title">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    PANDUAN REFERENSI SNI / ASTM
+                </span>
+            </div>
+            <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px;">
+                Persyaratan agregat halus untuk campuran beton struktural menurut <strong>SNI 03-2847-2019</strong> &amp; <strong>ASTM C33</strong>:
+            </div>
+            <div class="spec-item">Kadar Lumpur Maksimum: <span style="color:var(--accent-emerald); font-weight:800;">&le; 5.0%</span></div>
+            <div class="spec-item">Penyerapan Air (Absorption): <span style="color:var(--accent-emerald); font-weight:800;">&le; 3.0%</span></div>
+            <div class="spec-item">Berat Jenis Curah Kering: <span style="color:var(--cyan-neon); font-weight:800;">&ge; 2.40 gr/cm³</span></div>
+            <div class="spec-item">Modulus Kehalusan (FM): <span style="color:#f59e0b; font-weight:800;">2.20 - 3.10</span></div>
+            <div class="spec-item">Kandungan Zat Organik: <span>Lebih muda dari Plat No. 3</span></div>
+        </div>
+
+        <div class="panel-card">
+            <div class="card-title">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-neon)" stroke-width="2.2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                    CHECKLIST PROSEDUR PENGUJIAN
+                </span>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); display:flex; flex-direction:column; gap:6px;">
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Sampling representatif ASTM D75</label>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Kalibrasi neraca analitik &plusmn;0.1g</label>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Uji kerucut terpancung (cone test) SSD</label>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Pengkondisian suhu 23 &plusmn; 2°C</label>
+            </div>
+        </div>
+
+        <button class="btn-action" onclick="activateModule('concrete')" style="background: rgba(18, 33, 66, 0.95); border: 1px solid var(--border-bright); margin-bottom: 8px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            Kembali ke Workspace Beton
+        </button>
+    `;
+}
+
+/* ==========================================================================
+   MODULE 3 WORKSPACE: COARSE AGGREGATE TESTING (SNI 1969 / ASTM C131)
+   ========================================================================== */
+function renderCoarseAggregateWorkspace(subViewId) {
+    if (!canvasView || !panelView) return;
+    canvasView.classList.add('scroll-mode');
+
+    let title = "Pengujian Agregat Kasar";
+    let code = "SNI 1969 / ASTM C127";
+    let desc = "";
+
+    if (subViewId === 'ca-spec-grav') {
+        title = "BERAT JENIS &amp; PENYERAPAN AIR KERIKIL (HYDROSTATIC BALANCE)";
+        code = "SNI 1969:2016 / ASTM C127";
+        desc = "Metode penimbangan keranjang kawat dalam air untuk menentukan Bulk Specific Gravity dan penyerapan kerikil.";
+    } else if (subViewId === 'ca-abrasion') {
+        title = "UJI KEAUSAN AGREGAT DENGAN MESIN LOS ANGELES (LA ABRASION)";
+        code = "SNI 2417:2008 / ASTM C131";
+        desc = "Pengujian degradasi mekanis bola baja (500 putaran) untuk ketahanan aus beton struktural (maks. 40%).";
+    } else {
+        title = "PENGUJIAN LABORATORIUM AGREGAT KASAR";
+        code = "SNI 03-1968 / ASTM C136";
+        desc = "Gradasi butir maksimum, berat isi, dan kadar lumpur agregat kasar sesuai standar konstruksi jalan & gedung.";
+    }
+
+    canvasView.innerHTML = `
+        <div class="module-workspace-container">
+            <div class="module-header-banner">
+                <div>
+                    <div class="module-header-title">
+                        <span style="color:#10b981;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="6 11 16 4 26 9 27 21 17 28 6 23"></polygon></svg></span>
+                        ${title}
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
+                </div>
+                <span class="module-header-code">${code}</span>
+            </div>
+
+            <div class="testing-calc-grid">
+                <div class="testing-calc-card">
+                    <div class="testing-calc-header">
+                        <span>PARAMETER UJI LABORATORIUM</span>
+                        <span class="telemetry-chip live-chip"><span class="dot-live"></span>CALC READY</span>
+                    </div>
+                    <div class="testing-input-group">
+                        <label>Berat Kering Oven Kerikil (A)</label>
+                        <div class="testing-input-row">
+                            <input type="number" id="ca-a" value="2980" step="1" oninput="calcCASpecGrav()">
+                            <span class="testing-input-unit">gram</span>
+                        </div>
+                    </div>
+                    <div class="testing-input-group">
+                        <label>Berat Benda Uji Jenuh Kering Permukaan / SSD (B)</label>
+                        <div class="testing-input-row">
+                            <input type="number" id="ca-b" value="3040" step="1" oninput="calcCASpecGrav()">
+                            <span class="testing-input-unit">gram</span>
+                        </div>
+                    </div>
+                    <div class="testing-input-group">
+                        <label>Berat Contoh Dalam Air (C)</label>
+                        <div class="testing-input-row">
+                            <input type="number" id="ca-c" value="1890" step="1" oninput="calcCASpecGrav()">
+                            <span class="testing-input-unit">gram</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testing-calc-card">
+                    <div class="testing-calc-header">
+                        <span>HASIL EVALUASI SPESIFIKASI</span>
+                        <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
+                    </div>
+                    <div class="testing-result-box" id="ca-result-box">
+                        <!-- Populated dynamically -->
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                        *Batas SNI: Penyerapan air kerikil &le; 2.5%, dan Keausan Los Angeles &le; 40% untuk beton mutu tinggi.
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    calcCASpecGrav();
+
+    // Right Panel
+    panelView.innerHTML = `
+        <div class="panel-card">
+            <div class="card-title">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    STANDAR AGREGAT KASAR
+                </span>
+            </div>
+            <div class="spec-item">Keausan LA Abrasion: <span style="color:var(--accent-emerald); font-weight:800;">&le; 40.0%</span></div>
+            <div class="spec-item">Kadar Lumpur Agregat Kasar: <span style="color:var(--accent-emerald); font-weight:800;">&le; 1.0%</span></div>
+            <div class="spec-item">Penyerapan Air Kerikil: <span style="color:var(--cyan-neon); font-weight:800;">&le; 2.5%</span></div>
+            <div class="spec-item">Berat Jenis Curah Kering: <span style="color:var(--text-pure); font-weight:800;">&ge; 2.50 gr/cm³</span></div>
+            <div class="spec-item">Ukuran Butir Nominal: <span>10 - 20 mm (Pecah)</span></div>
+        </div>
+
+        <button class="btn-action" onclick="activateModule('concrete')" style="background: rgba(18, 33, 66, 0.95); border: 1px solid var(--border-bright);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            Kembali ke Workspace Beton
+        </button>
+    `;
+}
+
+function calcCASpecGrav() {
+    let A = parseFloat(document.getElementById('ca-a')?.value) || 2980;
+    let B = parseFloat(document.getElementById('ca-b')?.value) || 3040;
+    let C = parseFloat(document.getElementById('ca-c')?.value) || 1890;
+
+    let denom = (B - C);
+    if (denom <= 0) denom = 1150;
+
+    let Gsb = (A / denom).toFixed(3);
+    let Gssd = (B / denom).toFixed(3);
+    let Gsa = (A / (A - C)).toFixed(3);
+    let Sw = (((B - A) / A) * 100).toFixed(2);
+
+    let resBox = document.getElementById('ca-result-box');
+    if (resBox) {
+        resBox.innerHTML = `
+            <div class="result-row">
+                <span class="result-label">1. Berat Jenis Curah (Bulk Specific Gravity):</span>
+                <span class="result-val">${Gsb}</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">2. Berat Jenis SSD Kerikil:</span>
+                <span class="result-val">${Gssd}</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">3. Berat Jenis Semu (Apparent):</span>
+                <span class="result-val">${Gsa}</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">4. Penyerapan Air (Water Absorption):</span>
+                <span class="result-val status-pass">${Sw}%</span>
+            </div>
+            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
+                <span class="result-label">Evaluasi SNI 1969:2016:</span>
+                <span class="result-val status-pass">✓ MEMENUHI SYARAT BETON STRUKTURAL</span>
+            </div>
+        `;
+    }
+}
+
+/* ==========================================================================
+   MODULE 4 WORKSPACE: STEEL TENSILE TESTING (SNI 2052 / ASTM A615)
+   ========================================================================== */
+function renderSteelWorkspace(subViewId) {
+    if (!canvasView || !panelView) return;
+    canvasView.classList.add('scroll-mode');
+
+    canvasView.innerHTML = `
+        <div class="module-workspace-container">
+            <div class="module-header-banner">
+                <div>
+                    <div class="module-header-title">
+                        <span style="color:#f43f5e;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="11" y="3" width="10" height="26" rx="2"></rect><line x1="11" y1="8" x2="21" y2="11"></line><line x1="11" y1="14" x2="21" y2="17"></line></svg></span>
+                        UJI TARIK BAJA TULANGAN BETON SIRIP (DEFORMED REBAR)
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                        Verifikasi Kuat Leleh (fy), Kuat Tarik (fu), Rasio Gempa (fu/fy &ge; 1.25), dan Regangan Patah (&delta;5).
+                    </div>
+                </div>
+                <span class="module-header-code">SNI 2052:2017 / ASTM A615</span>
+            </div>
+
+            <div class="testing-calc-grid">
+                <div class="testing-calc-card">
+                    <div class="testing-calc-header">
+                        <span>PARAMETER BENDA UJI BAJA</span>
+                        <span class="telemetry-chip live-chip"><span class="dot-live"></span>TENSILE MACHINE</span>
+                    </div>
+                    <div class="testing-input-group">
+                        <label>Mutu Baja Tulangan</label>
+                        <select class="custom-select" id="st-grade" onchange="calcSteelTensile()">
+                            <option value="420" selected>BJTS 420B (Ulir / Deformed - fy 420 MPa)</option>
+                            <option value="280">BJTP 280 (Polos / Plain - fy 280 MPa)</option>
+                            <option value="520">BJTS 520 (High-Strength Deformed - fy 520 MPa)</option>
+                        </select>
+                    </div>
+                    <div class="testing-input-group">
+                        <label>Diameter Nominal Tulangan</label>
+                        <select class="custom-select" id="st-diam" onchange="calcSteelTensile()">
+                            <option value="10">D10 (Luas: 78.5 mm²)</option>
+                            <option value="12">D12 (Luas: 113.1 mm²)</option>
+                            <option value="16" selected>D16 (Luas: 201.1 mm²)</option>
+                            <option value="19">D19 (Luas: 283.5 mm²)</option>
+                            <option value="25">D25 (Luas: 490.9 mm²)</option>
+                        </select>
+                    </div>
+                    <div class="testing-input-group">
+                        <label>Gaya Leleh Terukur / Yield Load (Py)</label>
+                        <div class="testing-input-row">
+                            <input type="number" id="st-py" value="92.5" step="0.5" oninput="calcSteelTensile()">
+                            <span class="testing-input-unit">kN</span>
+                        </div>
+                    </div>
+                    <div class="testing-input-group">
+                        <label>Gaya Tarik Maksimum / Ultimate Load (Pu)</label>
+                        <div class="testing-input-row">
+                            <input type="number" id="st-pu" value="122.8" step="0.5" oninput="calcSteelTensile()">
+                            <span class="testing-input-unit">kN</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testing-calc-card">
+                    <div class="testing-calc-header">
+                        <span>HASIL KUAT TARIK &amp; DAKTILITAS GEMPA</span>
+                        <span class="telemetry-chip" style="color:var(--accent-emerald);">ISO 6935-2</span>
+                    </div>
+                    <div class="testing-result-box" id="st-result-box">
+                        <!-- Populated dynamically -->
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                        *Pasal 18 SNI 2847:2019 mensyaratkan rasio fu/fy &ge; 1.25 untuk struktur penahan beban gempa (SRPMK).
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stress-Strain Schematic SVG Canvas -->
+            <div class="testing-calc-card" style="width: 100%;">
+                <div class="testing-calc-header">
+                    <span>KURVA TEGANGAN - REGANGAN (STRESS-STRAIN &sigma; - &epsilon;)</span>
+                    <span class="telemetry-chip live-chip"><span class="dot-live"></span>REAL-TIME TELEMETRY</span>
+                </div>
+                <div style="position: relative; width: 100%; height: 200px; background: rgba(8, 16, 36, 0.95); border: 1px solid var(--border-dim); border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                    <svg width="100%" height="100%" viewBox="0 0 500 180" preserveAspectRatio="none" style="padding: 10px;">
+                        <!-- Axes -->
+                        <line x1="40" y1="150" x2="480" y2="150" stroke="#475569" stroke-width="1.5"/>
+                        <line x1="40" y1="20" x2="40" y2="150" stroke="#475569" stroke-width="1.5"/>
+                        <!-- Grid Lines -->
+                        <line x1="40" y1="100" x2="480" y2="100" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
+                        <line x1="40" y1="50" x2="480" y2="50" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
+                        <!-- Stress-Strain Curve -->
+                        <path d="M 40 150 L 120 70 L 170 72 Q 280 25 360 30 Q 420 35 440 65" fill="none" stroke="var(--cyan-neon)" stroke-width="3" filter="drop-shadow(0 0 6px rgba(0,240,255,0.6))"/>
+                        <!-- Feature Points -->
+                        <circle cx="120" cy="70" r="4" fill="#fbbf24"/>
+                        <text x="125" y="65" fill="#fbbf24" font-size="10" font-family="monospace">Batas Leleh fy</text>
+                        <circle cx="360" cy="30" r="4" fill="#f43f5e"/>
+                        <text x="365" y="25" fill="#f43f5e" font-size="10" font-family="monospace">Beban Ultimit fu</text>
+                        <circle cx="440" cy="65" r="4" fill="#10b981"/>
+                        <text x="390" y="85" fill="#10b981" font-size="10" font-family="monospace">Patah (Rupture)</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    `;
+    calcSteelTensile();
+
+    // Right Panel
+    panelView.innerHTML = `
+        <div class="panel-card">
+            <div class="card-title">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    STANDAR BAJA TULANGAN
+                </span>
+            </div>
+            <div class="spec-item">Standar Acuan: <span style="color:var(--cyan-neon); font-weight:800;">SNI 2052:2017</span></div>
+            <div class="spec-item">Kuat Luluh Desain: <span style="color:var(--accent-gold); font-weight:800;">fy = 420 MPa</span></div>
+            <div class="spec-item">Rasio Daktilitas Gempa: <span style="color:var(--accent-emerald); font-weight:800;">fu / fy &ge; 1.25</span></div>
+            <div class="spec-item">Elongasi Minimum (&delta;5): <span style="color:var(--text-pure); font-weight:800;">&ge; 12.0%</span></div>
+            <div class="spec-item">Uji Lengkung Mandrel 180°: <span>Radius 3d - 5d (Tanpa Retak)</span></div>
+        </div>
+
+        <button class="btn-action" onclick="activateModule('concrete')" style="background: rgba(18, 33, 66, 0.95); border: 1px solid var(--border-bright);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            Kembali ke Workspace Beton
+        </button>
+    `;
+}
+
+function calcSteelTensile() {
+    let d = parseFloat(document.getElementById('st-diam')?.value) || 16;
+    let Py_kN = parseFloat(document.getElementById('st-py')?.value) || 92.5;
+    let Pu_kN = parseFloat(document.getElementById('st-pu')?.value) || 122.8;
+
+    let A = Math.PI * Math.pow(d, 2) / 4;
+    let fy = (Py_kN * 1000 / A).toFixed(1);
+    let fu = (Pu_kN * 1000 / A).toFixed(1);
+    let ratio = (parseFloat(fu) / parseFloat(fy)).toFixed(2);
+    let isRatioPass = (parseFloat(ratio) >= 1.25);
+
+    let resBox = document.getElementById('st-result-box');
+    if (resBox) {
+        resBox.innerHTML = `
+            <div class="result-row">
+                <span class="result-label">Luas Penampang Nominal (A):</span>
+                <span class="result-val">${A.toFixed(1)} mm²</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">1. Kuat Luluh Aktual (fy):</span>
+                <span class="result-val" style="color:var(--accent-gold);">${fy} MPa</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">2. Kuat Tarik Aktual (fu):</span>
+                <span class="result-val" style="color:#f43f5e;">${fu} MPa</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">3. Rasio Kekuatan Tarik (fu / fy):</span>
+                <span class="result-val ${isRatioPass ? 'status-pass' : 'status-fail'}">${ratio} (Syarat &ge; 1.25)</span>
+            </div>
+            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
+                <span class="result-label">Kepatuhan Ketahanan Gempa SNI 2847:</span>
+                <span class="result-val ${isRatioPass ? 'status-pass' : 'status-fail'}">${isRatioPass ? '✓ MEMENUHI SYARAT DAKTILITAS' : '✗ DI BAWAH RASIO GEMPA'}</span>
+            </div>
+        `;
+    }
+}
+
+// Auto-initialize module switcher once DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    renderModuleCardStack();
+});

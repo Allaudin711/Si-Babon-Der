@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     
     <!-- Custom Engineering Stylesheet -->
-    <link rel="stylesheet" href="static/style.css?v=20261120_01">
+    <link rel="stylesheet" href="static/style.css?v=20261120_02">
 </head>
 <body>
 
@@ -141,44 +141,73 @@
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <nav class="sidebar">
-            <div class="sidebar-heading">WORKSPACE NAVIGATION</div>
+            <div class="sidebar-heading" id="sidebar-module-heading">WORKSPACE NAVIGATION</div>
 
-            <button class="btn-nav active" onclick="switchTab(this, 'create')">
-                <img src="static/icons/menu-create.svg" alt="Create Element Logo" class="nav-btn-logo nav-logo-create">
-                <span>Create Element</span>
-            </button>
-            <button class="btn-nav" onclick="switchTab(this, 'loss')">
-                <img src="static/icons/menu-loss.svg" alt="Material Loss Logo" class="nav-btn-logo nav-logo-loss">
-                <span>Material Loss</span>
-            </button>
-            <button class="btn-nav" onclick="switchTab(this, 'pengujian')">
-                <img src="static/icons/menu-pengujian.svg" alt="Lab Testing Logo" class="nav-btn-logo nav-logo-pengujian">
-                <span>Lab Testing</span>
-                <span class="nav-badge">UTM</span>
-            </button>
-            <button class="btn-nav" onclick="switchTab(this, 'analisis')">
-                <img src="static/icons/menu-analisis.svg" alt="Analysis Report Logo" class="nav-btn-logo nav-logo-analisis">
-                <span>Analysis Report</span>
-            </button>
-            <button class="btn-nav" onclick="switchTab(this, 'rab')">
-                <img src="static/icons/menu-rab.svg" alt="Cost &amp; BoQ Logo" class="nav-btn-logo nav-logo-rab">
-                <span>Cost &amp; BoQ</span>
-            </button>
-            <button class="btn-nav" onclick="switchTab(this, 'karbon')">
-                <img src="static/icons/menu-karbon.svg" alt="Carbon Footprint Logo" class="nav-btn-logo nav-logo-karbon">
-                <span>Carbon Footprint</span>
-                <span class="nav-badge" style="color:var(--accent-emerald); border-color:var(--accent-emerald);">ECO</span>
-            </button>
-            <button class="btn-nav" onclick="switchTab(this, 'ekspor')">
-                <img src="static/icons/menu-ekspor.svg" alt="Export Report Logo" class="nav-btn-logo nav-logo-ekspor">
-                <span>Export Report</span>
-            </button>
-            <!-- REPOSITIONED: Structural Battle is below Export Report -->
-            <button class="btn-nav" onclick="switchTab(this, 'pertempuran')">
-                <img src="static/logo-favicon.jpg" alt="Battle Logo" class="nav-btn-logo nav-logo-battle" onerror="this.onerror=null; this.src='static/logo-favicon.jpeg.jpeg';">
-                <span>Structural Battle</span>
-                <span class="nav-badge">BATTLE</span>
-            </button>
+            <div class="sidebar-nav-container" id="sidebar-nav-container">
+                <button class="btn-nav active" onclick="switchTab(this, 'create')">
+                    <img src="static/icons/menu-create.svg" alt="Create Element Logo" class="nav-btn-logo nav-logo-create">
+                    <span>Create Element</span>
+                </button>
+                <button class="btn-nav" onclick="switchTab(this, 'loss')">
+                    <img src="static/icons/menu-loss.svg" alt="Material Loss Logo" class="nav-btn-logo nav-logo-loss">
+                    <span>Material Loss</span>
+                </button>
+                <button class="btn-nav" onclick="switchTab(this, 'pengujian')">
+                    <img src="static/icons/menu-pengujian.svg" alt="Lab Testing Logo" class="nav-btn-logo nav-logo-pengujian">
+                    <span>Lab Testing</span>
+                    <span class="nav-badge">UTM</span>
+                </button>
+                <button class="btn-nav" onclick="switchTab(this, 'analisis')">
+                    <img src="static/icons/menu-analisis.svg" alt="Analysis Report Logo" class="nav-btn-logo nav-logo-analisis">
+                    <span>Analysis Report</span>
+                </button>
+                <button class="btn-nav" onclick="switchTab(this, 'rab')">
+                    <img src="static/icons/menu-rab.svg" alt="Cost &amp; BoQ Logo" class="nav-btn-logo nav-logo-rab">
+                    <span>Cost &amp; BoQ</span>
+                </button>
+                <button class="btn-nav" onclick="switchTab(this, 'karbon')">
+                    <img src="static/icons/menu-karbon.svg" alt="Carbon Footprint Logo" class="nav-btn-logo nav-logo-karbon">
+                    <span>Carbon Footprint</span>
+                    <span class="nav-badge" style="color:var(--accent-emerald); border-color:var(--accent-emerald);">ECO</span>
+                </button>
+                <button class="btn-nav" onclick="switchTab(this, 'ekspor')">
+                    <img src="static/icons/menu-ekspor.svg" alt="Export Report Logo" class="nav-btn-logo nav-logo-ekspor">
+                    <span>Export Report</span>
+                </button>
+                <!-- REPOSITIONED: Structural Battle is below Export Report -->
+                <button class="btn-nav" onclick="switchTab(this, 'pertempuran')">
+                    <img src="static/logo-favicon.jpg" alt="Battle Logo" class="nav-btn-logo nav-logo-battle" onerror="this.onerror=null; this.src='static/logo-favicon.jpeg.jpeg';">
+                    <span>Structural Battle</span>
+                    <span class="nav-badge">BATTLE</span>
+                </button>
+            </div>
+
+            <!-- CHAPTER / MODULE TESTING SWITCHER (STACKED CARDS WIDGET) -->
+            <div class="sidebar-module-section" id="sidebar-module-section">
+                <div class="module-switcher-header">
+                    <div class="module-switcher-title">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-neon)" stroke-width="2.2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                        <span>TESTING CHAPTERS</span>
+                    </div>
+                    <span class="module-switcher-badge">SNI / ASTM</span>
+                </div>
+                
+                <div class="module-stack-viewport" id="module-stack-viewport">
+                    <!-- Dynamic Stack Cards Rendered by script.js -->
+                </div>
+
+                <div class="stack-controls-bar">
+                    <button class="stack-cycle-btn" onclick="cycleModuleStack(-1)" title="Previous Chapter">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </button>
+                    <div class="stack-dots-indicator" id="stack-dots">
+                        <!-- 4 indicator dots -->
+                    </div>
+                    <button class="stack-cycle-btn" onclick="cycleModuleStack(1)" title="Next Chapter">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </button>
+                </div>
+            </div>
         </nav>
 
         <!-- Main Workspace (Center Canvas 3D & Right Control Panel) -->
@@ -199,6 +228,6 @@
     <div id="hud-toast-container"></div>
 
     <!-- Core Simulation Logic -->
-    <script src="static/script.js?v=20261120_01"></script>
+    <script src="static/script.js?v=20261120_02"></script>
 </body>
 </html>

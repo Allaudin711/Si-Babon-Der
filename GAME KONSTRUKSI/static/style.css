@@ -3544,3 +3544,579 @@ option {
     pointer-events: none;
     transition: opacity 0.4s ease;
 }
+
+/* ==========================================================================
+   CHAPTER / MODULE TESTING SWITCHER (STACKED-CARD WIDGET)
+   ========================================================================== */
+.sidebar::-webkit-scrollbar {
+    width: 5px;
+}
+.sidebar::-webkit-scrollbar-track {
+    background: rgba(10, 18, 38, 0.5);
+}
+.sidebar::-webkit-scrollbar-thumb {
+    background: rgba(56, 189, 248, 0.25);
+    border-radius: 4px;
+}
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: var(--cyan-neon);
+}
+
+.sidebar-nav-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+.sidebar-module-section {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(56, 189, 248, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    user-select: none;
+}
+
+.module-switcher-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+}
+
+.module-switcher-title {
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--cyan-neon);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-heading);
+}
+
+.module-switcher-badge {
+    font-size: 8.5px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(0, 240, 255, 0.12);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    color: var(--cyan-neon);
+    letter-spacing: 0.5px;
+}
+
+/* 3D Stack Viewport */
+.module-stack-viewport {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    perspective: 1000px;
+    margin-bottom: 2px;
+}
+
+/* Individual Card in Stack */
+.module-stack-card {
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    background: linear-gradient(145deg, rgba(16, 29, 59, 0.96) 0%, rgba(9, 17, 36, 0.98) 100%);
+    border: 1px solid var(--border-dim);
+    padding: 10px 11px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    transform-origin: center bottom;
+    transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1), 
+                opacity 0.35s ease, 
+                box-shadow 0.35s ease, 
+                filter 0.35s ease, 
+                border-color 0.3s ease;
+    overflow: hidden;
+}
+
+/* Cyber Blueprint CAD Grid inside Card */
+.module-stack-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+        linear-gradient(rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+    background-size: 11px 11px;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+/* Edge click indicator strip on cards */
+.card-edge-strip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--card-theme, var(--cyan-neon));
+    opacity: 0.8;
+}
+
+/* Layer Depths for the 4 Cards */
+.module-stack-card.layer-0 {
+    transform: translateY(0px) scale(1) translateZ(0px);
+    z-index: 10;
+    opacity: 1;
+    filter: brightness(1);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.65), 0 0 16px rgba(0, 240, 255, 0.15);
+}
+
+.module-stack-card.layer-1 {
+    transform: translateY(12px) scale(0.94) translateZ(-25px);
+    z-index: 8;
+    opacity: 0.85;
+    filter: brightness(0.82);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+.module-stack-card.layer-2 {
+    transform: translateY(24px) scale(0.88) translateZ(-50px);
+    z-index: 6;
+    opacity: 0.62;
+    filter: brightness(0.68);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.module-stack-card.layer-3 {
+    transform: translateY(34px) scale(0.82) translateZ(-75px);
+    z-index: 4;
+    opacity: 0.40;
+    filter: brightness(0.55);
+}
+
+/* Peeking Card Hover States */
+.module-stack-card.layer-1:hover {
+    transform: translateY(6px) scale(0.96) translateZ(-15px);
+    filter: brightness(0.95);
+    opacity: 0.95;
+    border-color: rgba(0, 240, 255, 0.5);
+}
+
+.module-stack-card.layer-2:hover {
+    transform: translateY(18px) scale(0.91) translateZ(-35px);
+    filter: brightness(0.85);
+    opacity: 0.8;
+}
+
+.module-stack-card.layer-3:hover {
+    transform: translateY(28px) scale(0.85) translateZ(-55px);
+    filter: brightness(0.7);
+    opacity: 0.6;
+}
+
+/* Active Workspace Card Accent */
+.module-stack-card.is-active-workspace {
+    border-color: var(--card-theme, var(--cyan-neon));
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 240, 255, 0.25);
+}
+
+/* Card Header */
+.card-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 6px;
+    position: relative;
+    z-index: 2;
+}
+
+.card-title-group {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.card-cad-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: rgba(14, 25, 52, 0.9);
+    border: 1px solid var(--border-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.card-title-text {
+    font-size: 10.5px;
+    font-weight: 800;
+    color: var(--text-pure);
+    letter-spacing: 0.3px;
+    line-height: 1.15;
+    font-family: var(--font-heading);
+}
+
+.card-sub-text {
+    font-size: 9px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin-top: 1px;
+}
+
+.card-sni-chip {
+    font-size: 8px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    padding: 2px 4px;
+    border-radius: 4px;
+    background: rgba(18, 33, 66, 0.9);
+    border: 1px solid var(--border-dim);
+    color: var(--card-theme, var(--cyan-neon));
+    white-space: nowrap;
+}
+
+/* Card Middle Summary */
+.card-summary-text {
+    font-size: 9px;
+    color: var(--text-secondary);
+    line-height: 1.3;
+    position: relative;
+    z-index: 2;
+    margin: 4px 0 6px 0;
+}
+
+/* Center Interactive Target on Front Card */
+.card-center-target {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+}
+
+.btn-activate-workspace {
+    width: 100%;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    font-family: var(--font-heading);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.18) 0%, rgba(37, 99, 235, 0.3) 100%);
+    border: 1px solid var(--card-theme, var(--cyan-neon));
+    color: var(--card-theme, var(--cyan-neon));
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+    transition: all var(--transition-fast);
+}
+
+.btn-activate-workspace:hover {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.3) 0%, rgba(37, 99, 235, 0.45) 100%);
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.badge-active-indicator {
+    width: 100%;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.45);
+    color: var(--accent-emerald);
+}
+
+/* Stack Controls Bar */
+.stack-controls-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+    margin-top: 2px;
+}
+
+.stack-cycle-btn {
+    background: rgba(18, 33, 66, 0.8);
+    border: 1px solid var(--border-dim);
+    color: var(--text-secondary);
+    border-radius: 4px;
+    width: 24px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.stack-cycle-btn:hover {
+    background: rgba(0, 240, 255, 0.15);
+    border-color: var(--cyan-neon);
+    color: var(--cyan-neon);
+}
+
+.stack-dots-indicator {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.stack-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(148, 163, 184, 0.3);
+    cursor: pointer;
+    transition: all 0.25s;
+}
+
+.stack-dot.active {
+    background: var(--cyan-neon);
+    box-shadow: 0 0 6px var(--cyan-neon);
+    transform: scale(1.2);
+}
+
+/* ==========================================================================
+   MODULE-SPECIFIC WORKSPACE STYLES (FINE AGGREGATE, COARSE, STEEL)
+   ========================================================================== */
+.module-workspace-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.module-header-banner {
+    background: linear-gradient(135deg, rgba(16, 29, 59, 0.95) 0%, rgba(10, 18, 38, 0.95) 100%);
+    border: 1px solid var(--border-bright);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.module-header-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-pure);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-heading);
+}
+
+.module-header-code {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--cyan-neon);
+    background: rgba(0, 240, 255, 0.1);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+}
+
+.btn-back-to-concrete {
+    background: rgba(18, 33, 66, 0.9);
+    border: 1px solid var(--border-dim);
+    color: var(--blue-neon);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.btn-back-to-concrete:hover {
+    background: rgba(56, 189, 248, 0.15);
+    border-color: var(--blue-neon);
+    color: #fff;
+}
+
+/* Interactive Testing Form Grid */
+.testing-calc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.testing-calc-card {
+    background: rgba(14, 25, 52, 0.92);
+    border: 1px solid var(--border-dim);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.testing-calc-header {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--text-pure);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-dim);
+    padding-bottom: 8px;
+    font-family: var(--font-heading);
+}
+
+.testing-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.testing-input-group label {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.testing-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.testing-input-row input {
+    flex: 1;
+    background: rgba(8, 16, 36, 0.85);
+    border: 1px solid var(--border-dim);
+    color: var(--text-pure);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+}
+
+.testing-input-row input:focus {
+    outline: none;
+    border-color: var(--cyan-neon);
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
+
+.testing-input-unit {
+    font-size: 11px;
+    color: var(--cyan-neon);
+    font-family: var(--font-mono);
+    min-width: 32px;
+}
+
+.testing-result-box {
+    background: rgba(8, 16, 36, 0.85);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11.5px;
+}
+
+.result-label {
+    color: var(--text-secondary);
+}
+
+.result-val {
+    font-family: var(--font-mono);
+    font-weight: 800;
+    color: var(--cyan-neon);
+}
+
+.result-val.status-pass {
+    color: var(--accent-emerald);
+}
+
+.result-val.status-fail {
+    color: var(--accent-crimson);
+}
+
+/* Sieve Table Styling */
+.sieve-table-container {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border-dim);
+}
+
+.sieve-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    font-family: var(--font-mono);
+}
+
+.sieve-table th {
+    background: rgba(18, 33, 66, 0.95);
+    color: var(--cyan-neon);
+    padding: 7px 6px;
+    text-align: center;
+    border: 1px solid var(--border-dim);
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.sieve-table td {
+    padding: 5px 6px;
+    border: 1px solid var(--border-dim);
+    text-align: center;
+    color: var(--text-pure);
+}
+
+.sieve-table input {
+    width: 55px;
+    padding: 3px 5px;
+    border-radius: 4px;
+    background: rgba(8, 16, 36, 0.85);
+    border: 1px solid var(--border-dim);
+    color: var(--text-pure);
+    font-family: var(--font-mono);
+    text-align: right;
+    font-size: 11px;
+}
+
+/* Rebar Tensile Stress-Strain SVG Box */
+.stress-strain-wrapper {
+    background: rgba(8, 16, 36, 0.85);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
