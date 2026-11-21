@@ -1505,7 +1505,7 @@ function updateBoxDimensions() {
     }
 }
 
-function generateCylinderMarkup(diamCm, heightCm) {
+function generateCylinderMarkup(diamCm, heightCm, isReinforced = false) {
     let dVal = Math.max(5, parseFloat(diamCm) || 15);
     let hVal = Math.max(5, parseFloat(heightCm) || 30);
     let scaleWidth = calculateDynamicScale(dVal);
@@ -1521,17 +1521,19 @@ function generateCylinderMarkup(diamCm, heightCm) {
         facetsHtml += `<div class="cyl-facet" style="width: ${facetWidth}px; margin-left: -${(facetWidth/2).toFixed(1)}px; transform: rotateY(${angleDeg}deg) translateZ(${radius.toFixed(1)}px); background: hsl(218, 40%, ${shade}%);"></div>`;
     }
 
-    // Rebars and spiral tie rings for X-Ray
+    // Rebars and spiral tie rings for X-Ray (only when reinforced)
     let cageHtml = '';
-    for (let s = 15; s <= 85; s += 22) {
-        cageHtml += `<div class="cyl-spiral-tie" style="top: ${s}%; width: ${(scaleWidth * 0.72).toFixed(1)}px; height: ${(scaleWidth * 0.72).toFixed(1)}px; margin-left: -${(scaleWidth * 0.36).toFixed(1)}px; margin-top: -${(scaleWidth * 0.36).toFixed(1)}px; transform: rotateX(90deg);"></div>`;
+    if (isReinforced) {
+        for (let s = 15; s <= 85; s += 22) {
+            cageHtml += `<div class="cyl-spiral-tie" style="top: ${s}%; width: ${(scaleWidth * 0.72).toFixed(1)}px; height: ${(scaleWidth * 0.72).toFixed(1)}px; margin-left: -${(scaleWidth * 0.36).toFixed(1)}px; margin-top: -${(scaleWidth * 0.36).toFixed(1)}px; transform: rotateX(90deg);"></div>`;
+        }
+        cageHtml += `
+            <div class="cyl-rebar-vertical" style="left: calc(50% + ${(scaleWidth * 0.32).toFixed(1)}px); transform: translateZ(0);"></div>
+            <div class="cyl-rebar-vertical" style="left: calc(50% - ${(scaleWidth * 0.32).toFixed(1)}px); transform: translateZ(0);"></div>
+            <div class="cyl-rebar-vertical" style="left: 50%; transform: translateZ(${(scaleWidth * 0.32).toFixed(1)}px);"></div>
+            <div class="cyl-rebar-vertical" style="left: 50%; transform: translateZ(-${(scaleWidth * 0.32).toFixed(1)}px);"></div>
+        `;
     }
-    cageHtml += `
-        <div class="cyl-rebar-vertical" style="left: calc(50% + ${(scaleWidth * 0.32).toFixed(1)}px); transform: translateZ(0);"></div>
-        <div class="cyl-rebar-vertical" style="left: calc(50% - ${(scaleWidth * 0.32).toFixed(1)}px); transform: translateZ(0);"></div>
-        <div class="cyl-rebar-vertical" style="left: 50%; transform: translateZ(${(scaleWidth * 0.32).toFixed(1)}px);"></div>
-        <div class="cyl-rebar-vertical" style="left: 50%; transform: translateZ(-${(scaleWidth * 0.32).toFixed(1)}px);"></div>
-    `;
 
     return `
         <div id="cylinder-element" class="cylinder-realistic ${currentRenderMode}-mode" style="width: ${scaleWidth}px; height: ${scaleHeight}px; --cyl-diam: ${scaleWidth}px; --cyl-height: ${scaleHeight}px;">
@@ -1560,7 +1562,8 @@ function updateCylinderDimensions() {
 
         const scene = document.querySelector('.scene-3d');
         if (scene) {
-            scene.innerHTML = generateCylinderMarkup(elementData.diameter, elementData.tinggiSilinder);
+            let isReinf = (elementData.jumlahTulangan > 0 && elementData.tulanganDiameter > 0);
+            scene.innerHTML = generateCylinderMarkup(elementData.diameter, elementData.tinggiSilinder, isReinf);
         }
     }
 }
@@ -1768,7 +1771,8 @@ function renderCreate() {
     let isSilinder = selectedTipe === 'Cylinder';
     let calcInitial = calculateAdvancedStrength(elementData);
 
-    let elementMarkup = isSilinder ? generateCylinderMarkup(elementData.diameter || 15, elementData.tinggiSilinder || 30) : `
+    let isCreatePlain = (elementData.jumlahTulangan === 0 || elementData.tulanganDiameter <= 0);
+    let elementMarkup = isSilinder ? generateCylinderMarkup(elementData.diameter || 15, elementData.tinggiSilinder || 30, !isCreatePlain) : `
         <div class="cube-3d ${currentRenderMode}-mode" id="cube-element">
             <div class="face front"></div>
             <div class="face back"></div>
@@ -1800,7 +1804,7 @@ function renderCreate() {
         <div class="viewport-hud-bottom">
             <div class="live-render-tag">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg> 
-                <span>CAD VIEWPORT XYZ | Mode: <strong>${getElementDisplayTitle(elementData.tipe)}</strong> | Rebar: <strong>${isSilinder ? 'Plain Specimen / Spiral Tie' : (elementData.jumlahTulangan || 4) + ' Bars'}</strong></span>
+                <span>CAD VIEWPORT XYZ | Mode: <strong>${getElementDisplayTitle(elementData.tipe)}</strong> | Rebar: <strong>${(elementData.jumlahTulangan === 0 || elementData.tulanganDiameter <= 0) ? '0 Bars / Plain Concrete (No Rebar)' : (elementData.jumlahTulangan !== undefined ? elementData.jumlahTulangan : 4) + ' Bars'}</strong></span>
             </div>
 
             <div class="viewport-controls-group">
@@ -2095,9 +2099,15 @@ function renderLossMaterial() {
     let isSilinder = getNormalizedTipe(selected.tipe) === 'Cylinder';
     let calc = calculateAdvancedStrength(selected);
 
+    let rebarCount = (selected.jumlahTulangan !== undefined && !isNaN(parseInt(selected.jumlahTulangan, 10))) 
+        ? parseInt(selected.jumlahTulangan, 10) 
+        : 4;
+    let rebarDiam = parseFloat(selected.tulanganDiameter) || 0;
+    let isPlainConcrete = (rebarCount === 0 || rebarDiam <= 0);
+
     let elementMarkup = '';
     if (isSilinder) {
-        elementMarkup = generateCylinderMarkup(selected.diameter, selected.tinggiSilinder);
+        elementMarkup = generateCylinderMarkup(selected.diameter, selected.tinggiSilinder, !isPlainConcrete);
     } else {
         let scaleW = calculateDynamicScale(selected.panjang);
         let scaleD = calculateDynamicScale(selected.lebar);
@@ -2111,7 +2121,7 @@ function renderLossMaterial() {
                 <div class="face top" style="width: ${scaleW}px; height: ${scaleD}px; top: ${scaleH/2 - scaleD/2}px;">H: ${selected.tinggi}cm</div>
                 <div class="face bottom" style="width: ${scaleW}px; height: ${scaleD}px; top: ${scaleH/2 - scaleD/2}px;"></div>
                 <div class="rebar-cage-3d">
-                    ${generateRebarsMarkup(selected.jumlahTulangan || 4, selected.tipe)}
+                    ${isPlainConcrete ? '' : generateRebarsMarkup(rebarCount, selected.tipe)}
                 </div>
             </div>
         `;
@@ -2135,7 +2145,7 @@ function renderLossMaterial() {
         <div class="viewport-hud-bottom">
             <div class="live-render-tag">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><path d="m21.12 6.4-6.05-4.06a2 2 0 0 0-2.17-.05L2.95 6.27a2 2 0 0 0-.95 1.7v7.57a2 2 0 0 0 .94 1.7l6.1 4.09a2 2 0 0 0 2.18 0l6.09-4.09a2 2 0 0 0 .94-1.7V7.97a2 2 0 0 0-.95-1.7Z"></path></svg>
-                <span>ITEM INSPECTION [${activeSelectedIndex+1}] | QTY: <strong>${selected.jumlah}</strong> | REBAR: <strong>${selected.jumlahTulangan || 4}D${selected.tulanganDiameter}</strong> | STRENGTH f'c: <strong>${calc.fcFinal} MPa</strong></span>
+                <span>ITEM INSPECTION [${activeSelectedIndex+1}] | QTY: <strong>${selected.jumlah}</strong> | REBAR: <strong>${isPlainConcrete ? '0 Bars / Plain Concrete (No Rebar)' : `${rebarCount}D${rebarDiam}`}</strong> | STRENGTH f'c: <strong>${calc.fcFinal} MPa</strong></span>
             </div>
 
             <div class="viewport-controls-group">
@@ -2172,7 +2182,8 @@ function renderLossMaterial() {
         </div>
     `;
 
-    let totalBeratSatuan = selected.semen + selected.pasir + selected.kerikil + selected.air + calc.totalBajaKg;
+    let steelMass = isPlainConcrete ? 0 : (calc.totalBajaKg || 0);
+    let totalBeratSatuan = selected.semen + selected.pasir + selected.kerikil + selected.air + steelMass;
     let totalBeratSemua = totalBeratSatuan * selected.jumlah;
     let beratHilang = (totalBeratSemua * 0.05).toFixed(1);
 
@@ -2180,10 +2191,14 @@ function renderLossMaterial() {
     storedConcreteList.forEach((item, idx) => {
         let activeClass = idx === activeSelectedIndex ? 'border-color: var(--cyan-neon); background: rgba(30, 53, 106, 0.95);' : '';
         let itemCalc = calculateAdvancedStrength(item);
+        let itemRebarCount = (item.jumlahTulangan !== undefined && !isNaN(parseInt(item.jumlahTulangan, 10))) ? parseInt(item.jumlahTulangan, 10) : 4;
+        let itemRebarDiam = parseFloat(item.tulanganDiameter) || 0;
+        let itemIsPlain = (itemRebarCount === 0 || itemRebarDiam <= 0);
+        let itemRebarLabel = itemIsPlain ? '0 Bars / Plain Concrete (No Rebar)' : `${itemRebarCount}D${itemRebarDiam}`;
         listHtml += `
             <div class="stored-item-card" style="${activeClass}" onclick="selectStoredItem(${idx})">
                 <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 12px; color: var(--cyan-neon); margin-bottom: 4px;">
-                    <span>[#${idx+1}] ${item.tipe} (${item.jumlahTulangan || 4}D${item.tulanganDiameter})</span>
+                    <span>[#${idx+1}] ${item.tipe} (${itemRebarLabel})</span>
                     <span style="background: var(--blue-primary); color: #fff; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-family: var(--font-mono);">Qty: ${item.jumlah}</span>
                 </div>
                 <div style="font-size: 11px; color: var(--text-secondary); display:flex; justify-content:space-between;">
@@ -2211,10 +2226,10 @@ function renderLossMaterial() {
             <div class="spec-item">Water-Cement Ratio (w/c - M): <span>${calc.wc}</span></div>
             <div class="spec-item">Abrams Compressive Strength (f'c): <span>${calc.fcAbrams} MPa</span></div>
             <div class="spec-item">ACI Curing Factor (${selected.umurCuring || 7} Days): <span style="color:var(--accent-emerald);">Active</span></div>
-            <div class="spec-item">Main Longitudinal Rebars: <span style="color:var(--accent-gold); font-weight:800;">${selected.jumlahTulangan || 4} Bars (D${selected.tulanganDiameter} mm)</span></div>
-            <div class="spec-item">Main Rebar Steel Area (As - P): <span>${calc.As} cm²</span></div>
-            <div class="spec-item">Estimasi Steel Rebar Mass: <span>${calc.totalBajaKg} kg</span></div>
-            <div class="spec-item">Nominal Moment Capacity (Mn): <span>${calc.Mn} kNm</span></div>
+            <div class="spec-item">Main Longitudinal Rebars: <span style="color:var(--accent-gold); font-weight:800;">${isPlainConcrete ? '0 Bars / Plain Concrete (No Rebar)' : `${rebarCount} Bars (D${rebarDiam} mm)`}</span></div>
+            <div class="spec-item">Main Rebar Steel Area (As - P): <span>${isPlainConcrete ? '0.00 cm² (Plain Concrete)' : `${calc.As} cm²`}</span></div>
+            <div class="spec-item">Estimasi Steel Rebar Mass: <span>${isPlainConcrete ? '0 kg (No Rebar)' : `${calc.totalBajaKg} kg`}</span></div>
+            <div class="spec-item">Nominal Moment Capacity (Mn): <span>${isPlainConcrete ? '0.0 kNm (Unreinforced)' : `${calc.Mn} kNm`}</span></div>
             <div class="spec-item" style="border-top: 1px solid var(--border-dim); margin-top: 8px; padding-top: 8px;">
                 Final Structural Strength (f'c): <span style="color: var(--accent-emerald); font-size: 14px; font-weight: 800;">${calc.fcFinal} MPa</span>
             </div>
@@ -3230,12 +3245,13 @@ function runMulaiUji() {
 
         // Save test record to history archive with dynamic SNI & International metadata
         let meta = getMethodMetadata(testState.selectedMethod, mat, calc);
+        let isMatPlain = (mat.jumlahTulangan === 0 || mat.tulanganDiameter <= 0);
         let newTestRecord = {
             id: testedHistoryList.length + 1,
             method: testState.selectedMethod,
             materialName: mat.tipe,
-            nBars: mat.jumlahTulangan || 4,
-            tulanganDiameter: mat.tulanganDiameter || 12,
+            nBars: isMatPlain ? 0 : (mat.jumlahTulangan !== undefined ? mat.jumlahTulangan : 4),
+            tulanganDiameter: isMatPlain ? 0 : (mat.tulanganDiameter || 12),
             fcFinal: calc.fcFinal,
             Load_kN: calc.Load_kN,
             sni: meta.sni,
@@ -4275,7 +4291,7 @@ function renderAnalisis() {
                 </div>
                 <div class="face bottom" style="width: ${scaleW}px; height: ${scaleD}px; top: ${scaleH/2 - scaleD/2}px;"></div>
                 <div class="rebar-cage-3d">
-                    ${generateRebarsMarkup(currentRecord.nBars || 4)}
+                    ${(currentRecord.nBars === 0 || currentRecord.tulanganDiameter <= 0) ? '' : generateRebarsMarkup(currentRecord.nBars)}
                 </div>
             </div>
         `;
@@ -4474,7 +4490,7 @@ function renderAnalisis() {
                 </span>
             </div>
             <div class="spec-item">Element Type: <span>${currentRecord.materialName}</span></div>
-            <div class="spec-item">Reinforcement Bars: <span style="color:var(--accent-gold); font-weight:800;">${currentRecord.nBars || 4} Bars</span></div>
+            <div class="spec-item">Reinforcement Bars: <span style="color:var(--accent-gold); font-weight:800;">${(currentRecord.nBars === 0 || currentRecord.tulanganDiameter <= 0) ? '0 Bars / Plain Concrete (No Rebar)' : `${currentRecord.nBars || 4} Bars`}</span></div>
             <div class="spec-item">Material Innovation: <span style="color: #c084fc;">${currentRecord.inovasi}</span></div>
             <div class="spec-item">Compressive Strength: <span style="color: var(--accent-emerald); font-weight: 800;">${currentRecord.fcFinal} MPa</span></div>
             <div class="spec-item">Water-Cement Ratio (w/c): <span>${currentRecord.wc}</span></div>
@@ -5246,21 +5262,22 @@ function activateModule(moduleId) {
 const PDF_GUIDE_MAP = {
     'concrete': {
         topicId: 'concrete',
-        title: 'Panduan Pengujian Beton (Concrete Testing Guide)',
-        subtitle: 'Kuat Tekan Silinder, Momen Lentur Balok & Pola Retak',
-        badge: 'SNI 03-1974-2011 / ASTM C39 / SNI 2491:2014',
+        title: 'MODUL OPERASIONAL & SPESIFIKASI TEKNIS - SI BABON DER!',
+        subtitle: 'Simulasi Balok Beton Bertulang & Silinder Uji Laboratorium Interaktif Berbasis Standar SNI 2847:2019 & ASTM International',
+        badge: 'Rev 2.4 (2026) • SNI / ASTM / ACI',
         fileName: 'Panduan_Pengujian_Beton_SNI_ASTM.pdf',
         pdfPath: 'static/pdf/Panduan_Pengujian_Beton_SNI_ASTM.pdf',
-        fileSize: '2.4 MB',
-        dateUpdated: '2026-11-20',
-        standards: ['SNI 03-1974-2011 (Kuat Tekan Silinder)', 'SNI 2491:2014 / ASTM C496 (Tarik Belah)', 'SNI 4431:2011 / ASTM C78 (Kuat Lentur)', 'SNI 2847:2019 (Persyaratan Beton Struktural)'],
-        summary: 'Prosedur lengkap pengujian mutu beton di laboratorium: persiapan benda uji silinder (15x30 cm), perataan permukaan (capping sulfur/pad neoprene), pembebanan kuasi-statik hidrolik UTM laju 0.25 MPa/s, identifikasi 6 tipe pola retak keruntuhan ASTM C39, dan perhitungan kapasitas lentur balok Mn.',
+        fileSize: '320 KB',
+        dateUpdated: 'Rev 2.4 (2026)',
+        standards: ['SNI 03-1974-2011 (Kuat Tekan Silinder)', 'SNI 4431:2011 / ASTM C78 (Kuat Lentur Balok)', 'SNI 2491:2014 / ASTM C496 (Tarik Belah)', 'SNI 7656:2012 (Mix Design)', 'SNI 2847:2019 (Beton Struktural)'],
+        summary: 'Panduan input takaran material, landasan perhitungan mekanika f\'c, fr, fsp, W/C ratio, serta aturan validasi komprehensif untuk uji silinder 150x300 mm dan balok standar 150x150x530 mm pada platform SI BABON DER!.',
         sections: [
-            { title: '1. Lingkup & Standar Acuan', desc: 'Metode uji kuat tekan (ASTM C39 / SNI 03-1974-2011) dan kuat tarik belah (ASTM C496 / SNI 2491:2014) untuk silinder dan balok beton struktural.' },
-            { title: '2. Peralatan Uji & Kalibrasi UTM', desc: 'Universal Testing Machine (UTM) kapasitas minimal 2000 kN dengan verifikasi akurasi Kelas 1 ISO 7500-1 dan bearing block spherical seating.' },
-            { title: '3. Persiapan Spesimen & Capping', desc: 'Toleransi ketegaklurusan ujung silinder <= 0.5 derajat. Gunakan compound sulfur ASTM C617 atau elastomeric pads (neoprene) ASTM C1231.' },
-            { title: '4. Pelaksanaan Pengujian Kuat Tekan', desc: 'Pemberian beban kontinu tanpa sentakan dengan kecepatan 0.15 - 0.35 MPa/s hingga spesimen runtuh ultimit.' },
-            { title: '5. Evaluasi Pola Retak & Verifikasi f\'c', desc: 'Dokumentasikan pola keruntuhan berdasarkan ASTM C39 Tipe 1-6 dan hitung kuat tekan dengan faktor koreksi L/D.' }
+            { title: '1. Ringkasan & Ruang Lingkup Pengujian', desc: 'Panduan takaran material satu benda uji standar untuk uji kuat tekan silinder (SNI 03-1974-2011 / ASTM C39), uji kuat lentur balok 4-titik (SNI 4431:2011 / ASTM C78), uji tarik belah silinder (SNI 2491:2014 / ASTM C496), dan validasi input simulator.' },
+            { title: '2. Landasan Perhitungan Mekanika', desc: 'Persamaan baku: Kuat Tekan f\'c = (P_ult / A) * F_L/D; Kuat Lentur fr = (P * L) / (b * d^2); Kuat Tarik Belah fsp = (2 * P_ult) / (pi * L * D); Rasio Air-Semen W/C = Water / Cement.' },
+            { title: '3. Pengujian 1: Uji Kuat Tekan Beton Silinder', desc: 'Spesifikasi silinder D 150 mm x L 300 mm (vol 0.0053 m3, netto 12.72 kg, cadangan 10% 13.8 kg). Nilai ideal mutu rendah (W/C 0.60), mutu standar (W/C 0.48), dan mutu tinggi (W/C 0.38). Batas aman W/C 0.40 - 0.55.' },
+            { title: '4. Pengujian 2: Uji Kuat Lentur Balok 4-Titik', desc: 'Balok standar 150 x 150 x 530 mm (vol 0.0119 m3, 28.6 kg, cadangan 31.5 kg, 2.25x silinder). Takaran mutu jalan kelas II vs utama. Validasi bentang, berat min 28.6 kg, dan penolakan patah di luar 1/3 bentang tengah selisih > 5% L.' },
+            { title: '5. Pengujian 3: Uji Kuat Tarik Belah Silinder', desc: 'Standar SNI 2491:2014 / ASTM C496 / EN 12390-6 menggunakan silinder 150 x 300 mm dengan pembebanan garis arah diametral.' },
+            { title: '6. Matriks Ringkasan Tiga Metode Pengujian', desc: 'Matriks komparasi dimensi, standar SNI & internasional, berat minimum campuran, dan tips praktis pemilihan mutu beton awal.' }
         ]
     },
     'fine-aggregate': {
@@ -5335,74 +5352,464 @@ function renderTestingGuidesWorkspace(topicId) {
 
     const guide = PDF_GUIDE_MAP[topicId] || PDF_GUIDE_MAP['concrete'];
 
-    let sectionsHtml = '';
-    guide.sections.forEach((sec, idx) => {
-        sectionsHtml += `
-            <div class="guide-section" style="background: rgba(10, 20, 42, 0.6); border: 1px solid var(--border-dim); border-radius: 8px; padding: 12px 14px; margin-bottom: 8px;">
-                <div class="guide-section-title" style="color: #a855f7; font-size: 12px; margin-bottom: 4px;">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline; margin-right:4px;"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                    ${sec.title}
-                </div>
-                <div class="guide-section-body" style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.55;">
-                    ${sec.desc}
+    if (topicId === 'concrete') {
+        canvasView.innerHTML = `
+            <div class="guides-workspace-container">
+                <div class="guide-viewer-box">
+                    <!-- HEADER BLOCK -->
+                    <div class="guide-doc-header">
+                        <div>
+                            <div style="font-size: 10px; font-weight: 800; color: #a855f7; letter-spacing: 1.2px; text-transform: uppercase; font-family: var(--font-mono); margin-bottom: 4px;">
+                                MODUL OPERASIONAL &amp; SPESIFIKASI TEKNIS
+                            </div>
+                            <div class="guide-doc-title">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                <span>SI BABON DER!</span>
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-pure); margin-top: 4px; font-weight: 600; line-height: 1.4;">
+                                Simulasi Balok Beton Bertulang &amp; Silinder Uji Laboratorium Interaktif Berbasis Standar SNI 2847:2019 &amp; ASTM International
+                            </div>
+                            <div class="guide-doc-meta" style="margin-top: 8px; display:flex; flex-wrap:wrap; gap:6px;">
+                                <span class="telemetry-chip" style="background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); font-size: 10px; padding: 3px 8px; border-radius: 4px;">Edisi: Rev 2.4 (2026)</span>
+                                <span class="telemetry-chip" style="background: rgba(0, 240, 255, 0.1); color: var(--cyan-neon); border: 1px solid rgba(0, 240, 255, 0.3); font-size: 10px; padding: 3px 8px; border-radius: 4px;">Format: SNI / ASTM / ACI</span>
+                                <span class="telemetry-chip" style="background: rgba(16, 185, 129, 0.12); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.35); font-size: 10px; padding: 3px 8px; border-radius: 4px;">Status: Terverifikasi Akreditasi</span>
+                                <span class="telemetry-chip" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 10px; padding: 3px 8px; border-radius: 4px;">Akses Web: GitHub Pages Live</span>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>OFFICIAL SPEC</span>
+                            <div style="font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 6px;">Rev 2.4 (2026)</div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 1: RINGKASAN & RUANG LINGKUP PENGUJIAN -->
+                    <div class="guide-section">
+                        <div class="guide-section-title" style="color: var(--cyan-neon);">
+                            <span style="background: var(--blue-primary); color: #fff; width: 18px; height: 18px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; margin-right: 6px;">1</span>
+                            Ringkasan &amp; Ruang Lingkup Pengujian
+                        </div>
+                        <div class="guide-section-body" style="font-size: 12px; line-height: 1.6; color: var(--text-secondary); margin-bottom: 10px;">
+                            Modul ini merangkum panduan <strong>input takaran material</strong>, <strong>landasan perhitungan</strong>, serta <strong>aturan validasi</strong> untuk tiga metode pengujian beton pada platform <strong>SI BABON DER!</strong>: uji kuat tekan beton silinder, uji kuat lentur balok 4-titik, dan uji kuat tarik belah silinder.<br>
+                            Seluruh angka acuan disesuaikan dengan ukuran benda uji standar (skala satu benda uji) sehingga pengguna dapat memasukkan takaran campuran yang realistis, dan sistem dapat memberi peringatan apabila input menyimpang dari batas yang disyaratkan standar.
+                        </div>
+
+                        <!-- 4 Cards Grid (Matching Section 1) -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+                            <div style="background: rgba(8, 16, 36, 0.7); border: 1px solid var(--border-dim); border-radius: 8px; padding: 10px 12px;">
+                                <div style="font-weight: 800; color: #fff; font-size: 11.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                                    <span style="color: var(--cyan-neon);">&bull;</span> Uji Kuat Tekan Silinder
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                                    Benda uji silinder 150 &times; 300 mm dengan acuan <strong>SNI 03-1974-2011 / ASTM C39</strong> dan mix design <strong>SNI 7656:2012</strong>.
+                                </div>
+                            </div>
+                            <div style="background: rgba(8, 16, 36, 0.7); border: 1px solid var(--border-dim); border-radius: 8px; padding: 10px 12px;">
+                                <div style="font-weight: 800; color: #fff; font-size: 11.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                                    <span style="color: var(--accent-gold);">&bull;</span> Uji Kuat Lentur Balok 4-Titik
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                                    Balok standar 150 &times; 150 &times; 530 mm dengan acuan <strong>SNI 4431:2011 / ASTM C78</strong> (third-point loading).
+                                </div>
+                            </div>
+                            <div style="background: rgba(8, 16, 36, 0.7); border: 1px solid var(--border-dim); border-radius: 8px; padding: 10px 12px;">
+                                <div style="font-weight: 800; color: #fff; font-size: 11.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                                    <span style="color: var(--accent-crimson);">&bull;</span> Uji Kuat Tarik Belah Silinder
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                                    Silinder 150 &times; 300 mm dengan acuan <strong>SNI 2491:2014 / ASTM C496 / EN 12390-6</strong>.
+                                </div>
+                            </div>
+                            <div style="background: rgba(8, 16, 36, 0.7); border: 1px solid var(--border-dim); border-radius: 8px; padding: 10px 12px;">
+                                <div style="font-weight: 800; color: #fff; font-size: 11.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                                    <span style="color: var(--accent-emerald);">&bull;</span> Validasi Input Simulator
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                                    Batas W/C ratio, berat minimum &amp; maksimum campuran, dimensi bentang, dan keabsahan lokasi patah.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 2: LANDASAN PERHITUNGAN MEKANIKA -->
+                    <div class="guide-section">
+                        <div class="guide-section-title" style="color: var(--cyan-neon);">
+                            <span style="background: var(--blue-primary); color: #fff; width: 18px; height: 18px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; margin-right: 6px;">2</span>
+                            Landasan Perhitungan Mekanika
+                        </div>
+                        <div class="guide-section-body" style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 8px;">
+                            Sistem menghitung kapasitas beban ultimit dan mutu beton menggunakan persamaan baku berikut sesuai metode pengujian masing-masing benda uji:
+                        </div>
+
+                        <!-- Formula 1 -->
+                        <div class="guide-formula-card" style="border-left: 3.5px solid var(--cyan-neon);">
+                            <div style="font-size: 10.5px; font-weight: 800; color: var(--cyan-neon); margin-bottom: 3px;">
+                                PERSAMAAN 1: KUAT TEKAN BENDA UJI SILINDER (SNI 03-1974-2011 / ASTM C39)
+                            </div>
+                            <div style="font-size: 14px; font-weight: 800; color: #fff; margin: 4px 0;">
+                                f'c = (P_ult / A) &times; F_L/D
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-main); line-height: 1.4;">
+                                Dimana: <strong>P_ult</strong> = Beban runtuh mesin hidrolik (N), <strong>A</strong> = Luas penampang silinder = &frac14; &pi; D&sup2; (mm&sup2;), <strong>F_L/D</strong> = Faktor koreksi rasio tinggi terhadap diameter (= 1,00 untuk 150 &times; 300 mm).
+                            </div>
+                        </div>
+
+                        <!-- Formula 2 -->
+                        <div class="guide-formula-card" style="border-left: 3.5px solid var(--accent-gold);">
+                            <div style="font-size: 10.5px; font-weight: 800; color: var(--accent-gold); margin-bottom: 3px;">
+                                PERSAMAAN 2: KUAT LENTUR BALOK 4-TITIK (SNI 4431:2011 / ASTM C78)
+                            </div>
+                            <div style="font-size: 14px; font-weight: 800; color: #fff; margin: 4px 0;">
+                                fr = (P &times; L) / (b &times; d&sup2;) [MPa]
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-main); line-height: 1.4;">
+                                Dimana: <strong>P</strong> = Beban maksimum (N), <strong>L</strong> = Bentang tumpuan (mm), <strong>b</strong> = Lebar balok (mm), <strong>d</strong> = Tinggi balok (mm). Berlaku bila bidang patah berada di sepertiga bentang tengah.
+                            </div>
+                        </div>
+
+                        <!-- Formula 3 -->
+                        <div class="guide-formula-card" style="border-left: 3.5px solid var(--accent-crimson);">
+                            <div style="font-size: 10.5px; font-weight: 800; color: var(--accent-crimson); margin-bottom: 3px;">
+                                PERSAMAAN 3: KUAT TARIK BELAH SILINDER (SNI 2491:2014 / ASTM C496)
+                            </div>
+                            <div style="font-size: 14px; font-weight: 800; color: #fff; margin: 4px 0;">
+                                fsp = (2 &times; P_ult) / (&pi; &times; L &times; D) [MPa]
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-main); line-height: 1.4;">
+                                Dimana: <strong>P_ult</strong> = Beban maksimum (N), <strong>L</strong> = Panjang silinder (mm), <strong>D</strong> = Diameter silinder (mm).
+                            </div>
+                        </div>
+
+                        <!-- Formula 4 -->
+                        <div class="guide-formula-card" style="border-left: 3.5px solid #a855f7;">
+                            <div style="font-size: 10.5px; font-weight: 800; color: #a855f7; margin-bottom: 3px;">
+                                PERSAMAAN 4: RASIO AIR-SEMEN (W/C) &amp; BERAT CAMPURAN
+                            </div>
+                            <div style="font-size: 13.5px; font-weight: 800; color: #fff; margin: 4px 0;">
+                                W/C = Water (kg) / Cement (kg) &nbsp;|&nbsp; V_silinder = &frac14; &times; &pi; &times; D&sup2; &times; L &approx; 0,0053 m&sup3;
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); font-family: var(--font-main); line-height: 1.4;">
+                                Dengan berat isi beton &plusmn; 2.400 kg/m&sup3;, volume bersih 1 silinder setara &plusmn; 12,72 kg beton dan volume 1 balok standar (0,0119 m&sup3;) setara &plusmn; 28,6 kg.
+                            </div>
+                        </div>
+
+                        <!-- Catatan Penerapan Standar Box -->
+                        <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 10px 12px; font-size: 11.5px; color: #e0f2fe; line-height: 1.5; margin-top: 4px;">
+                            <strong><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> Catatan Penerapan Standar:</strong> SNI 7656:2012 digunakan sebagai pedoman mix design, sedangkan SNI 2847:2019 berperan sebagai aturan syarat batas dan evaluasi mutu beton.
+                        </div>
+                    </div>
+
+                    <!-- SECTION 3: PENGUJIAN 1: UJI KUAT TEKAN BETON SILINDER -->
+                    <div class="guide-section">
+                        <div class="guide-section-title" style="color: var(--cyan-neon);">
+                            <span style="background: var(--blue-primary); color: #fff; width: 18px; height: 18px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; margin-right: 6px;">3</span>
+                            Pengujian 1: Uji Kuat Tekan Beton Silinder
+                        </div>
+
+                        <!-- 3.1 Spesifikasi Benda Uji Table -->
+                        <div style="margin-bottom: 12px;">
+                            <div style="font-size: 11.5px; font-weight: 800; color: #fff; margin-bottom: 6px;">3.1 Spesifikasi Benda Uji</div>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+                                    <tr style="background: rgba(18, 33, 66, 0.8); border-bottom: 1px solid var(--border-bright);">
+                                        <th style="padding: 6px 10px; text-align: left; color: var(--cyan-neon); width: 35%;">Parameter</th>
+                                        <th style="padding: 6px 10px; text-align: left; color: #fff;">Ketentuan</th>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid var(--border-dim); background: rgba(8, 16, 36, 0.5);">
+                                        <td style="padding: 5px 10px; color: var(--text-muted);">Standar pengujian</td>
+                                        <td style="padding: 5px 10px; color: #fff; font-weight: 600;">SNI 03-1974-2011 / ASTM C39</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid var(--border-dim);">
+                                        <td style="padding: 5px 10px; color: var(--text-muted);">Dimensi silinder</td>
+                                        <td style="padding: 5px 10px; color: #fff; font-weight: 600;">Diameter (D) = 150 mm; Panjang (L) = 300 mm</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid var(--border-dim); background: rgba(8, 16, 36, 0.5);">
+                                        <td style="padding: 5px 10px; color: var(--text-muted);">Faktor koreksi (Fkoreksi)</td>
+                                        <td style="padding: 5px 10px; color: #fff; font-weight: 600;">1,00</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid var(--border-dim);">
+                                        <td style="padding: 5px 10px; color: var(--text-muted);">Mix design</td>
+                                        <td style="padding: 5px 10px; color: #fff; font-weight: 600;">SNI 7656:2012</td>
+                                    </tr>
+                                    <tr style="background: rgba(8, 16, 36, 0.5);">
+                                        <td style="padding: 5px 10px; color: var(--text-muted);">Syarat batas &amp; evaluasi mutu</td>
+                                        <td style="padding: 5px 10px; color: #fff; font-weight: 600;">SNI 2847:2019</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- 3.2 Panduan Nilai Input Ideal Table -->
+                        <div style="margin-bottom: 12px;">
+                            <div style="font-size: 11.5px; font-weight: 800; color: #fff; margin-bottom: 6px;">3.2 Panduan Nilai Input Ideal (Skala 1 Silinder SNI: D 150 mm &times; L 300 mm)</div>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+                                    <tr style="background: rgba(18, 33, 66, 0.8); border-bottom: 1px solid var(--border-bright);">
+                                        <th style="padding: 6px 10px; text-align: left; color: var(--cyan-neon);">Parameter Input</th>
+                                        <th style="padding: 6px 10px; text-align: center; color: #cbd5e1;">Mutu Rendah<br><span style="font-size: 9.5px; font-weight: normal; color: var(--text-muted);">(f'c 15–20 MPa)</span></th>
+                                        <th style="padding: 6px 10px; text-align: center; color: var(--accent-emerald);">Mutu Struktural Standar<br><span style="font-size: 9.5px; font-weight: normal; color: var(--text-muted);">(f'c 25–30 MPa)</span></th>
+                                        <th style="padding: 6px 10px; text-align: center; color: var(--accent-gold);">Mutu Tinggi<br><span style="font-size: 9.5px; font-weight: normal; color: var(--text-muted);">(f'c 35–40 MPa)</span></th>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid var(--border-dim); background: rgba(8, 16, 36, 0.5);">
+                                        <td style="padding: 5px 10px; color: var(--text-muted);">Portland Cement (kg)</td>
+                                        <td style="padding: 5px 10px; text-align: center; color: #fff;">2,0 kg</td>
+                                        <td style="padding: 5px 10px; text-align: center; color: #fff; font-weight: 700;">2,5 kg</td>
+                                        <td style="padding: 5px 10px; text-align: center; color: #fff;">3,0 kg</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid var(--border-dim);">
+                                        <td style="padding: 5px 10px; color: var(--text-muted);">Fine Aggregate / Sand (kg)</td>
+                                        <td style="padding: 5px 10px; text-align: center; color: #fff;">4,5 kg</td>
+                                        <td style="padding: 5px 10px; text-align: center; color: #fff; font-weight: 700;">4,1 kg</td>
+                                        <td style="padding: 5px 10px; text-align: center; color: #fff;">3,8 kg</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid var(--border-dim); background: rgba(8, 16, 36, 0.5);">
+                                        <td style="padding: 5px 10px; color: var(--text-muted);">Coarse Aggregate / Gravel (kg)</td>
+                                        <td style="padding: 5px 10px; text-align: center; color: #fff;">6,0 kg</td>
+                                        <td style="padding: 5px 10px; text-align: center; color: #fff; font-weight: 700;">6,0 kg</td>
+                                        <td style="padding: 5px 10px; text-align: center; color: #fff;">5,9 kg</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid var(--border-dim);">
+                                        <td style="padding: 5px 10px; color: var(--text-muted);">Water (Liters)</td>
+                                        <td style="padding: 5px 10px; text-align: center; color: #fff;">1,2 L</td>
+                                        <td style="padding: 5px 10px; text-align: center; color: #fff; font-weight: 700;">1,2 L</td>
+                                        <td style="padding: 5px 10px; text-align: center; color: #fff;">1,15 L</td>
+                                    </tr>
+                                    <tr style="background: rgba(18, 33, 66, 0.9); font-weight: 800;">
+                                        <td style="padding: 6px 10px; color: var(--cyan-neon);">W/C Ratio (Otomatis)</td>
+                                        <td style="padding: 6px 10px; text-align: center; color: #cbd5e1;">0,60</td>
+                                        <td style="padding: 6px 10px; text-align: center; color: var(--accent-emerald); font-size: 12.5px;">0,48</td>
+                                        <td style="padding: 6px 10px; text-align: center; color: var(--accent-gold);">0,38</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div style="font-size: 10.5px; color: var(--text-muted); font-style: italic; margin-top: 5px;">
+                                Catatan: Total berat campuran pada tabel di atas adalah sekitar <strong>13,7 – 13,85 kg</strong>, sudah termasuk faktor keamanan susut &plusmn;10% agar cetakan 150&times;300 mm terisi penuh tanpa kekurangan adukan.
+                            </div>
+                        </div>
+
+                        <!-- 3.3 & 3.4 Batas Aman & Aturan Validasi -->
+                        <div style="background: rgba(8, 16, 36, 0.7); border: 1px solid var(--border-dim); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+                            <div style="font-size: 11.5px; font-weight: 800; color: #fff; margin-bottom: 6px;">3.3 Batas Aman W/C Ratio (FAS)</div>
+                            <ul class="guide-steps-list" style="margin-bottom: 10px;">
+                                <li>Untuk beton struktural normal sesuai SNI, jaga nilai W/C Ratio di kisaran <strong>0,40 – 0,55</strong>.</li>
+                                <li>Jika <strong>W/C Ratio &gt; 0,60</strong>: <span style="color: #fca5a5;">&ldquo;Air terlalu banyak; kuat tekan akan turun drastis dan rentan keropos (bleeding).&rdquo;</span></li>
+                                <li>Jika <strong>W/C Ratio &lt; 0,38</strong>: <span style="color: #fde047;">&ldquo;Adukan terlalu kental (slump rendah); sulit dipadatkan tanpa bahan tambah (superplasticizer).&rdquo;</span></li>
+                            </ul>
+
+                            <div style="font-size: 11.5px; font-weight: 800; color: #fff; margin-bottom: 6px;">3.4 Aturan Validasi Berbasis Volume (Skala 1 Silinder D 150 mm &times; L 300 mm)</div>
+                            <ul class="guide-steps-list">
+                                <li><strong>Batas Berat Minimum Campuran:</strong> Total input (Semen + Pasir + Kerikil + Air) minimal <strong>12,72 kg</strong> (volume bersih 1 silinder) atau <strong>13,8 kg</strong> bila sistem mewajibkan faktor cadangan/susut 10%. Jika di bawah angka tersebut: <span style="color: #fca5a5;">&ldquo;Total berat campuran kurang untuk mengisi penuh 1 silinder ukuran 150&times;300 mm.&rdquo;</span></li>
+                                <li><strong>Batas Berat Maksimum (Opsional):</strong> Bila input untuk 1 silinder melebihi <strong>16 kg</strong>: <span style="color: #fdba74;">&ldquo;Campuran berlebih untuk 1 silinder (sisa adukan akan terbuang).&rdquo;</span></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 4: PENGUJIAN 2: UJI KUAT LENTUR BALOK 4-TITIK -->
+                    <div class="guide-section">
+                        <div class="guide-section-title" style="color: var(--cyan-neon);">
+                            <span style="background: var(--blue-primary); color: #fff; width: 18px; height: 18px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; margin-right: 6px;">4</span>
+                            Pengujian 2: Uji Kuat Lentur Balok 4-Titik (SNI 4431:2011)
+                        </div>
+
+                        <div style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
+                            <strong>4.1 Rekomendasi Ukuran Benda Uji:</strong> Dimensi Balok Standar: Lebar (b) = 150 mm, Tinggi (h) = 150 mm, dan Panjang total (L_total) = 500 mm – 550 mm (umumnya dibuat 530 mm atau 600 mm).<br>
+                            <strong>4.2 Perbandingan Kebutuhan Mix Design (Skala 1 Balok 150&times;150&times;530 mm):</strong> Volume 1 balok standar (0,0119 m&sup3; atau sekitar 28,6 kg beton, ditambah cadangan &plusmn;10% menjadi &plusmn;31,5 kg) sekitar <strong>2,25 kali lebih besar</strong> daripada 1 silinder (150&times;300 mm).
+                        </div>
+
+                        <!-- Table Mix Design Balok -->
+                        <div style="overflow-x: auto; margin-bottom: 10px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+                                <tr style="background: rgba(18, 33, 66, 0.8); border-bottom: 1px solid var(--border-bright);">
+                                    <th style="padding: 6px 10px; text-align: left; color: var(--cyan-neon);">Parameter Input</th>
+                                    <th style="padding: 6px 10px; text-align: center; color: var(--accent-emerald);">Mutu Jalan Kelas II<br><span style="font-size: 9.5px; font-weight: normal; color: var(--text-muted);">(f'c &plusmn;25 MPa)</span></th>
+                                    <th style="padding: 6px 10px; text-align: center; color: var(--accent-gold);">Mutu Jalan Raya / Utama<br><span style="font-size: 9.5px; font-weight: normal; color: var(--text-muted);">(f'c &plusmn;35 MPa / Fs 4,5 MPa)</span></th>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border-dim); background: rgba(8, 16, 36, 0.5);">
+                                    <td style="padding: 5px 10px; color: var(--text-muted);">Portland Cement (kg)</td>
+                                    <td style="padding: 5px 10px; text-align: center; color: #fff; font-weight: 700;">5,6 kg</td>
+                                    <td style="padding: 5px 10px; text-align: center; color: #fff; font-weight: 700;">6,8 kg</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border-dim);">
+                                    <td style="padding: 5px 10px; color: var(--text-muted);">Fine Aggregate / Sand (kg)</td>
+                                    <td style="padding: 5px 10px; text-align: center; color: #fff;">9,2 kg</td>
+                                    <td style="padding: 5px 10px; text-align: center; color: #fff;">8,5 kg</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border-dim); background: rgba(8, 16, 36, 0.5);">
+                                    <td style="padding: 5px 10px; color: var(--text-muted);">Coarse Aggregate / Gravel (kg)</td>
+                                    <td style="padding: 5px 10px; text-align: center; color: #fff;">13,5 kg</td>
+                                    <td style="padding: 5px 10px; text-align: center; color: #fff;">13,3 kg</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border-dim);">
+                                    <td style="padding: 5px 10px; color: var(--text-muted);">Water (Liters)</td>
+                                    <td style="padding: 5px 10px; text-align: center; color: #fff;">2,7 L</td>
+                                    <td style="padding: 5px 10px; text-align: center; color: #fff;">2,6 L</td>
+                                </tr>
+                                <tr style="background: rgba(18, 33, 66, 0.9); font-weight: 800;">
+                                    <td style="padding: 6px 10px; color: var(--cyan-neon);">W/C Ratio (Otomatis)</td>
+                                    <td style="padding: 6px 10px; text-align: center; color: var(--accent-emerald); font-size: 12.5px;">0,48</td>
+                                    <td style="padding: 6px 10px; text-align: center; color: var(--accent-gold); font-size: 12.5px;">0,38</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- 4.3 Aturan Validasi Tambahan -->
+                        <div style="background: rgba(8, 16, 36, 0.7); border: 1px solid var(--border-dim); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+                            <div style="font-size: 11.5px; font-weight: 800; color: #fff; margin-bottom: 6px;">4.3 Aturan Validasi Tambahan (Uji Kuat Lentur)</div>
+                            <ul class="guide-steps-list">
+                                <li><strong>Validasi Dimensi:</strong> Pastikan input panjang total balok lebih besar dari bentang tumpuan (minimal L_bentang + 50 mm) agar ujung balok tidak tergelincir dari tumpuan.</li>
+                                <li><strong>Validasi Berat Minimum:</strong> Total berat campuran minimal <strong>28,6 kg</strong> (atau &plusmn;31 kg dengan cadangan susut) untuk mencetak 1 buah balok standar 150&times;150&times;530 mm.</li>
+                                <li><strong>Validasi Lokasi Patah (Simulasi):</strong> Jika bidang patah terjadi di luar 1/3 bentang tengah dengan jarak selisih melebihi <strong>5% dari bentang L</strong>, sesuai SNI 4431:2011 hasil pengujian harus dinyatakan <strong style="color: #ef4444;">TIDAK SAH / DITOLAK</strong>.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- SECTION 5: PENGUJIAN 3: UJI KUAT TARIK BELAH SILINDER -->
+                    <div class="guide-section">
+                        <div class="guide-section-title" style="color: var(--cyan-neon);">
+                            <span style="background: var(--blue-primary); color: #fff; width: 18px; height: 18px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; margin-right: 6px;">5</span>
+                            Pengujian 3: Uji Kuat Tarik Belah Silinder
+                        </div>
+                        <div class="guide-section-body" style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 6px;">
+                            Standar acuan: <strong>SNI 2491:2014 / ASTM C496 / EN 12390-6</strong>.
+                        </div>
+                        <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 10px 12px; font-size: 11.5px; color: #e0f2fe; line-height: 1.5;">
+                            <strong>(i) Ketentuan Input:</strong> Benda uji, panduan nilai input ideal, batas aman W/C ratio, dan aturan validasi berat sama dengan <strong>Pengujian 1</strong> (silinder 150 &times; 300 mm, lihat Bagian 3.1 – 3.4). Perbedaan hanya pada metode pembebanan (garis, arah diametral) dan persamaan hasil (Persamaan 3).
+                        </div>
+                    </div>
+
+                    <!-- SECTION 6: MATRIKS RINGKASAN TIGA METODE PENGUJIAN -->
+                    <div class="guide-section">
+                        <div class="guide-section-title" style="color: var(--cyan-neon);">
+                            <span style="background: var(--blue-primary); color: #fff; width: 18px; height: 18px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; margin-right: 6px;">6</span>
+                            Matriks Ringkasan Tiga Metode Pengujian
+                        </div>
+
+                        <div style="overflow-x: auto; margin-bottom: 10px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+                                <tr style="background: rgba(18, 33, 66, 0.8); border-bottom: 1px solid var(--border-bright);">
+                                    <th style="padding: 6px 8px; text-align: center; color: var(--cyan-neon); width: 30px;">No</th>
+                                    <th style="padding: 6px 10px; text-align: left; color: #fff;">Metode Pengujian</th>
+                                    <th style="padding: 6px 10px; text-align: left; color: #cbd5e1;">Standar SNI</th>
+                                    <th style="padding: 6px 10px; text-align: left; color: #cbd5e1;">Standar Internasional</th>
+                                    <th style="padding: 6px 10px; text-align: left; color: #cbd5e1;">Benda Uji</th>
+                                    <th style="padding: 6px 10px; text-align: left; color: var(--accent-gold);">Berat Min. Campuran</th>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border-dim); background: rgba(8, 16, 36, 0.5);">
+                                    <td style="padding: 6px 8px; text-align: center; color: var(--text-muted);">1</td>
+                                    <td style="padding: 6px 10px; font-weight: 700; color: #fff;">Uji Kuat Tekan Silinder</td>
+                                    <td style="padding: 6px 10px; color: var(--text-secondary);">SNI 03-1974-2011</td>
+                                    <td style="padding: 6px 10px; color: var(--text-secondary);">ASTM C39</td>
+                                    <td style="padding: 6px 10px; color: var(--text-secondary);">Silinder 150&times;300 mm</td>
+                                    <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700;">12,72 kg (13,8 kg)</td>
+                                </tr>
+                                <tr style="border-bottom: 1px solid var(--border-dim);">
+                                    <td style="padding: 6px 8px; text-align: center; color: var(--text-muted);">2</td>
+                                    <td style="padding: 6px 10px; font-weight: 700; color: #fff;">Uji Kuat Lentur Balok 4-Titik</td>
+                                    <td style="padding: 6px 10px; color: var(--text-secondary);">SNI 4431:2011</td>
+                                    <td style="padding: 6px 10px; color: var(--text-secondary);">ASTM C78</td>
+                                    <td style="padding: 6px 10px; color: var(--text-secondary);">Balok 150&times;150&times;530 mm</td>
+                                    <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700;">28,6 kg (&plusmn;31 kg)</td>
+                                </tr>
+                                <tr style="background: rgba(8, 16, 36, 0.5);">
+                                    <td style="padding: 6px 8px; text-align: center; color: var(--text-muted);">3</td>
+                                    <td style="padding: 6px 10px; font-weight: 700; color: #fff;">Uji Kuat Tarik Belah Silinder</td>
+                                    <td style="padding: 6px 10px; color: var(--text-secondary);">SNI 2491:2014</td>
+                                    <td style="padding: 6px 10px; color: var(--text-secondary);">ASTM C496 / EN 12390-6</td>
+                                    <td style="padding: 6px 10px; color: var(--text-secondary);">Silinder 150&times;300 mm</td>
+                                    <td style="padding: 6px 10px; color: var(--accent-gold); font-weight: 700;">12,72 kg (13,8 kg)</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- Tips Praktis Box -->
+                        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 10px 14px; font-size: 11.5px; color: #a7f3d0; line-height: 1.5; margin-bottom: 6px;">
+                            <strong><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline; margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg> Tips Praktis:</strong> Gunakan mutu struktural standar (f′c 25–30 MPa, W/C 0,48) sebagai titik awal pengisian form, lalu bandingkan hasilnya dengan mutu rendah dan mutu tinggi untuk melihat pengaruh W/C ratio terhadap kapasitas beban.
+                        </div>
+                    </div>
+
+                    <!-- ACTION BUTTONS -->
+                    <div style="display:flex; gap:10px; justify-content: flex-end; padding-top: 10px; border-top: 1px solid var(--border-dim); flex-wrap: wrap;">
+                        <a href="${guide.pdfPath}" target="_blank" class="btn-preview-pdf" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:11.5px; padding:8px 14px; border-radius:6px;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            Buka PDF di Tab Baru
+                        </a>
+                        <a href="${guide.pdfPath}" download="${guide.fileName}" class="btn-download-pdf" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:11.5px; padding:8px 16px; border-radius:6px; width:auto;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Unduh Dokumen PDF (${guide.fileSize})
+                        </a>
+                    </div>
                 </div>
             </div>
         `;
-    });
+    } else {
+        let sectionsHtml = '';
+        guide.sections.forEach((sec, idx) => {
+            sectionsHtml += `
+                <div class="guide-section" style="background: rgba(10, 20, 42, 0.6); border: 1px solid var(--border-dim); border-radius: 8px; padding: 12px 14px; margin-bottom: 8px;">
+                    <div class="guide-section-title" style="color: #a855f7; font-size: 12px; margin-bottom: 4px;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline; margin-right:4px;"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        ${sec.title}
+                    </div>
+                    <div class="guide-section-body" style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.55;">
+                        ${sec.desc}
+                    </div>
+                </div>
+            `;
+        });
 
-    let standardsBadgesHtml = '';
-    guide.standards.forEach(std => {
-        standardsBadgesHtml += `<span class="telemetry-chip" style="background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); font-size: 10px; padding: 3px 8px; border-radius: 4px;">${std}</span>`;
-    });
+        let standardsBadgesHtml = '';
+        guide.standards.forEach(std => {
+            standardsBadgesHtml += `<span class="telemetry-chip" style="background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); font-size: 10px; padding: 3px 8px; border-radius: 4px;">${std}</span>`;
+        });
 
-    canvasView.innerHTML = `
-        <div class="guides-workspace-container">
-            <div class="guide-viewer-box">
-                <div class="guide-doc-header">
+        canvasView.innerHTML = `
+            <div class="guides-workspace-container">
+                <div class="guide-viewer-box">
+                    <div class="guide-doc-header">
+                        <div>
+                            <div class="guide-doc-title">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                <span>${guide.title}</span>
+                            </div>
+                            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                                ${guide.subtitle} &bull; Standar Terverifikasi SNI &amp; ASTM Internasional
+                            </div>
+                            <div class="guide-doc-meta" style="margin-top: 8px; display:flex; flex-wrap:wrap; gap:6px;">
+                                ${standardsBadgesHtml}
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>VERIFIED SOP</span>
+                            <div style="font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 6px;">Rev: ${guide.dateUpdated}</div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(168, 85, 247, 0.08); border-left: 3px solid #a855f7; border-radius: 0 8px 8px 0; padding: 12px 14px; font-size: 12px; color: var(--text-pure); line-height: 1.6;">
+                        <strong style="color: #c084fc;">Ringkasan Eksekutif &amp; Tujuan SOP:</strong><br>
+                        ${guide.summary}
+                    </div>
+
                     <div>
-                        <div class="guide-doc-title">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                            <span>${guide.title}</span>
-                        </div>
-                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
-                            ${guide.subtitle} &bull; Standar Terverifikasi SNI &amp; ASTM Internasional
-                        </div>
-                        <div class="guide-doc-meta" style="margin-top: 8px; display:flex; flex-wrap:wrap; gap:6px;">
-                            ${standardsBadgesHtml}
-                        </div>
+                        <h4 style="color: var(--cyan-neon); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                            TAHAPAN &amp; PROSEDUR STANDAR OPERASIONAL (SOP)
+                        </h4>
+                        ${sectionsHtml}
                     </div>
-                    <div style="text-align: right;">
-                        <span class="telemetry-chip live-chip"><span class="dot-live"></span>VERIFIED SOP</span>
-                        <div style="font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 6px;">Rev: ${guide.dateUpdated}</div>
+
+                    <div style="display:flex; gap:10px; justify-content: flex-end; padding-top: 10px; border-top: 1px solid var(--border-dim); flex-wrap: wrap;">
+                        <a href="${guide.pdfPath}" target="_blank" class="btn-preview-pdf" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:11.5px; padding:8px 14px; border-radius:6px;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            Buka PDF di Tab Baru
+                        </a>
+                        <a href="${guide.pdfPath}" download="${guide.fileName}" class="btn-download-pdf" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:11.5px; padding:8px 16px; border-radius:6px; width:auto;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Unduh Dokumen PDF (${guide.fileSize})
+                        </a>
                     </div>
-                </div>
-
-                <div style="background: rgba(168, 85, 247, 0.08); border-left: 3px solid #a855f7; border-radius: 0 8px 8px 0; padding: 12px 14px; font-size: 12px; color: var(--text-pure); line-height: 1.6;">
-                    <strong style="color: #c084fc;">Ringkasan Eksekutif &amp; Tujuan SOP:</strong><br>
-                    ${guide.summary}
-                </div>
-
-                <div>
-                    <h4 style="color: var(--cyan-neon); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                        TAHAPAN &amp; PROSEDUR STANDAR OPERASIONAL (SOP)
-                    </h4>
-                    ${sectionsHtml}
-                </div>
-
-                <div style="display:flex; gap:10px; justify-content: flex-end; padding-top: 10px; border-top: 1px solid var(--border-dim); flex-wrap: wrap;">
-                    <a href="${guide.pdfPath}" target="_blank" class="btn-preview-pdf" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:11.5px; padding:8px 14px; border-radius:6px;">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                        Buka PDF di Tab Baru
-                    </a>
-                    <a href="${guide.pdfPath}" download="${guide.fileName}" class="btn-download-pdf" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:11.5px; padding:8px 16px; border-radius:6px; width:auto;">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        Unduh Dokumen PDF (${guide.fileSize})
-                    </a>
                 </div>
             </div>
-        </div>
-    `;
+        `;
+    }
 
     // Right Sidebar / Panel View: Download Card and File Info
     let otherTopicsHtml = '';

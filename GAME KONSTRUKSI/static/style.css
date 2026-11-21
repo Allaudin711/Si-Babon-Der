@@ -364,10 +364,12 @@ html, body {
     border-right: 1px solid var(--border-dim);
     display: flex;
     flex-direction: column;
-    padding: 16px 12px;
+    padding: 14px 12px 10px 12px;
     gap: 6px;
     z-index: 40;
-    overflow-y: auto;
+    overflow: hidden;
+    height: 100%;
+    box-sizing: border-box;
     position: relative;
     transition: transform var(--transition-norm);
 }
@@ -3567,16 +3569,40 @@ option {
     flex-direction: column;
     gap: 6px;
     width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 2px;
+}
+
+.sidebar-nav-container::-webkit-scrollbar {
+    width: 4px;
+}
+.sidebar-nav-container::-webkit-scrollbar-track {
+    background: rgba(11, 20, 38, 0.4);
+    border-radius: 4px;
+}
+.sidebar-nav-container::-webkit-scrollbar-thumb {
+    background: rgba(56, 189, 248, 0.35);
+    border-radius: 4px;
+}
+.sidebar-nav-container::-webkit-scrollbar-thumb:hover {
+    background: var(--cyan-neon);
 }
 
 .sidebar-module-section {
-    margin-top: 14px;
-    padding-top: 12px;
+    flex-shrink: 0;
+    margin-top: auto;
+    padding-top: 10px;
     border-top: 1px dashed rgba(56, 189, 248, 0.25);
     display: flex;
     flex-direction: column;
     gap: 8px;
-    position: relative;
+    position: sticky;
+    bottom: 0;
+    background: rgba(14, 25, 51, 0.98);
+    z-index: 15;
     user-select: none;
 }
 
