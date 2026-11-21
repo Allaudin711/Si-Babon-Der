@@ -5077,15 +5077,15 @@ const TESTING_MODULES = [
         subtitle: 'Agregat Kasar / Kerikil & Split',
         standardBadge: 'SNI 1969 / ASTM C131',
         summary: 'Berat jenis kerikil, rongga udara, gradasi ayakan, uji abrasi Los Angeles.',
-        themeColor: '#10b981',
-        cadIcon: `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="#10b981" stroke-width="1.8">
-            <polygon points="6 11 16 4 26 9 27 21 17 28 6 23" stroke="#10b981" fill="rgba(16,185,129,0.1)"/>
-            <line x1="6" y1="11" x2="17" y2="17" stroke="#10b981"/>
-            <line x1="16" y1="4" x2="17" y2="17" stroke="#10b981"/>
-            <line x1="26" y1="9" x2="17" y2="17" stroke="#10b981"/>
-            <line x1="27" y1="21" x2="17" y2="17" stroke="#10b981"/>
-            <line x1="17" y1="28" x2="17" y2="17" stroke="#10b981"/>
-            <line x1="6" y1="23" x2="17" y2="17" stroke="#10b981"/>
+        themeColor: '#e05638',
+        cadIcon: `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="#e05638" stroke-width="1.8">
+            <polygon points="6 11 16 4 26 9 27 21 17 28 6 23" stroke="#e05638" fill="rgba(224,86,56,0.12)"/>
+            <line x1="6" y1="11" x2="17" y2="17" stroke="#e05638"/>
+            <line x1="16" y1="4" x2="17" y2="17" stroke="#e05638"/>
+            <line x1="26" y1="9" x2="17" y2="17" stroke="#e05638"/>
+            <line x1="27" y1="21" x2="17" y2="17" stroke="#e05638"/>
+            <line x1="17" y1="28" x2="17" y2="17" stroke="#e05638"/>
+            <line x1="6" y1="23" x2="17" y2="17" stroke="#e05638"/>
         </svg>`
     },
     {
@@ -5242,14 +5242,151 @@ function bringCardToFront(moduleId) {
 }
 
 // Commit and Activate Module Workspace
+// Comprehensive Design Token Map for Chapter Workspaces
+const CHAPTER_THEMES = {
+    'concrete': {
+        name: 'Concrete Testing',
+        // Original untouched default theme (Navy / Slate & Cyan Neon)
+        bgVoid: '#0b1426',
+        bgBase: '#101d3b',
+        bgSurface: '#16274e',
+        bgCard: 'rgba(22, 39, 78, 0.82)',
+        bgCardHover: 'rgba(30, 53, 106, 0.92)',
+        bgGlass: 'rgba(18, 33, 66, 0.75)',
+        bgInput: '#0d1933',
+        bgSidebar: 'rgba(14, 25, 51, 0.98)',
+        bgHeader: 'rgba(14, 25, 51, 0.95)',
+        bgPanel: 'rgba(14, 25, 51, 0.96)',
+        bgCanvas: 'radial-gradient(circle at 50% 50%, #172a56 0%, #0d1733 100%)',
+        bgBanner: 'linear-gradient(135deg, rgba(16, 29, 59, 0.95) 0%, rgba(10, 18, 38, 0.95) 100%)',
+        borderDim: 'rgba(56, 189, 248, 0.2)',
+        borderBright: 'rgba(56, 189, 248, 0.42)',
+        borderGlow: 'rgba(0, 240, 255, 0.55)',
+        accent: '#00f0ff',
+        accentGlow: 'rgba(0, 240, 255, 0.25)',
+        accentDim: 'rgba(0, 240, 255, 0.08)',
+        accentBorder: 'rgba(0, 240, 255, 0.35)'
+    },
+    'fine-aggregate': {
+        name: 'Fine Aggregate Testing',
+        // Warm amber / burnt-orange dominant base tone
+        bgVoid: '#140a04',
+        bgBase: '#1a0e06',
+        bgSurface: '#241308',
+        bgCard: 'rgba(38, 20, 8, 0.88)',
+        bgCardHover: 'rgba(52, 28, 12, 0.94)',
+        bgGlass: 'rgba(32, 17, 7, 0.78)',
+        bgInput: '#130a04',
+        bgSidebar: 'rgba(24, 13, 5, 0.98)',
+        bgHeader: 'rgba(24, 13, 5, 0.95)',
+        bgPanel: 'rgba(24, 13, 5, 0.96)',
+        bgCanvas: 'radial-gradient(circle at 50% 50%, #351a08 0%, #150903 100%)',
+        bgBanner: 'linear-gradient(135deg, rgba(45, 23, 9, 0.96) 0%, rgba(22, 11, 4, 0.96) 100%)',
+        borderDim: 'rgba(245, 158, 11, 0.22)',
+        borderBright: 'rgba(245, 158, 11, 0.48)',
+        borderGlow: 'rgba(245, 158, 11, 0.65)',
+        accent: '#f59e0b',
+        accentGlow: 'rgba(245, 158, 11, 0.32)',
+        accentDim: 'rgba(245, 158, 11, 0.12)',
+        accentBorder: 'rgba(245, 158, 11, 0.42)'
+    },
+    'coarse-aggregate': {
+        name: 'Coarse Aggregate Testing',
+        // Warm copper / terracotta / earthy bronze dominant base tone
+        bgVoid: '#150a07',
+        bgBase: '#1d0e09',
+        bgSurface: '#2a140d',
+        bgCard: 'rgba(44, 21, 14, 0.88)',
+        bgCardHover: 'rgba(60, 29, 19, 0.94)',
+        bgGlass: 'rgba(36, 17, 11, 0.78)',
+        bgInput: '#150a06',
+        bgSidebar: 'rgba(26, 12, 8, 0.98)',
+        bgHeader: 'rgba(26, 12, 8, 0.95)',
+        bgPanel: 'rgba(26, 12, 8, 0.96)',
+        bgCanvas: 'radial-gradient(circle at 50% 50%, #3e1b10 0%, #150906 100%)',
+        bgBanner: 'linear-gradient(135deg, rgba(52, 24, 16, 0.96) 0%, rgba(26, 12, 8, 0.96) 100%)',
+        borderDim: 'rgba(224, 86, 56, 0.24)',
+        borderBright: 'rgba(224, 86, 56, 0.5)',
+        borderGlow: 'rgba(224, 86, 56, 0.65)',
+        accent: '#e05638',
+        accentGlow: 'rgba(224, 86, 56, 0.32)',
+        accentDim: 'rgba(224, 86, 56, 0.12)',
+        accentBorder: 'rgba(224, 86, 56, 0.45)'
+    },
+    'steel': {
+        name: 'Steel Tensile Testing',
+        // Crimson / gunmetal steel dominant base tone
+        bgVoid: '#13070b',
+        bgBase: '#1c0a10',
+        bgSurface: '#280e17',
+        bgCard: 'rgba(42, 14, 24, 0.88)',
+        bgCardHover: 'rgba(58, 19, 33, 0.94)',
+        bgGlass: 'rgba(34, 12, 20, 0.78)',
+        bgInput: '#14060b',
+        bgSidebar: 'rgba(24, 8, 14, 0.98)',
+        bgHeader: 'rgba(24, 8, 14, 0.95)',
+        bgPanel: 'rgba(24, 8, 14, 0.96)',
+        bgCanvas: 'radial-gradient(circle at 50% 50%, #3a1221 0%, #14060b 100%)',
+        bgBanner: 'linear-gradient(135deg, rgba(50, 16, 28, 0.96) 0%, rgba(24, 8, 14, 0.96) 100%)',
+        borderDim: 'rgba(244, 63, 94, 0.22)',
+        borderBright: 'rgba(244, 63, 94, 0.48)',
+        borderGlow: 'rgba(244, 63, 94, 0.65)',
+        accent: '#f43f5e',
+        accentGlow: 'rgba(244, 63, 94, 0.32)',
+        accentDim: 'rgba(244, 63, 94, 0.12)',
+        accentBorder: 'rgba(244, 63, 94, 0.42)'
+    },
+    'guides': {
+        name: 'Testing Guides',
+        // Deep purple / violet obsidian dominant base tone
+        bgVoid: '#0f061b',
+        bgBase: '#160927',
+        bgSurface: '#210d3a',
+        bgCard: 'rgba(35, 14, 60, 0.88)',
+        bgCardHover: 'rgba(49, 20, 84, 0.94)',
+        bgGlass: 'rgba(29, 12, 50, 0.78)',
+        bgInput: '#11061f',
+        bgSidebar: 'rgba(20, 8, 35, 0.98)',
+        bgHeader: 'rgba(20, 8, 35, 0.95)',
+        bgPanel: 'rgba(20, 8, 35, 0.96)',
+        bgCanvas: 'radial-gradient(circle at 50% 50%, #301354 0%, #11061f 100%)',
+        bgBanner: 'linear-gradient(135deg, rgba(42, 16, 74, 0.96) 0%, rgba(21, 8, 37, 0.96) 100%)',
+        borderDim: 'rgba(168, 85, 247, 0.22)',
+        borderBright: 'rgba(168, 85, 247, 0.48)',
+        borderGlow: 'rgba(168, 85, 247, 0.65)',
+        accent: '#a855f7',
+        accentGlow: 'rgba(168, 85, 247, 0.32)',
+        accentDim: 'rgba(168, 85, 247, 0.12)',
+        accentBorder: 'rgba(168, 85, 247, 0.42)'
+    }
+};
+
 // Apply dynamic chapter theme colors to root CSS variables
 function applyChapterTheme(moduleId) {
-    const mod = TESTING_MODULES.find(m => m.id === moduleId) || TESTING_MODULES[0];
-    const color = mod ? mod.themeColor : '#00f0ff';
-    document.documentElement.style.setProperty('--chapter-accent', color);
-    document.documentElement.style.setProperty('--chapter-accent-glow', color + '40');
-    document.documentElement.style.setProperty('--chapter-accent-dim', color + '18');
-    document.documentElement.style.setProperty('--chapter-accent-border', color + '55');
+    const theme = CHAPTER_THEMES[moduleId] || CHAPTER_THEMES['concrete'];
+    const root = document.documentElement;
+
+    root.style.setProperty('--bg-void', theme.bgVoid);
+    root.style.setProperty('--bg-base', theme.bgBase);
+    root.style.setProperty('--bg-surface', theme.bgSurface);
+    root.style.setProperty('--bg-card', theme.bgCard);
+    root.style.setProperty('--bg-card-hover', theme.bgCardHover);
+    root.style.setProperty('--bg-glass', theme.bgGlass);
+    root.style.setProperty('--bg-input', theme.bgInput);
+    root.style.setProperty('--bg-sidebar', theme.bgSidebar);
+    root.style.setProperty('--bg-header', theme.bgHeader);
+    root.style.setProperty('--bg-panel', theme.bgPanel);
+    root.style.setProperty('--bg-canvas', theme.bgCanvas);
+    root.style.setProperty('--bg-banner', theme.bgBanner);
+    root.style.setProperty('--border-dim', theme.borderDim);
+    root.style.setProperty('--border-bright', theme.borderBright);
+    root.style.setProperty('--border-glow', theme.borderGlow);
+    root.style.setProperty('--chapter-accent', theme.accent);
+    root.style.setProperty('--chapter-accent-glow', theme.accentGlow);
+    root.style.setProperty('--chapter-accent-dim', theme.accentDim);
+    root.style.setProperty('--chapter-accent-border', theme.accentBorder);
+
+    document.body.setAttribute('data-chapter', moduleId);
 }
 
 function activateModule(moduleId) {
@@ -6010,27 +6147,27 @@ function updateSidebarAndWorkspaceForModule() {
                     Kembali ke Beton (Concrete)
                 </button>
                 <button class="btn-nav ${activeSub === 'ca-spec-grav' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-spec-grav', this)">
-                    <span style="color:#10b981; font-weight:800;">1.</span> <span>Berat Jenis &amp; Serap</span>
+                    <span style="color:#e05638; font-weight:800;">1.</span> <span>Berat Jenis &amp; Serap</span>
                     <span class="nav-badge">C127</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'ca-moisture' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-moisture', this)">
-                    <span style="color:#10b981; font-weight:800;">2.</span> <span>Kadar Air Kerikil</span>
+                    <span style="color:#e05638; font-weight:800;">2.</span> <span>Kadar Air Kerikil</span>
                     <span class="nav-badge">C566</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'ca-silt' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-silt', this)">
-                    <span style="color:#10b981; font-weight:800;">3.</span> <span>Kadar Lumpur #200</span>
+                    <span style="color:#e05638; font-weight:800;">3.</span> <span>Kadar Lumpur #200</span>
                     <span class="nav-badge">C117</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'ca-unit-weight' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-unit-weight', this)">
-                    <span style="color:#10b981; font-weight:800;">4.</span> <span>Berat Isi &amp; Rongga</span>
+                    <span style="color:#e05638; font-weight:800;">4.</span> <span>Berat Isi &amp; Rongga</span>
                     <span class="nav-badge">C29</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'ca-gradation' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-gradation', this)">
-                    <span style="color:#10b981; font-weight:800;">5.</span> <span>Gradasi Butir Maks</span>
+                    <span style="color:#e05638; font-weight:800;">5.</span> <span>Gradasi Butir Maks</span>
                     <span class="nav-badge">C136</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'ca-abrasion' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-abrasion', this)">
-                    <span style="color:#10b981; font-weight:800;">6.</span> <span>Keausan Los Angeles</span>
+                    <span style="color:#e05638; font-weight:800;">6.</span> <span>Keausan Los Angeles</span>
                     <span class="nav-badge">C131</span>
                 </button>
             `;
@@ -6478,7 +6615,7 @@ function renderCoarseAggregateWorkspace(subViewId) {
             <div class="module-header-banner">
                 <div>
                     <div class="module-header-title">
-                        <span style="color:#10b981;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="6 11 16 4 26 9 27 21 17 28 6 23"></polygon></svg></span>
+                        <span style="color:#e05638;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="6 11 16 4 26 9 27 21 17 28 6 23"></polygon></svg></span>
                         ${title}
                     </div>
                     <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
@@ -6537,7 +6674,7 @@ function renderCoarseAggregateWorkspace(subViewId) {
         <div class="panel-card">
             <div class="card-title">
                 <span style="display:flex; align-items:center; gap:8px;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e05638" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                     STANDAR AGREGAT KASAR
                 </span>
             </div>

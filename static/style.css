@@ -16,6 +16,13 @@
     --bg-glass: rgba(18, 33, 66, 0.75);
     --bg-input: #0d1933;
 
+    /* Workspace Structural Surface Tones (Default: Concrete Testing) */
+    --bg-sidebar: rgba(14, 25, 51, 0.98);
+    --bg-header: rgba(14, 25, 51, 0.95);
+    --bg-panel: rgba(14, 25, 51, 0.96);
+    --bg-canvas: radial-gradient(circle at 50% 50%, #172a56 0%, #0d1733 100%);
+    --bg-banner: linear-gradient(135deg, rgba(16, 29, 59, 0.95) 0%, rgba(10, 18, 38, 0.95) 100%);
+
     /* Borders & Outlines */
     --border-dim: rgba(56, 189, 248, 0.2);
     --border-bright: rgba(56, 189, 248, 0.42);
@@ -108,9 +115,10 @@ html, body {
 .app-header {
     height: 58px;
     min-height: 58px;
-    background: rgba(14, 25, 51, 0.95);
+    background: var(--bg-header, rgba(14, 25, 51, 0.95));
     backdrop-filter: blur(14px);
     border-bottom: 1px solid var(--border-dim);
+    transition: background 0.35s ease, border-color 0.35s ease;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -357,6 +365,8 @@ html, body {
     width: 100%;
     position: relative;
     overflow: hidden;
+    background: var(--bg-base);
+    transition: background 0.35s ease;
 }
 
 /* ==========================================================================
@@ -365,9 +375,10 @@ html, body {
 .sidebar {
     width: 236px;
     min-width: 236px;
-    background: rgba(14, 25, 51, 0.98);
+    background: var(--bg-sidebar, rgba(14, 25, 51, 0.98));
     backdrop-filter: blur(16px);
     border-right: 1px solid var(--border-dim);
+    transition: transform var(--transition-norm), background 0.35s ease, border-color 0.35s ease;
     display: flex;
     flex-direction: column;
     padding: 14px 12px 10px 12px;
@@ -500,9 +511,10 @@ html, body {
     font-weight: 700;
     padding: 2px 7px;
     border-radius: 4px;
-    background: rgba(56, 189, 248, 0.2);
-    color: var(--blue-neon);
-    border: 1px solid rgba(56, 189, 248, 0.35);
+    background: var(--chapter-accent-dim, rgba(56, 189, 248, 0.2));
+    color: var(--chapter-accent, var(--blue-neon));
+    border: 1px solid var(--chapter-accent-border, rgba(56, 189, 248, 0.35));
+    transition: all var(--transition-fast);
 }
 
 .sidebar-footer {
@@ -548,6 +560,8 @@ html, body {
     height: 100%;
     overflow: hidden;
     position: relative;
+    background: var(--bg-base);
+    transition: background 0.35s ease;
 }
 
 /* ==========================================================================
@@ -555,7 +569,7 @@ html, body {
    ========================================================================== */
 .canvas-area {
     flex: 1;
-    background: radial-gradient(circle at 50% 50%, #172a56 0%, #0d1733 100%);
+    background: var(--bg-canvas, radial-gradient(circle at 50% 50%, #172a56 0%, #0d1733 100%));
     position: relative;
     display: flex;
     flex-direction: column;
@@ -564,7 +578,7 @@ html, body {
     perspective: 1800px;
     overflow: hidden;
     cursor: grab;
-    transition: background 0.3s ease;
+    transition: background 0.35s ease;
 }
 
 .canvas-area:active {
@@ -929,9 +943,10 @@ html, body {
 .control-panel {
     width: 420px;
     min-width: 420px;
-    background: rgba(14, 25, 51, 0.96);
+    background: var(--bg-panel, rgba(14, 25, 51, 0.96));
     backdrop-filter: blur(16px);
     border-left: 1px solid var(--border-dim);
+    transition: background 0.35s ease, border-color 0.35s ease;
     display: flex;
     flex-direction: column;
     padding: 20px;
@@ -3995,8 +4010,9 @@ option {
 }
 
 .module-header-banner {
-    background: linear-gradient(135deg, rgba(16, 29, 59, 0.95) 0%, rgba(10, 18, 38, 0.95) 100%);
+    background: var(--bg-banner, linear-gradient(135deg, rgba(16, 29, 59, 0.95) 0%, rgba(10, 18, 38, 0.95) 100%));
     border: 1px solid var(--border-bright);
+    transition: background 0.35s ease, border-color 0.35s ease;
     border-radius: 10px;
     padding: 14px 18px;
     display: flex;
@@ -4020,18 +4036,19 @@ option {
 .module-header-code {
     font-size: 11px;
     font-family: var(--font-mono);
-    color: var(--cyan-neon);
-    background: rgba(0, 240, 255, 0.1);
-    border: 1px solid rgba(0, 240, 255, 0.35);
+    color: var(--chapter-accent, var(--cyan-neon));
+    background: var(--chapter-accent-dim, rgba(0, 240, 255, 0.1));
+    border: 1px solid var(--chapter-accent-border, rgba(0, 240, 255, 0.35));
     padding: 4px 10px;
     border-radius: 6px;
     font-weight: 700;
+    transition: color var(--transition-norm), background var(--transition-norm), border-color var(--transition-norm);
 }
 
 .btn-back-to-concrete {
-    background: rgba(18, 33, 66, 0.9);
+    background: var(--bg-glass, rgba(18, 33, 66, 0.9));
     border: 1px solid var(--border-dim);
-    color: var(--blue-neon);
+    color: var(--chapter-accent, var(--blue-neon));
     padding: 6px 12px;
     border-radius: 6px;
     font-size: 11px;
@@ -4044,8 +4061,8 @@ option {
 }
 
 .btn-back-to-concrete:hover {
-    background: rgba(56, 189, 248, 0.15);
-    border-color: var(--blue-neon);
+    background: var(--chapter-accent-dim, rgba(56, 189, 248, 0.15));
+    border-color: var(--chapter-accent, var(--blue-neon));
     color: #fff;
 }
 
@@ -4057,13 +4074,18 @@ option {
 }
 
 .testing-calc-card {
-    background: rgba(14, 25, 52, 0.92);
+    background: var(--bg-card, rgba(14, 25, 52, 0.92));
     border: 1px solid var(--border-dim);
     border-radius: 10px;
     padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    transition: background 0.35s ease, border-color var(--transition-norm), box-shadow var(--transition-norm);
+}
+
+.testing-calc-card:hover {
+    border-color: var(--chapter-accent-border, var(--border-bright));
 }
 
 .testing-calc-header {
@@ -4098,36 +4120,39 @@ option {
 
 .testing-input-row input {
     flex: 1;
-    background: rgba(8, 16, 36, 0.85);
+    background: var(--bg-input, rgba(8, 16, 36, 0.85));
     border: 1px solid var(--border-dim);
     color: var(--text-pure);
     border-radius: 6px;
     padding: 6px 10px;
     font-size: 12px;
     font-family: var(--font-mono);
+    transition: background 0.35s ease, border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .testing-input-row input:focus {
     outline: none;
-    border-color: var(--cyan-neon);
-    box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+    border-color: var(--chapter-accent);
+    box-shadow: 0 0 8px var(--chapter-accent-glow);
 }
 
 .testing-input-unit {
     font-size: 11px;
-    color: var(--cyan-neon);
+    color: var(--chapter-accent, var(--cyan-neon));
     font-family: var(--font-mono);
     min-width: 32px;
+    transition: color var(--transition-norm);
 }
 
 .testing-result-box {
-    background: rgba(8, 16, 36, 0.85);
-    border: 1px solid rgba(0, 240, 255, 0.25);
+    background: var(--bg-input, rgba(8, 16, 36, 0.85));
+    border: 1px solid var(--chapter-accent-border, rgba(0, 240, 255, 0.25));
     border-radius: 8px;
     padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 6px;
+    transition: background 0.35s ease, border-color 0.35s ease;
 }
 
 .result-row {
@@ -4144,7 +4169,8 @@ option {
 .result-val {
     font-family: var(--font-mono);
     font-weight: 800;
-    color: var(--cyan-neon);
+    color: var(--chapter-accent, var(--cyan-neon));
+    transition: color var(--transition-norm);
 }
 
 .result-val.status-pass {
@@ -4253,7 +4279,7 @@ option {
 
 /* Column 1: Guide Topics Selector */
 .guide-topics-panel {
-    background: rgba(14, 25, 52, 0.94);
+    background: var(--bg-card, rgba(14, 25, 52, 0.94));
     border: 1px solid var(--border-dim);
     border-radius: 10px;
     padding: 12px;
@@ -4266,7 +4292,7 @@ option {
     width: 100%;
     padding: 10px 12px;
     border-radius: 8px;
-    background: rgba(8, 16, 36, 0.7);
+    background: var(--bg-input, rgba(8, 16, 36, 0.7));
     border: 1px solid var(--border-dim);
     color: var(--text-secondary);
     cursor: pointer;
@@ -4325,7 +4351,7 @@ option {
 
 /* Column 2: Styled PDF Document Content Viewer */
 .guide-viewer-box {
-    background: rgba(14, 25, 52, 0.95);
+    background: var(--bg-card, rgba(14, 25, 52, 0.95));
     border: 1px solid var(--border-dim);
     border-radius: 10px;
     padding: 24px;
@@ -4388,8 +4414,8 @@ option {
 }
 
 .guide-formula-card {
-    background: rgba(8, 16, 36, 0.85);
-    border: 1px solid rgba(0, 240, 255, 0.25);
+    background: var(--bg-input, rgba(8, 16, 36, 0.85));
+    border: 1px solid var(--chapter-accent-border, rgba(0, 240, 255, 0.25));
     border-radius: 8px;
     padding: 12px 16px;
     font-family: var(--font-mono);
@@ -4412,7 +4438,7 @@ option {
 
 /* Column 3: Right Panel PDF Download Card */
 .pdf-download-card {
-    background: linear-gradient(145deg, rgba(16, 29, 59, 0.96) 0%, rgba(10, 18, 38, 0.98) 100%);
+    background: var(--bg-banner, linear-gradient(145deg, rgba(16, 29, 59, 0.96) 0%, rgba(10, 18, 38, 0.98) 100%));
     border: 1.5px solid var(--border-bright);
     border-radius: 12px;
     padding: 16px;
