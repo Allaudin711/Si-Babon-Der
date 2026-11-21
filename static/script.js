@@ -1209,13 +1209,14 @@ function calculateAdvancedStrength(item) {
 
     let Area = normTipe === 'Cylinder' ? Math.PI * Math.pow((item.diameter || 15) / 2, 2) : b * h;
 
-    let n_bars = Math.max(0, parseInt(item.jumlahTulangan) || (normTipe === 'Cylinder' ? 0 : 4));
+    let parsedBars = parseInt(item.jumlahTulangan, 10);
+    let n_bars = !isNaN(parsedBars) ? Math.max(0, parsedBars) : (normTipe === 'Cylinder' ? 0 : 4);
     let r_bar = ((item.tulanganDiameter || 12) / 10) / 2;
-    let As = n_bars * Math.PI * Math.pow(r_bar, 2);
+    let As = n_bars > 0 ? n_bars * Math.PI * Math.pow(r_bar, 2) : 0;
     let fy = item.tulanganTipe && item.tulanganTipe.includes('Polos') ? 280 : 420;
     let d_eff = (normTipe === 'Cylinder' ? (item.tinggiSilinder || 30) : h) - 3;
     let b_eff = normTipe === 'Cylinder' ? (item.diameter || 15) : b;
-    let a = As > 0 ? (As * fy) / (0.85 * f_c_t * b_eff) : 0;
+    let a = (As > 0 && f_c_t > 0) ? (As * fy) / (0.85 * f_c_t * b_eff) : 0;
     let Mn = As > 0 ? As * fy * (d_eff - (a / 20)) / 100 : 0;
 
     // Structural load capacity according to element type:
@@ -1241,15 +1242,20 @@ function calculateAdvancedStrength(item) {
     // Kalkulasi Realistis Berat Baja Tulangan (kg)
     let length_m = (normTipe === 'Cylinder' ? (item.tinggiSilinder || 30) : L) / 100;
     let diam_m = ((item.tulanganDiameter || 12) / 1000);
-    let vol_longitudinal = n_bars * (Math.PI / 4) * Math.pow(diam_m, 2) * length_m;
-    let sengkang_spasi = Math.max(50, item.sengkangJarak || 150);
-    let sengkang_count = Math.max(2, Math.floor((length_m * 1000) / sengkang_spasi));
-    let keliling_sengkang = (normTipe === 'Cylinder') 
-        ? Math.PI * (((item.diameter || 15) - 4) / 100) 
-        : (2 * ((b - 4) + (h - 4))) / 100;
-    let diam_sengkang_m = ((item.sengkangDiameter || 8) / 1000);
-    let vol_sengkang = sengkang_count * Math.max(0, keliling_sengkang) * (Math.PI / 4) * Math.pow(diam_sengkang_m, 2);
-    let beratBajaKg = Math.max(normTipe === 'Cylinder' ? 0 : 2, Math.round((vol_longitudinal + vol_sengkang) * 7850));
+    let vol_longitudinal = 0;
+    let vol_sengkang = 0;
+    let beratBajaKg = 0;
+    if (n_bars > 0) {
+        vol_longitudinal = n_bars * (Math.PI / 4) * Math.pow(diam_m, 2) * length_m;
+        let sengkang_spasi = Math.max(50, item.sengkangJarak || 150);
+        let sengkang_count = Math.max(2, Math.floor((length_m * 1000) / sengkang_spasi));
+        let keliling_sengkang = (normTipe === 'Cylinder') 
+            ? Math.PI * (((item.diameter || 15) - 4) / 100) 
+            : (2 * ((b - 4) + (h - 4))) / 100;
+        let diam_sengkang_m = ((item.sengkangDiameter || 8) / 1000);
+        vol_sengkang = sengkang_count * Math.max(0, keliling_sengkang) * (Math.PI / 4) * Math.pow(diam_sengkang_m, 2);
+        beratBajaKg = Math.max(normTipe === 'Cylinder' ? 0 : 2, Math.round((vol_longitudinal + vol_sengkang) * 7850));
+    }
 
     return {
         wc: w_c.toFixed(2),
@@ -1361,7 +1367,11 @@ function calculateDynamicScale(val) {
 }
 
 function generateRebarsMarkup(nBars, tipe) {
-    let n = Math.max(2, parseInt(nBars) || 4);
+    let parsed = parseInt(nBars, 10);
+    if (!isNaN(parsed) && parsed <= 0) {
+        return '';
+    }
+    let n = Math.max(2, isNaN(parsed) ? 4 : parsed);
     let norm = getNormalizedTipe(tipe || elementData.tipe);
     let html = '';
 
@@ -1490,7 +1500,7 @@ function updateBoxDimensions() {
 
         const cage = cube.querySelector('.rebar-cage-3d');
         if (cage) {
-            cage.innerHTML = generateRebarsMarkup(elementData.jumlahTulangan || 4, elementData.tipe);
+            cage.innerHTML = generateRebarsMarkup(elementData.jumlahTulangan !== undefined ? elementData.jumlahTulangan : 4, elementData.tipe);
         }
     }
 }
@@ -1555,6 +1565,23 @@ function updateCylinderDimensions() {
     }
 }
 
+function updateLiveWCRatio() {
+    let semenInput = document.getElementById('input-mix-semen');
+    let airInput = document.getElementById('input-mix-air');
+    let semen = semenInput ? parseFloat(semenInput.value) : elementData.semen;
+    let air = airInput ? parseFloat(airInput.value) : elementData.air;
+
+    let wcText = 'N/A';
+    if (!isNaN(semen) && semen > 0 && !isNaN(air) && air >= 0) {
+        wcText = (air / semen).toFixed(2);
+    }
+    let wcLabel = document.getElementById('label-live-wc');
+    if (wcLabel) {
+        wcLabel.textContent = wcText;
+    }
+    return wcText;
+}
+
 function handleTipeChange(selectObj) {
     playSynthSound('click');
     let prevNorm = getNormalizedTipe(elementData.tipe);
@@ -1611,7 +1638,8 @@ function handleInovasiChange(selectObj) {
 
 function handleJumlahTulanganChange(val) {
     playSynthSound('click');
-    let num = parseInt(val) || 4;
+    let parsed = parseInt(val, 10);
+    let num = isNaN(parsed) ? 4 : parsed;
     elementData.jumlahTulangan = Math.max(0, Math.min(32, num));
     
     let r_bar = ((elementData.tulanganDiameter || 12) / 10) / 2;
@@ -1649,7 +1677,7 @@ function createConcreteElement() {
     elementData.tinggiSilinder = isNaN(tsVal) ? 10 : tsVal;
     elementData.tulanganTipe = tTipe;
     elementData.tulanganDiameter = isNaN(tDiam) ? 12 : tDiam;
-    elementData.jumlahTulangan = isNaN(tJml) || tJml < 1 ? 4 : tJml;
+    elementData.jumlahTulangan = isNaN(tJml) || tJml < 0 ? 0 : tJml;
     elementData.sengkangDiameter = isNaN(sDiam) ? 8 : sDiam;
     elementData.sengkangJarak = isNaN(sJarak) ? 150 : sJarak;
 
@@ -1749,7 +1777,7 @@ function renderCreate() {
             <div class="face top"></div>
             <div class="face bottom"></div>
             <div class="rebar-cage-3d">
-                ${generateRebarsMarkup(elementData.jumlahTulangan || 4, elementData.tipe)}
+                ${generateRebarsMarkup(elementData.jumlahTulangan !== undefined ? elementData.jumlahTulangan : 4, elementData.tipe)}
             </div>
         </div>
     `;
@@ -1862,8 +1890,9 @@ function renderCreate() {
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <input type="number" id="input-tulangan-jumlah" class="custom-input" value="${elementData.jumlahTulangan !== undefined ? elementData.jumlahTulangan : 4}" min="0" max="32" oninput="handleJumlahTulanganChange(this.value)">
                     <select class="custom-select" style="max-width: 140px;" onchange="document.getElementById('input-tulangan-jumlah').value = this.value; handleJumlahTulanganChange(this.value);">
+                        <option value="0" ${elementData.jumlahTulangan === 0 ? 'selected' : ''}>0 (Plain Concrete / Tanpa Tulangan)</option>
                         <option value="2" ${elementData.jumlahTulangan === 2 ? 'selected' : ''}>2 Bars</option>
-                        <option value="4" ${(elementData.jumlahTulangan === 4 || !elementData.jumlahTulangan) ? 'selected' : ''}>4 Bars (Std)</option>
+                        <option value="4" ${(elementData.jumlahTulangan === 4 || elementData.jumlahTulangan === undefined) ? 'selected' : ''}>4 Bars (Std)</option>
                         <option value="6" ${elementData.jumlahTulangan === 6 ? 'selected' : ''}>6 Bars</option>
                         <option value="8" ${elementData.jumlahTulangan === 8 ? 'selected' : ''}>8 Bars</option>
                         <option value="10" ${elementData.jumlahTulangan === 10 ? 'selected' : ''}>10 Bars</option>
@@ -1898,23 +1927,23 @@ function renderCreate() {
         <div class="panel-card">
             <div class="card-title">
                 <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><path d="M3 10h18v2a9 9 0 0 1-18 0v-2z"></path><path d="M14 4l-4 8"></path></svg> Proporsi Rancangan Campuran (Mix Design)</span>
-                <span class="label-hint">w/c Ratio: ${(elementData.semen > 0 ? (elementData.air/elementData.semen).toFixed(2) : '0.50')}</span>
+                <span class="label-hint">w/c Ratio: <strong id="label-live-wc" style="color:var(--cyan-neon); font-family:var(--font-mono); font-weight:800;">${(elementData.semen > 0 ? (elementData.air / elementData.semen).toFixed(2) : 'N/A')}</strong></span>
             </div>
             <div class="input-group">
                 <label>Portland Cement (kg)</label>
-                <input type="number" class="custom-input" value="${elementData.semen}" oninput="elementData.semen = parseFloat(this.value)||1">
+                <input type="number" id="input-mix-semen" class="custom-input" value="${elementData.semen}" oninput="elementData.semen = parseFloat(this.value) || 0; updateLiveWCRatio();">
             </div>
             <div class="input-group">
                 <label>Fine Aggregate / Sand (kg)</label>
-                <input type="number" class="custom-input" value="${elementData.pasir}" oninput="elementData.pasir = parseFloat(this.value)||1">
+                <input type="number" id="input-mix-pasir" class="custom-input" value="${elementData.pasir}" oninput="elementData.pasir = parseFloat(this.value) || 0; updateLiveWCRatio();">
             </div>
             <div class="input-group">
                 <label>Coarse Aggregate / Gravel (kg)</label>
-                <input type="number" class="custom-input" value="${elementData.kerikil}" oninput="elementData.kerikil = parseFloat(this.value)||1">
+                <input type="number" id="input-mix-kerikil" class="custom-input" value="${elementData.kerikil}" oninput="elementData.kerikil = parseFloat(this.value) || 0; updateLiveWCRatio();">
             </div>
             <div class="input-group">
                 <label>Water (Liters)</label>
-                <input type="number" class="custom-input" value="${elementData.air}" oninput="elementData.air = parseFloat(this.value)||1">
+                <input type="number" id="input-mix-air" class="custom-input" value="${elementData.air}" oninput="elementData.air = parseFloat(this.value) || 0; updateLiveWCRatio();">
             </div>
         </div>
 
@@ -2802,6 +2831,13 @@ function updateHpUI() {
    ========================================================================== */
 function renderPengujian() {
     if (canvasView) canvasView.classList.remove("scroll-mode");
+
+    // Ensure testState.selectedMethod is restricted to active methods (#1, #2, #3, #10, #11)
+    const allowedMethodKeywords = ['Kuat Tekan', 'Tarik Belah', 'Lentur', 'RCPT', 'Klorida', 'Permeabilitas', 'Kedap Air'];
+    let isAllowedMethod = allowedMethodKeywords.some(kw => testState.selectedMethod && testState.selectedMethod.includes(kw));
+    if (!isAllowedMethod) {
+        testState.selectedMethod = "Uji Kuat Tekan Silinder Beton (SNI 03-1974-2011 / ASTM C39 / ISO 1920-4)";
+    }
     let hasSpecimen = storedConcreteList && storedConcreteList.length > 0;
     let materialOptionsHtml = '';
     
@@ -2893,17 +2929,8 @@ function renderPengujian() {
                     <option value="Uji Kuat Tekan Silinder Beton (SNI 03-1974-2011 / ASTM C39 / ISO 1920-4)" ${testState.selectedMethod.includes('Kuat Tekan') ? 'selected' : ''}>1. Uji Kuat Tekan Silinder Beton (SNI 03-1974-2011 / ASTM C39 / ISO 1920-4)</option>
                     <option value="Uji Kuat Tarik Belah Silinder (SNI 2491:2014 / ASTM C496 / EN 12390-6)" ${testState.selectedMethod.includes('Tarik Belah') ? 'selected' : ''}>2. Uji Kuat Tarik Belah Silinder (SNI 2491:2014 / ASTM C496 / EN 12390-6)</option>
                     <option value="Uji Kuat Lentur Balok 4-Titik (SNI 4431:2011 / ASTM C78 / EN 12390-5)" ${testState.selectedMethod.includes('Lentur') ? 'selected' : ''}>3. Uji Kuat Lentur Balok 4-Titik (SNI 4431:2011 / ASTM C78 / EN 12390-5)</option>
-                    <option value="Uji Bor Inti / Core Drill Beton (SNI 03-2492-2002 / ASTM C42 / EN 12504-1)" ${testState.selectedMethod.includes('Core Drill') || testState.selectedMethod.includes('Bor Inti') ? 'selected' : ''}>4. Uji Bor Inti / Core Drill Beton (SNI 03-2492-2002 / ASTM C42 / EN 12504-1)</option>
-                    <option value="Uji Palu Pantul Schmidt Rebound Hammer (SNI 03-4430-1997 / ASTM C805 / EN 12504-2)" ${testState.selectedMethod.includes('Hammer') || testState.selectedMethod.includes('Palu') ? 'selected' : ''}>5. Uji Palu Pantul Schmidt Rebound Hammer (SNI 03-4430-1997 / ASTM C805 / EN 12504-2)</option>
-                    <option value="Uji Cepat Rambat Ultrasonik UPVT Non-Destruktif (ASTM C597 / BS 1881-203 / ISO 1920-7)" ${testState.selectedMethod.includes('UPVT') || testState.selectedMethod.includes('Ultrasonik') ? 'selected' : ''}>6. Uji Cepat Rambat Ultrasonik UPVT Non-Destruktif (ASTM C597 / BS 1881-203 / ISO 1920-7)</option>
-                    <option value="Uji Covermeter & Pemetaan Tulangan (BS 1881:Part 204 / DIN 1048-1)" ${testState.selectedMethod.includes('Covermeter') || testState.selectedMethod.includes('Profometer') ? 'selected' : ''}>7. Uji Covermeter & Pemetaan Tulangan (BS 1881:Part 204 / DIN 1048-1)</option>
-                    <option value="Uji Kedalaman Karbonasi Kimia Phenolphthalein (RILEM CPC-18 / SNI 03-6805)" ${testState.selectedMethod.includes('Karbonasi') ? 'selected' : ''}>8. Uji Kedalaman Karbonasi Kimia Phenolphthalein (RILEM CPC-18 / SNI 03-6805)</option>
-                    <option value="Uji Potensial Korosi Sel Separuh Half-Cell (ASTM C876-15 / RILEM TC 154)" ${testState.selectedMethod.includes('Korosi') || testState.selectedMethod.includes('Half-Cell') ? 'selected' : ''}>9. Uji Potensial Korosi Sel Separuh Half-Cell (ASTM C876-15 / RILEM TC 154)</option>
                     <option value="Uji Penetrasi Klorida Cepat / RCPT (ASTM C1202 / AASHTO T277)" ${testState.selectedMethod.includes('RCPT') || testState.selectedMethod.includes('Klorida') ? 'selected' : ''}>10. Uji Penetrasi Klorida Cepat / RCPT (ASTM C1202 / AASHTO T277)</option>
                     <option value="Uji Kedap Air Permeabilitas Tekanan Tinggi (DIN 1048 Part 5 / EN 12390-8)" ${testState.selectedMethod.includes('Permeabilitas') || testState.selectedMethod.includes('Kedap Air') ? 'selected' : ''}>11. Uji Kedap Air Permeabilitas Tekanan Tinggi (DIN 1048 Part 5 / EN 12390-8)</option>
-                    <option value="Uji Kuat Tarik Baja Tulangan Deform (SNI 2052:2017 / ASTM A615 / ISO 6935-2)" ${testState.selectedMethod.includes('Tarik Baja') || testState.selectedMethod.includes('Tulangan Deform') ? 'selected' : ''}>12. Uji Kuat Tarik Baja Tulangan Deform (SNI 2052:2017 / ASTM A615 / ISO 6935-2)</option>
-                    <option value="Uji Slump & Kelecakan Beton Segar (SNI 1972:2008 / ASTM C143 / EN 12350-2)" ${testState.selectedMethod.includes('Slump') ? 'selected' : ''}>13. Uji Slump & Kelecakan Beton Segar (SNI 1972:2008 / ASTM C143 / EN 12350-2)</option>
-                    <option value="Uji Modulus Elastisitas Statis & Angka Poisson (ASTM C469 / ISO 1920-10)" ${testState.selectedMethod.includes('Modulus') ? 'selected' : ''}>14. Uji Modulus Elastisitas Statis & Angka Poisson (ASTM C469 / ISO 1920-10)</option>
                 </select>
             </div>
         </div>
@@ -4511,7 +4538,7 @@ function renderRAB() {
         let unitSemenBiaya = item.semen * hargaSemenPerKg;
         let unitPasirBiaya = item.pasir * hargaPasirPerKg;
         let unitKerikilBiaya = item.kerikil * hargaKerikilPerKg;
-        let unitBajaKg = calc.totalBajaKg || 12;
+        let unitBajaKg = (calc.totalBajaKg !== undefined) ? calc.totalBajaKg : 0;
         let unitBajaBiaya = unitBajaKg * hargaBajaPerKg;
 
         let totalBiayaSatuanUnit = unitSemenBiaya + unitPasirBiaya + unitKerikilBiaya + unitBajaBiaya;
@@ -4521,7 +4548,7 @@ function renderRAB() {
         detailItemsHtml += `
             <div style="background: rgba(18, 33, 66, 0.85); border: 1px solid var(--border-dim); border-radius: 10px; padding: 14px; margin-bottom: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid var(--border-dim); padding-bottom: 6px;">
-                    <span style="font-weight: 800; color: var(--cyan-neon); font-size: 13px;">[Item #${idx+1}] ${item.tipe} (${item.jumlahTulangan||4} Rebar Bars)</span>
+                    <span style="font-weight: 800; color: var(--cyan-neon); font-size: 13px;">[Item #${idx+1}] ${item.tipe} (${item.jumlahTulangan === 0 ? 'Plain Concrete (Tanpa Tulangan)' : (item.jumlahTulangan !== undefined ? item.jumlahTulangan : 4) + ' Rebar Bars'})</span>
                     <span style="background: var(--blue-primary); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-family: var(--font-mono);">Qty: ${item.jumlah} Units</span>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11.5px; color: var(--text-secondary); margin-bottom: 8px;">
@@ -4630,7 +4657,7 @@ function renderKarbon() {
         detailKarbonHtml += `
             <div style="background: rgba(18, 33, 66, 0.85); border: 1px solid var(--border-dim); border-radius: 10px; padding: 14px; margin-bottom: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid var(--border-dim); padding-bottom: 6px;">
-                    <span style="font-weight: 800; color: var(--cyan-neon); font-size: 13px;">[Item #${idx+1}] ${item.tipe} (${item.jumlahTulangan||4} Rebar Bars)</span>
+                    <span style="font-weight: 800; color: var(--cyan-neon); font-size: 13px;">[Item #${idx+1}] ${item.tipe} (${item.jumlahTulangan === 0 ? 'Plain Concrete (Tanpa Tulangan)' : (item.jumlahTulangan !== undefined ? item.jumlahTulangan : 4) + ' Rebar Bars'})</span>
                     <span style="background: var(--accent-emerald); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-family: var(--font-mono);">Qty: ${item.jumlah} Units</span>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11.5px; color: var(--text-secondary); margin-bottom: 8px;">
@@ -4988,8 +5015,9 @@ window.onload = function() {
    CHAPTER / MODULE TESTING SWITCHER (SNI & ASTM MULTI-MODULE WORKSPACE ENGINE)
    ========================================================================== */
 
-let activeModule = 'concrete'; // 'concrete' | 'fine-aggregate' | 'coarse-aggregate' | 'steel'
-let previewStackOrder = ['concrete', 'fine-aggregate', 'coarse-aggregate', 'steel'];
+let activeModule = 'concrete'; // 'concrete' | 'fine-aggregate' | 'coarse-aggregate' | 'steel' | 'guides'
+let previewStackOrder = ['concrete', 'fine-aggregate', 'coarse-aggregate', 'steel', 'guides'];
+let activeGuideTopic = 'concrete';
 let currentSubModuleView = {
     'fine-aggregate': 'fa-spec-grav',
     'coarse-aggregate': 'ca-spec-grav',
@@ -5057,6 +5085,21 @@ const TESTING_MODULES = [
             <line x1="11" y1="13" x2="21" y2="16" stroke="#f43f5e" stroke-width="2"/>
             <line x1="11" y1="18" x2="21" y2="21" stroke="#f43f5e" stroke-width="2"/>
             <line x1="11" y1="23" x2="21" y2="26" stroke="#f43f5e" stroke-width="2"/>
+        </svg>`
+    },
+    {
+        id: 'guides',
+        title: 'Testing Guides',
+        subtitle: 'Panduan Pengujian SNI & ASTM',
+        standardBadge: 'DOCS & PDF',
+        summary: 'Kumpulan SOP, manual prosedur uji & spesifikasi SNI/ASTM dengan tautan unduh dokumen PDF.',
+        themeColor: '#a855f7',
+        cadIcon: `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="#a855f7" stroke-width="1.8">
+            <path d="M6 4h14l6 6v18H6z" stroke="#a855f7" fill="rgba(168,85,247,0.1)"/>
+            <polyline points="20 4 20 10 26 10" stroke="#a855f7"/>
+            <line x1="10" y1="14" x2="22" y2="14" stroke="#a855f7"/>
+            <line x1="10" y1="18" x2="22" y2="18" stroke="#a855f7"/>
+            <line x1="10" y1="22" x2="18" y2="22" stroke="#a855f7"/>
         </svg>`
     }
 ];
@@ -5196,6 +5239,242 @@ function activateModule(moduleId) {
     updateSidebarAndWorkspaceForModule();
 }
 
+
+/* ==========================================================================
+   CONFIG & WORKSPACE: TESTING GUIDES & PDF DOWNLOAD
+   ========================================================================== */
+const PDF_GUIDE_MAP = {
+    'concrete': {
+        topicId: 'concrete',
+        title: 'Panduan Pengujian Beton (Concrete Testing Guide)',
+        subtitle: 'Kuat Tekan Silinder, Momen Lentur Balok & Pola Retak',
+        badge: 'SNI 03-1974-2011 / ASTM C39 / SNI 2491:2014',
+        fileName: 'Panduan_Pengujian_Beton_SNI_ASTM.pdf',
+        pdfPath: 'static/pdf/Panduan_Pengujian_Beton_SNI_ASTM.pdf',
+        fileSize: '2.4 MB',
+        dateUpdated: '2026-11-20',
+        standards: ['SNI 03-1974-2011 (Kuat Tekan Silinder)', 'SNI 2491:2014 / ASTM C496 (Tarik Belah)', 'SNI 4431:2011 / ASTM C78 (Kuat Lentur)', 'SNI 2847:2019 (Persyaratan Beton Struktural)'],
+        summary: 'Prosedur lengkap pengujian mutu beton di laboratorium: persiapan benda uji silinder (15x30 cm), perataan permukaan (capping sulfur/pad neoprene), pembebanan kuasi-statik hidrolik UTM laju 0.25 MPa/s, identifikasi 6 tipe pola retak keruntuhan ASTM C39, dan perhitungan kapasitas lentur balok Mn.',
+        sections: [
+            { title: '1. Lingkup & Standar Acuan', desc: 'Metode uji kuat tekan (ASTM C39 / SNI 03-1974-2011) dan kuat tarik belah (ASTM C496 / SNI 2491:2014) untuk silinder dan balok beton struktural.' },
+            { title: '2. Peralatan Uji & Kalibrasi UTM', desc: 'Universal Testing Machine (UTM) kapasitas minimal 2000 kN dengan verifikasi akurasi Kelas 1 ISO 7500-1 dan bearing block spherical seating.' },
+            { title: '3. Persiapan Spesimen & Capping', desc: 'Toleransi ketegaklurusan ujung silinder <= 0.5 derajat. Gunakan compound sulfur ASTM C617 atau elastomeric pads (neoprene) ASTM C1231.' },
+            { title: '4. Pelaksanaan Pengujian Kuat Tekan', desc: 'Pemberian beban kontinu tanpa sentakan dengan kecepatan 0.15 - 0.35 MPa/s hingga spesimen runtuh ultimit.' },
+            { title: '5. Evaluasi Pola Retak & Verifikasi f\'c', desc: 'Dokumentasikan pola keruntuhan berdasarkan ASTM C39 Tipe 1-6 dan hitung kuat tekan dengan faktor koreksi L/D.' }
+        ]
+    },
+    'fine-aggregate': {
+        topicId: 'fine-aggregate',
+        title: 'Panduan Uji Agregat Halus (Fine Aggregate Guide)',
+        subtitle: 'Berat Jenis, Penyerapan, Kadar Lumpur & Gradasi Ayakan',
+        badge: 'SNI 1970:2008 / ASTM C128 / SNI 03-4142',
+        fileName: 'Panduan_Pengujian_Agregat_Halus_SNI.pdf',
+        pdfPath: 'static/pdf/Panduan_Pengujian_Agregat_Halus_SNI.pdf',
+        fileSize: '1.8 MB',
+        dateUpdated: '2026-11-20',
+        standards: ['SNI 1970:2008 (Berat Jenis & Absorpsi Pasir)', 'ASTM C128 (Specific Gravity & Absorption)', 'SNI 03-4142-1996 / ASTM C117 (Kadar Lumpur #200)', 'SNI 03-1968-1990 / ASTM C136 (Analisis Saringan)'],
+        summary: 'Tata cara karakterisasi pasir alam dan pasir olahan: penentuan berat jenis curah (bulk), berat jenis kering permukaan jenuh (SSD), kadar air riil, persentase bahan lolos saringan No. 200, penentuan modulus kehalusan butir (Fineness Modulus 2.3 - 3.1), serta uji kualitatif zat organik pelat warna Gardner.',
+        sections: [
+            { title: '1. Penentuan Kondisi SSD (Kerucut Abrams Pasir)', desc: 'Spesimen dipadatkan 25 kali tumbukan dalam kerucut kuningan; runtuh sebagian menandakan kondisi SSD tercapai.' },
+            { title: '2. Pengukuran Piknometer & Berat Jenis', desc: 'Pengukuran massa piknometer + air + pasir SSD untuk formula Bj Bulk, Bj SSD, dan persentase penyerapan air.' },
+            { title: '3. Uji Cuci Saringan No. 200 (Kadar Lumpur)', desc: 'Pencucian sampel di atas ayakan 0.075 mm; batas maksimal lumpur untuk beton struktural adalah 5.0%.' },
+            { title: '4. Gradasi Saringan & Fineness Modulus', desc: 'Ayakan susun ASTM (9.5mm, No.4, 8, 16, 30, 50, 100); hitung persen tertahan kumulatif dibagi 100.' },
+            { title: '5. Uji Kolorimetri Bahan Organik (ASTM C40)', desc: 'Perendaman sampel dalam larutan NaOH 3% selama 24 jam; bandingkan warna cairan dengan standar pelat warna kaca.' }
+        ]
+    },
+    'coarse-aggregate': {
+        topicId: 'coarse-aggregate',
+        title: 'Panduan Uji Agregat Kasar (Coarse Aggregate Guide)',
+        subtitle: 'Berat Jenis Kerikil, Uji Abrasi Los Angeles & Rongga',
+        badge: 'SNI 1969:2008 / ASTM C127 / SNI 2417:2008',
+        fileName: 'Panduan_Pengujian_Agregat_Kasar_SNI.pdf',
+        pdfPath: 'static/pdf/Panduan_Pengujian_Agregat_Kasar_SNI.pdf',
+        fileSize: '2.1 MB',
+        dateUpdated: '2026-11-20',
+        standards: ['SNI 1969:2008 / ASTM C127 (Berat Jenis Kerikil)', 'SNI 2417:2008 / ASTM C131 (Abrasi Los Angeles)', 'SNI 03-4804-1998 / ASTM C29 (Berat Isi & Rongga)', 'ASTM C136 (Analisis Gradasi Kerikil)'],
+        summary: 'Prosedur pengujian fisik kerikil dan batu pecah (split): penimbangan dalam keranjang kawat terendam air untuk berat jenis kering dan SSD, uji ketahanan abrasi mekanik bejana Los Angeles (500 putaran, bola baja & ayakan 1.7 mm), berat isi gembur dan padat rodding 25 tusukan, serta distribusi gradasi butir nominal.',
+        sections: [
+            { title: '1. Penimbangan Hidrostatis (Archimedes)', desc: 'Spesimen direndam 24 jam, dilap SSD, lalu ditimbang di udara dan di dalam air menggunakan neraca hidrostatik.' },
+            { title: '2. Uji Ketahanan Abrasi Mesin Los Angeles', desc: 'Drum berputar 30-33 rpm sebanyak 500 putaran dengan muatan bola baja; fraksi lolos No.12 (< 1.7 mm) ditimbang untuk nilai abrasi (< 40%).' },
+            { title: '3. Berat Isi & Persentase Rongga Udara', desc: 'Pengukuran wadah logam terkalibrasi kondisi lepas vs rodding 3 lapis; kalkulasi densitas dan rongga antar butir agregat.' },
+            { title: '4. Analisis Gradasi & Ukuran Butir Maksimum', desc: 'Pemisahan fraksi ukuran split 10-20 mm atau 20-40 mm memastikan kurva gradasi menerus ideal untuk mix design beton.' }
+        ]
+    },
+    'steel': {
+        topicId: 'steel',
+        title: 'Panduan Uji Tarik Baja Tulangan (Steel Tensile Guide)',
+        subtitle: 'Tegangan Luluh fy, Kuat Tarik fu & Elongasi Regangan',
+        badge: 'SNI 2052:2017 / ASTM A615 / ISO 6892-1',
+        fileName: 'Panduan_Pengujian_Tarik_Baja_SNI.pdf',
+        pdfPath: 'static/pdf/Panduan_Pengujian_Tarik_Baja_SNI.pdf',
+        fileSize: '1.9 MB',
+        dateUpdated: '2026-11-20',
+        standards: ['SNI 2052:2017 (Baja Tulangan Beton BjTS & BjTP)', 'ASTM A615 / A615M (Deformed and Plain Carbon-Steel Bars)', 'SNI 8330:2017 / ISO 6892-1 (Metode Uji Tarik Logam)', 'SNI 0410:2017 (Uji Lengkung Baja)'],
+        summary: 'Standar pengujian mekanik baja tulangan deform (sirip) dan polos: penentuan batas luluh fy (metode offset 0.2% atau yield plateau), batas tarik ultimit fu, rasio keamanan kegempaan (fu/fy >= 1.25), persentase perpanjangan saat patah (elongation gauge length 5d/200mm), dan uji lengkung 180 derajat tanpa retak permukaan luar.',
+        sections: [
+            { title: '1. Penyiapan Spesimen & Penandaan Gauge Length', desc: 'Pengukuran diameter nominal berdasarkan massa per meter (kg/m); penandaan gauge length Lo = 5d atau 200 mm dengan mesin punch titik.' },
+            { title: '2. Pemasangan Grip Wedge & Sensor Ekstensometer', desc: 'Cengkeraman hidrolik V-jaw memastikan tidak terjadi slip; ekstensometer presisi mengukur regangan elastis aksial.' },
+            { title: '3. Penentuan Tegangan Luluh (fy) & Kuat Tarik (fu)', desc: 'Pengujian dengan laju tegangan terkontrol 10-30 MPa/s; verifikasi nilai minimum BjTS 420 (fy >= 420 MPa, fu >= 525 MPa).' },
+            { title: '4. Pengukuran Regangan Patah (Elongation %)', desc: 'Penyatuan kedua patahan spesimen setelah putus; pengukuran jarak akhir Lu untuk memastikan keuletan daktail sesuai kelas baja.' },
+            { title: '5. Uji Lengkung Dingin 180 Derajat (Bend Test)', desc: 'Pelengkungan spesimen 180 derajat mengelilingi mandrel diameter 3d - 5d; evaluasi tidak adanya retakan atau sobekan.' }
+        ]
+    }
+};
+
+function switchGuideTopic(topicId) {
+    if (!PDF_GUIDE_MAP[topicId]) return;
+    activeGuideTopic = topicId;
+    playSynthSound('click');
+    updateSidebarAndWorkspaceForModule();
+}
+
+function renderTestingGuidesWorkspace(topicId) {
+    if (!canvasView || !panelView) return;
+    canvasView.classList.add('scroll-mode');
+    panelView.style.display = 'block';
+
+    const guide = PDF_GUIDE_MAP[topicId] || PDF_GUIDE_MAP['concrete'];
+
+    let sectionsHtml = '';
+    guide.sections.forEach((sec, idx) => {
+        sectionsHtml += `
+            <div class="guide-section" style="background: rgba(10, 20, 42, 0.6); border: 1px solid var(--border-dim); border-radius: 8px; padding: 12px 14px; margin-bottom: 8px;">
+                <div class="guide-section-title" style="color: #a855f7; font-size: 12px; margin-bottom: 4px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline; margin-right:4px;"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                    ${sec.title}
+                </div>
+                <div class="guide-section-body" style="font-size: 11.5px; color: var(--text-secondary); line-height: 1.55;">
+                    ${sec.desc}
+                </div>
+            </div>
+        `;
+    });
+
+    let standardsBadgesHtml = '';
+    guide.standards.forEach(std => {
+        standardsBadgesHtml += `<span class="telemetry-chip" style="background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); font-size: 10px; padding: 3px 8px; border-radius: 4px;">${std}</span>`;
+    });
+
+    canvasView.innerHTML = `
+        <div class="guides-workspace-container">
+            <div class="guide-viewer-box">
+                <div class="guide-doc-header">
+                    <div>
+                        <div class="guide-doc-title">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            <span>${guide.title}</span>
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                            ${guide.subtitle} &bull; Standar Terverifikasi SNI &amp; ASTM Internasional
+                        </div>
+                        <div class="guide-doc-meta" style="margin-top: 8px; display:flex; flex-wrap:wrap; gap:6px;">
+                            ${standardsBadgesHtml}
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="telemetry-chip live-chip"><span class="dot-live"></span>VERIFIED SOP</span>
+                        <div style="font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 6px;">Rev: ${guide.dateUpdated}</div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(168, 85, 247, 0.08); border-left: 3px solid #a855f7; border-radius: 0 8px 8px 0; padding: 12px 14px; font-size: 12px; color: var(--text-pure); line-height: 1.6;">
+                    <strong style="color: #c084fc;">Ringkasan Eksekutif &amp; Tujuan SOP:</strong><br>
+                    ${guide.summary}
+                </div>
+
+                <div>
+                    <h4 style="color: var(--cyan-neon); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                        TAHAPAN &amp; PROSEDUR STANDAR OPERASIONAL (SOP)
+                    </h4>
+                    ${sectionsHtml}
+                </div>
+
+                <div style="display:flex; gap:10px; justify-content: flex-end; padding-top: 10px; border-top: 1px solid var(--border-dim); flex-wrap: wrap;">
+                    <a href="${guide.pdfPath}" target="_blank" class="btn-preview-pdf" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:11.5px; padding:8px 14px; border-radius:6px;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        Buka PDF di Tab Baru
+                    </a>
+                    <a href="${guide.pdfPath}" download="${guide.fileName}" class="btn-download-pdf" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:11.5px; padding:8px 16px; border-radius:6px; width:auto;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Unduh Dokumen PDF (${guide.fileSize})
+                    </a>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Right Sidebar / Panel View: Download Card and File Info
+    let otherTopicsHtml = '';
+    Object.keys(PDF_GUIDE_MAP).forEach(k => {
+        const item = PDF_GUIDE_MAP[k];
+        const isCurrent = (k === topicId);
+        otherTopicsHtml += `
+            <div onclick="switchGuideTopic('${k}')" style="background: ${isCurrent ? 'rgba(168, 85, 247, 0.18)' : 'rgba(10, 20, 42, 0.7)'}; border: 1px solid ${isCurrent ? '#a855f7' : 'var(--border-dim)'}; border-radius: 8px; padding: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all var(--transition-fast);">
+                <div style="font-size: 11px; font-weight: ${isCurrent ? '800' : '600'}; color: ${isCurrent ? '#fff' : 'var(--text-secondary)'};">
+                    ${item.title.split('(')[0].trim()}
+                </div>
+                <span class="telemetry-chip" style="font-size: 9px; padding: 2px 6px;">PDF</span>
+            </div>
+        `;
+    });
+
+    panelView.innerHTML = `
+        <div style="padding: 16px; display: flex; flex-direction: column; gap: 14px; height: 100%; box-sizing: border-box; overflow-y: auto;">
+            <!-- Main PDF Download Box -->
+            <div class="pdf-download-card">
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <div class="pdf-icon-badge">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    </div>
+                    <div>
+                        <div style="font-size: 13px; font-weight: 800; color: #fff;">UNDUH DOKUMEN PDF</div>
+                        <div style="font-size: 10px; color: #a855f7; font-family: var(--font-mono);">${guide.fileName}</div>
+                    </div>
+                </div>
+
+                <div class="pdf-file-info" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; color: var(--text-secondary); background: rgba(8, 16, 36, 0.7); padding: 10px; border-radius: 6px; border: 1px solid var(--border-dim);">
+                    <div>Ukuran: <strong style="color: #fff;">${guide.fileSize}</strong></div>
+                    <div>Format: <strong style="color: #ef4444;">Portable Doc (PDF)</strong></div>
+                    <div>Versi: <strong style="color: var(--cyan-neon);">2026.1</strong></div>
+                    <div>Akses: <strong style="color: var(--accent-emerald);">Publik / Lab Ready</strong></div>
+                </div>
+
+                <a href="${guide.pdfPath}" download="${guide.fileName}" class="btn-download-pdf">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    UNDUH FILE PDF SEKARANG
+                </a>
+
+                <a href="${guide.pdfPath}" target="_blank" class="btn-preview-pdf" style="text-decoration: none; text-align: center; display: block; padding: 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:4px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    Pratinjau di Tab Browser
+                </a>
+            </div>
+
+            <!-- Mapping Configuration Info for User -->
+            <div class="panel-card" style="padding: 12px;">
+                <div class="card-title" style="color: var(--cyan-neon); font-size: 11.5px; margin-bottom: 6px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    File Mapping Configuration
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
+                    Direktori penyimpanan file PDF:<br>
+                    <code style="color: #38bdf8; background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 3px; font-size: 10px;">static/pdf/</code><br>
+                    Pengguna dapat menempatkan atau mengganti file PDF sesuai nama file pada konfigurasi <code style="color: #a855f7;">PDF_GUIDE_MAP</code>.
+                </div>
+            </div>
+
+            <!-- Quick Jump to Other Testing Guides -->
+            <div class="panel-card" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                <div class="card-title" style="font-size: 11.5px; margin-bottom: 2px;">
+                    Pilih Topik Panduan Lainnya
+                </div>
+                ${otherTopicsHtml}
+            </div>
+        </div>
+    `;
+}
+
 // Update Sidebar and Main Workspace according to activeModule
 function updateSidebarAndWorkspaceForModule() {
     renderModuleCardStack();
@@ -5248,6 +5527,35 @@ function updateSidebarAndWorkspaceForModule() {
         // Render concrete active tab
         const firstNav = navContainer ? navContainer.querySelector('.btn-nav.active') || navContainer.querySelector('.btn-nav') : null;
         switchTab(firstNav, currentActiveTab || 'create');
+    } else if (activeModule === 'guides') {
+        if (headingEl) headingEl.textContent = 'PANDUAN PENGUJIAN (SNI & ASTM)';
+        const curTopic = activeGuideTopic || 'concrete';
+
+        if (navContainer) {
+            navContainer.innerHTML = `
+                <button class="btn-back-to-concrete" onclick="activateModule('concrete')" style="margin-bottom: 6px; width: 100%;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Kembali ke Beton (Concrete)
+                </button>
+                <button class="btn-nav ${curTopic === 'concrete' ? 'active' : ''}" onclick="switchGuideTopic('concrete')">
+                    <span style="color:#a855f7; font-weight:800;">1.</span> <span>Concrete Testing</span>
+                    <span class="nav-badge">C39</span>
+                </button>
+                <button class="btn-nav ${curTopic === 'fine-aggregate' ? 'active' : ''}" onclick="switchGuideTopic('fine-aggregate')">
+                    <span style="color:#a855f7; font-weight:800;">2.</span> <span>Fine Aggregate</span>
+                    <span class="nav-badge">C128</span>
+                </button>
+                <button class="btn-nav ${curTopic === 'coarse-aggregate' ? 'active' : ''}" onclick="switchGuideTopic('coarse-aggregate')">
+                    <span style="color:#a855f7; font-weight:800;">3.</span> <span>Coarse Aggregate</span>
+                    <span class="nav-badge">C127</span>
+                </button>
+                <button class="btn-nav ${curTopic === 'steel' ? 'active' : ''}" onclick="switchGuideTopic('steel')">
+                    <span style="color:#a855f7; font-weight:800;">4.</span> <span>Steel Tensile</span>
+                    <span class="nav-badge">A615</span>
+                </button>
+            `;
+        }
+        renderTestingGuidesWorkspace(curTopic);
     } else if (activeModule === 'fine-aggregate') {
         if (headingEl) headingEl.textContent = 'AGREGAT HALUS (SNI & ASTM)';
         const activeSub = currentSubModuleView['fine-aggregate'] || 'fa-spec-grav';
