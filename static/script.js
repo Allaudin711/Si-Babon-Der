@@ -2223,15 +2223,15 @@ function renderLossMaterial() {
             <div class="card-title">
                 <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><path d="M16 10h.01"></path><path d="M12 10h.01"></path><path d="M8 10h.01"></path><path d="M12 14h.01"></path><path d="M8 14h.01"></path><path d="M12 18h.01"></path><path d="M8 18h.01"></path></svg> Multi-variable Strength Formula K = f(M,D,P,I,C)</span>
             </div>
-            <div class="spec-item">Water-Cement Ratio (w/c - M): <span>${calc.wc}</span></div>
-            <div class="spec-item">Abrams Compressive Strength (f'c): <span>${calc.fcAbrams} MPa</span></div>
-            <div class="spec-item">ACI Curing Factor (${selected.umurCuring || 7} Days): <span style="color:var(--accent-emerald);">Active</span></div>
-            <div class="spec-item">Main Longitudinal Rebars: <span style="color:var(--accent-gold); font-weight:800;">${isPlainConcrete ? '0 Bars / Plain Concrete (No Rebar)' : `${rebarCount} Bars (D${rebarDiam} mm)`}</span></div>
-            <div class="spec-item">Main Rebar Steel Area (As - P): <span>${isPlainConcrete ? '0.00 cm² (Plain Concrete)' : `${calc.As} cm²`}</span></div>
-            <div class="spec-item">Estimasi Steel Rebar Mass: <span>${isPlainConcrete ? '0 kg (No Rebar)' : `${calc.totalBajaKg} kg`}</span></div>
-            <div class="spec-item">Nominal Moment Capacity (Mn): <span>${isPlainConcrete ? '0.0 kNm (Unreinforced)' : `${calc.Mn} kNm`}</span></div>
+            <div class="spec-item"><span class="spec-label">Water-Cement Ratio (w/c - M):</span> <span class="spec-value">${calc.wc}</span></div>
+            <div class="spec-item"><span class="spec-label">Abrams Compressive Strength (f'c):</span> <span class="spec-value">${calc.fcAbrams} MPa</span></div>
+            <div class="spec-item"><span class="spec-label">ACI Curing Factor (${selected.umurCuring || 7} Days):</span> <span class="spec-value" style="color:var(--accent-emerald);">Active</span></div>
+            <div class="spec-item"><span class="spec-label">Main Longitudinal Rebars:</span> <span class="spec-value" style="color:var(--accent-gold); font-weight:800;">${isPlainConcrete ? '0 Bars / Plain Concrete (No Rebar)' : `${rebarCount} Bars (D${rebarDiam} mm)`}</span></div>
+            <div class="spec-item"><span class="spec-label">Main Rebar Steel Area (As - P):</span> <span class="spec-value">${isPlainConcrete ? '0.00 cm² (Plain Concrete)' : `${calc.As} cm²`}</span></div>
+            <div class="spec-item"><span class="spec-label">Estimasi Steel Rebar Mass:</span> <span class="spec-value">${isPlainConcrete ? '0 kg (No Rebar)' : `${calc.totalBajaKg} kg`}</span></div>
+            <div class="spec-item"><span class="spec-label">Nominal Moment Capacity (Mn):</span> <span class="spec-value">${isPlainConcrete ? '0.0 kNm (Unreinforced)' : `${calc.Mn} kNm`}</span></div>
             <div class="spec-item" style="border-top: 1px solid var(--border-dim); margin-top: 8px; padding-top: 8px;">
-                Final Structural Strength (f'c): <span style="color: var(--accent-emerald); font-size: 14px; font-weight: 800;">${calc.fcFinal} MPa</span>
+                <span class="spec-label">Final Structural Strength (f'c):</span> <span class="spec-value" style="color: var(--accent-emerald); font-size: 13.5px; font-weight: 800;">${calc.fcFinal} MPa</span>
             </div>
 
             <button class="btn-curing" onclick="cycleCuring(${activeSelectedIndex})">
@@ -2944,8 +2944,8 @@ function renderPengujian() {
                     <option value="Uji Kuat Tekan Silinder Beton (SNI 03-1974-2011 / ASTM C39 / ISO 1920-4)" ${testState.selectedMethod.includes('Kuat Tekan') ? 'selected' : ''}>1. Uji Kuat Tekan Silinder Beton (SNI 03-1974-2011 / ASTM C39 / ISO 1920-4)</option>
                     <option value="Uji Kuat Tarik Belah Silinder (SNI 2491:2014 / ASTM C496 / EN 12390-6)" ${testState.selectedMethod.includes('Tarik Belah') ? 'selected' : ''}>2. Uji Kuat Tarik Belah Silinder (SNI 2491:2014 / ASTM C496 / EN 12390-6)</option>
                     <option value="Uji Kuat Lentur Balok 4-Titik (SNI 4431:2011 / ASTM C78 / EN 12390-5)" ${testState.selectedMethod.includes('Lentur') ? 'selected' : ''}>3. Uji Kuat Lentur Balok 4-Titik (SNI 4431:2011 / ASTM C78 / EN 12390-5)</option>
-                    <option value="Uji Penetrasi Klorida Cepat / RCPT (ASTM C1202 / AASHTO T277)" ${testState.selectedMethod.includes('RCPT') || testState.selectedMethod.includes('Klorida') ? 'selected' : ''}>10. Uji Penetrasi Klorida Cepat / RCPT (ASTM C1202 / AASHTO T277)</option>
-                    <option value="Uji Kedap Air Permeabilitas Tekanan Tinggi (DIN 1048 Part 5 / EN 12390-8)" ${testState.selectedMethod.includes('Permeabilitas') || testState.selectedMethod.includes('Kedap Air') ? 'selected' : ''}>11. Uji Kedap Air Permeabilitas Tekanan Tinggi (DIN 1048 Part 5 / EN 12390-8)</option>
+                    <option value="Uji Penetrasi Klorida Cepat / RCPT (ASTM C1202 / AASHTO T277)" ${testState.selectedMethod.includes('RCPT') || testState.selectedMethod.includes('Klorida') ? 'selected' : ''}>4. Uji Penetrasi Klorida Cepat / RCPT (ASTM C1202 / AASHTO T277)</option>
+                    <option value="Uji Kedap Air Permeabilitas Tekanan Tinggi (DIN 1048 Part 5 / EN 12390-8)" ${testState.selectedMethod.includes('Permeabilitas') || testState.selectedMethod.includes('Kedap Air') ? 'selected' : ''}>5. Uji Kedap Air Permeabilitas Tekanan Tinggi (DIN 1048 Part 5 / EN 12390-8)</option>
                 </select>
             </div>
         </div>
@@ -3342,8 +3342,8 @@ const SNI_ASTM_FORMULA_METHODS = [
     { id: 7, label: "7. Uji Covermeter & Pemetaan Tulangan (BS 1881:Part 204 / DIN 1048-1)", standard: "BS 1881:Part 204 / DIN 1048-1" },
     { id: 8, label: "8. Uji Kedalaman Karbonasi Kimia Phenolphthalein (RILEM CPC-18 / SNI 03-6805)", standard: "RILEM CPC-18 / SNI 03-6805" },
     { id: 9, label: "9. Uji Potensial Korosi Sel Separuh Half-Cell (ASTM C876-15 / RILEM TC 154)", standard: "ASTM C876-15 / RILEM TC 154" },
-    { id: 10, label: "10. Uji Penetrasi Klorida Cepat / RCPT (ASTM C1202 / AASHTO T277)", standard: "ASTM C1202 / AASHTO T277" },
-    { id: 11, label: "11. Uji Kedap Air Permeabilitas Tekanan Tinggi (DIN 1048 Part 5 / EN 12390-8)", standard: "DIN 1048 Part 5 / EN 12390-8" },
+    { id: 10, label: "4. Uji Penetrasi Klorida Cepat / RCPT (ASTM C1202 / AASHTO T277)", standard: "ASTM C1202 / AASHTO T277" },
+    { id: 11, label: "5. Uji Kedap Air Permeabilitas Tekanan Tinggi (DIN 1048 Part 5 / EN 12390-8)", standard: "DIN 1048 Part 5 / EN 12390-8" },
     { id: 12, label: "12. Uji Kuat Tarik Baja Tulangan Deform (SNI 2052:2017 / ASTM A615 / ISO 6935-2)", standard: "SNI 2052:2017 / ASTM A615" },
     { id: 13, label: "13. Uji Slump & Kelecakan Beton Segar (SNI 1972:2008 / ASTM C143 / EN 12350-2)", standard: "SNI 1972:2008 / ASTM C143" },
     { id: 14, label: "14. Uji Modulus Elastisitas Statis & Angka Poisson (ASTM C469 / ISO 1920-10)", standard: "ASTM C469 / ISO 1920-10" }
@@ -4489,12 +4489,12 @@ function renderAnalisis() {
                     SELECTED SPECIMEN PARAMETERS
                 </span>
             </div>
-            <div class="spec-item">Element Type: <span>${currentRecord.materialName}</span></div>
-            <div class="spec-item">Reinforcement Bars: <span style="color:var(--accent-gold); font-weight:800;">${(currentRecord.nBars === 0 || currentRecord.tulanganDiameter <= 0) ? '0 Bars / Plain Concrete (No Rebar)' : `${currentRecord.nBars || 4} Bars`}</span></div>
-            <div class="spec-item">Material Innovation: <span style="color: #c084fc;">${currentRecord.inovasi}</span></div>
-            <div class="spec-item">Compressive Strength: <span style="color: var(--accent-emerald); font-weight: 800;">${currentRecord.fcFinal} MPa</span></div>
-            <div class="spec-item">Water-Cement Ratio (w/c): <span>${currentRecord.wc}</span></div>
-            <div class="spec-item">Curing Age: <span>${currentRecord.curing || 7} Days</span></div>
+            <div class="spec-item"><span class="spec-label">Element Type:</span> <span class="spec-value">${currentRecord.materialName}</span></div>
+            <div class="spec-item"><span class="spec-label">Reinforcement Bars:</span> <span class="spec-value" style="color:var(--accent-gold); font-weight:800;">${(currentRecord.nBars === 0 || currentRecord.tulanganDiameter <= 0) ? '0 Bars / Plain Concrete (No Rebar)' : `${currentRecord.nBars || 4} Bars`}</span></div>
+            <div class="spec-item"><span class="spec-label">Material Innovation:</span> <span class="spec-value" style="color: #c084fc;">${currentRecord.inovasi}</span></div>
+            <div class="spec-item"><span class="spec-label">Compressive Strength:</span> <span class="spec-value" style="color: var(--accent-emerald); font-weight: 800;">${currentRecord.fcFinal} MPa</span></div>
+            <div class="spec-item"><span class="spec-label">Water-Cement Ratio (w/c):</span> <span class="spec-value">${currentRecord.wc}</span></div>
+            <div class="spec-item"><span class="spec-label">Curing Age:</span> <span class="spec-value">${currentRecord.curing || 7} Days</span></div>
         </div>
 
         <!-- CARD 3: TECHNICAL COMPLIANCE -->
@@ -5242,10 +5242,21 @@ function bringCardToFront(moduleId) {
 }
 
 // Commit and Activate Module Workspace
+// Apply dynamic chapter theme colors to root CSS variables
+function applyChapterTheme(moduleId) {
+    const mod = TESTING_MODULES.find(m => m.id === moduleId) || TESTING_MODULES[0];
+    const color = mod ? mod.themeColor : '#00f0ff';
+    document.documentElement.style.setProperty('--chapter-accent', color);
+    document.documentElement.style.setProperty('--chapter-accent-glow', color + '40');
+    document.documentElement.style.setProperty('--chapter-accent-dim', color + '18');
+    document.documentElement.style.setProperty('--chapter-accent-border', color + '55');
+}
+
 function activateModule(moduleId) {
     if (!TESTING_MODULES.find(m => m.id === moduleId)) return;
 
     activeModule = moduleId;
+    applyChapterTheme(moduleId);
     bringCardToFront(moduleId);
     playSynthSound('hydraulic');
 
@@ -5858,19 +5869,6 @@ function renderTestingGuidesWorkspace(topicId) {
                 </a>
             </div>
 
-            <!-- Mapping Configuration Info for User -->
-            <div class="panel-card" style="padding: 12px;">
-                <div class="card-title" style="color: var(--cyan-neon); font-size: 11.5px; margin-bottom: 6px;">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                    File Mapping Configuration
-                </div>
-                <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
-                    Direktori penyimpanan file PDF:<br>
-                    <code style="color: #38bdf8; background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 3px; font-size: 10px;">static/pdf/</code><br>
-                    Pengguna dapat menempatkan atau mengganti file PDF sesuai nama file pada konfigurasi <code style="color: #a855f7;">PDF_GUIDE_MAP</code>.
-                </div>
-            </div>
-
             <!-- Quick Jump to Other Testing Guides -->
             <div class="panel-card" style="padding: 12px; display: flex; flex-direction: column; gap: 8px;">
                 <div class="card-title" style="font-size: 11.5px; margin-bottom: 2px;">
@@ -5884,6 +5882,7 @@ function renderTestingGuidesWorkspace(topicId) {
 
 // Update Sidebar and Main Workspace according to activeModule
 function updateSidebarAndWorkspaceForModule() {
+    applyChapterTheme(activeModule);
     renderModuleCardStack();
 
     const headingEl = document.getElementById('sidebar-module-heading');
@@ -6765,5 +6764,6 @@ function calcSteelTensile() {
 
 // Auto-initialize module switcher once DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    applyChapterTheme(activeModule);
     renderModuleCardStack();
 });

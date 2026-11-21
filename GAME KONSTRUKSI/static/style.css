@@ -32,6 +32,12 @@
     --accent-purple: #a855f7;
     --accent-gold: #fbbf24;
 
+    /* Dynamic Chapter Workspace Accent Variables */
+    --chapter-accent: var(--cyan-neon);
+    --chapter-accent-glow: rgba(0, 240, 255, 0.25);
+    --chapter-accent-dim: rgba(0, 240, 255, 0.08);
+    --chapter-accent-border: rgba(0, 240, 255, 0.35);
+
     /* Text Colors (Crisp & High Contrast) */
     --text-pure: #ffffff;
     --text-primary: #f8fafc;
@@ -379,9 +385,10 @@ html, body {
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 1.2px;
-    color: var(--text-muted);
+    color: var(--chapter-accent, var(--text-muted));
     padding: 8px 10px 4px 10px;
     margin-top: 2px;
+    transition: color var(--transition-norm);
 }
 
 .btn-nav {
@@ -421,15 +428,15 @@ html, body {
 }
 
 .btn-nav.active {
-    background: linear-gradient(90deg, rgba(37, 99, 235, 0.35) 0%, rgba(22, 39, 78, 0.85) 100%);
+    background: linear-gradient(90deg, var(--chapter-accent-dim, rgba(37, 99, 235, 0.35)) 0%, rgba(22, 39, 78, 0.85) 100%);
     color: var(--text-pure);
-    border-color: var(--border-bright);
-    box-shadow: inset 3px 0 0 var(--cyan-neon), 0 4px 16px rgba(37, 99, 235, 0.3);
+    border-color: var(--chapter-accent-border, var(--border-bright));
+    box-shadow: inset 3px 0 0 var(--chapter-accent, var(--cyan-neon)), 0 4px 16px var(--chapter-accent-glow, rgba(37, 99, 235, 0.3));
 }
 
 .btn-nav.active i {
-    color: var(--cyan-neon);
-    filter: drop-shadow(0 0 6px var(--cyan-neon));
+    color: var(--chapter-accent, var(--cyan-neon));
+    filter: drop-shadow(0 0 6px var(--chapter-accent, var(--cyan-neon)));
 }
 
 .nav-btn-logo {
@@ -946,19 +953,20 @@ html, body {
 }
 
 .panel-card:hover {
-    border-color: rgba(56, 189, 248, 0.35);
+    border-color: var(--chapter-accent-border, rgba(56, 189, 248, 0.35));
 }
 
 .card-title {
     font-size: 12px;
     font-weight: 800;
-    color: var(--cyan-neon);
+    color: var(--chapter-accent, var(--cyan-neon));
     text-transform: uppercase;
     letter-spacing: 0.8px;
     margin-bottom: 14px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    transition: color var(--transition-norm);
 }
 
 .card-title i {
@@ -1039,8 +1047,8 @@ html, body {
 }
 
 .custom-select:focus, .custom-input:focus {
-    border-color: var(--cyan-neon);
-    box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+    border-color: var(--chapter-accent, var(--cyan-neon));
+    box-shadow: 0 0 12px var(--chapter-accent-glow, rgba(0, 240, 255, 0.3));
     background: #112042;
 }
 
@@ -1156,18 +1164,47 @@ option {
 }
 
 .spec-item {
-    font-size: 12px;
+    font-size: 11.5px;
     font-weight: 600;
     color: var(--text-secondary);
-    margin-bottom: 8px;
+    padding: 6px 0;
+    margin-bottom: 2px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: baseline;
+    gap: 12px;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.08);
+    line-height: 1.45;
 }
 
-.spec-item span {
-    color: var(--cyan-neon);
+.spec-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.spec-label {
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    max-width: 58%;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.spec-value {
+    color: var(--chapter-accent, var(--cyan-neon));
     font-weight: 700;
+    text-align: right;
+    word-break: break-word;
+    margin-left: auto;
+    font-family: var(--font-sans);
+}
+
+.spec-item span:not(.spec-label) {
+    color: var(--chapter-accent, var(--cyan-neon));
+    font-weight: 700;
+    text-align: right;
+    word-break: break-word;
+    margin-left: auto;
 }
 
 .stored-item-card {
@@ -1181,9 +1218,35 @@ option {
 }
 
 .stored-item-card:hover {
-    border-color: var(--blue-neon);
+    border-color: var(--chapter-accent-border, var(--blue-neon));
     background: rgba(26, 46, 92, 0.85);
     transform: translateX(2px);
+}
+
+.stored-item-card.active {
+    border-color: var(--chapter-accent, var(--cyan-neon));
+    background: rgba(26, 46, 92, 0.95);
+    box-shadow: inset 3px 0 0 var(--chapter-accent, var(--cyan-neon)), 0 0 14px var(--chapter-accent-glow, rgba(0, 240, 255, 0.25));
+}
+
+.stored-item-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-pure);
+    margin-bottom: 5px;
+}
+
+.stored-item-specs {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 10.5px;
+    color: var(--text-muted);
 }
 
 /* ==========================================================================
