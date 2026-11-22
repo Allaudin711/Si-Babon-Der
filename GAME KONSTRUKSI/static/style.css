@@ -4668,13 +4668,31 @@ body.right-sidebar-collapsed #btn-floating-right-toggle {
     justify-content: center;
     width: 48px;
     height: 48px;
-    filter: drop-shadow(0 0 8px currentColor);
+    filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.7));
     transition: transform 0.3s ease, filter 0.3s ease;
 }
 
-.module-stack-card:hover .card-cad-icon-lg {
+.module-stack-card:hover .card-cad-icon-lg,
+.module-stack-card.layer-0 .card-cad-icon-lg {
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 14px rgba(0, 240, 255, 0.95));
+}
+
+.chapter-module-icon {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    user-select: none;
+    pointer-events: none;
+    display: block;
+    filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.7));
+    transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.module-stack-card:hover .chapter-module-icon,
+.module-stack-card.layer-0 .chapter-module-icon {
     transform: scale(1.05);
-    filter: drop-shadow(0 0 12px currentColor);
+    filter: drop-shadow(0 0 14px rgba(0, 240, 255, 0.95));
 }
 
 .card-title-single {

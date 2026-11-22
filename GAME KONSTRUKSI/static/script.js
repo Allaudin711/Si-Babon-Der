@@ -5342,113 +5342,31 @@ const TESTING_MODULES = [
         id: 'concrete',
         title: 'Beton',
         themeColor: '#00f0ff',
-        cadIcon: `<svg viewBox="0 0 64 64" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <ellipse cx="32" cy="14" rx="14" ry="4" stroke="currentColor"/>
-            <ellipse cx="32" cy="14" rx="10" ry="2.5" stroke="currentColor" stroke-dasharray="2 2" opacity="0.6"/>
-            <line x1="18" y1="14" x2="18" y2="48" stroke="currentColor"/>
-            <line x1="46" y1="14" x2="46" y2="48" stroke="currentColor"/>
-            <path d="M18 48 C18 53.5 46 53.5 46 48" stroke="currentColor"/>
-            <path d="M18 48 C18 44 46 44 46 48" stroke="currentColor" stroke-dasharray="2 2" opacity="0.4"/>
-            <path d="M18 20 H13 V42 H18" stroke="currentColor"/>
-            <circle cx="15.5" cy="24" r="1.2" fill="currentColor"/>
-            <circle cx="15.5" cy="38" r="1.2" fill="currentColor"/>
-            <path d="M46 20 H51 V42 H46" stroke="currentColor"/>
-            <circle cx="48.5" cy="24" r="1.2" fill="currentColor"/>
-            <circle cx="48.5" cy="38" r="1.2" fill="currentColor"/>
-            <circle cx="26" cy="22" r="1" fill="currentColor"/>
-            <circle cx="38" cy="24" r="1.2" fill="currentColor"/>
-            <circle cx="28" cy="32" r="1.4" fill="currentColor"/>
-            <circle cx="36" cy="36" r="1" fill="currentColor"/>
-            <circle cx="24" cy="42" r="1.2" fill="currentColor"/>
-            <circle cx="34" cy="44" r="1.3" fill="currentColor"/>
-        </svg>`
+        cadIcon: `<img src="static/img/chapter-concrete.png" alt="Beton" class="chapter-module-icon">`
     },
     {
         id: 'coarse-aggregate',
         title: 'Agregat Kasar',
         themeColor: '#00f0ff',
-        cadIcon: `<svg viewBox="0 0 64 64" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="24 16 28 11 34 13 40 10 44 16" stroke="currentColor"/>
-            <polygon points="27 15 32 12 36 15" stroke="currentColor"/>
-            <polygon points="20 18 25 15 30 18" stroke="currentColor"/>
-            <rect x="14" y="17" width="36" height="8" rx="1" stroke="currentColor"/>
-            <line x1="20" y1="17" x2="20" y2="25" stroke="currentColor"/>
-            <line x1="26" y1="17" x2="26" y2="25" stroke="currentColor"/>
-            <line x1="32" y1="17" x2="32" y2="25" stroke="currentColor"/>
-            <line x1="38" y1="17" x2="38" y2="25" stroke="currentColor"/>
-            <line x1="44" y1="17" x2="44" y2="25" stroke="currentColor"/>
-            <polygon points="14 25 50 25 41 40 23 40" stroke="currentColor"/>
-            <line x1="17" y1="28" x2="47" y2="28" stroke="currentColor" stroke-dasharray="1.5 1.5" opacity="0.6"/>
-            <line x1="26" y1="40" x2="26" y2="44" stroke="currentColor"/>
-            <line x1="38" y1="40" x2="38" y2="44" stroke="currentColor"/>
-            <line x1="16" y1="25" x2="16" y2="52" stroke="currentColor"/>
-            <line x1="48" y1="25" x2="48" y2="52" stroke="currentColor"/>
-            <line x1="12" y1="52" x2="20" y2="52" stroke="currentColor"/>
-            <line x1="44" y1="52" x2="52" y2="52" stroke="currentColor"/>
-            <polygon points="28 47 31 45 32 48" stroke="currentColor" fill="currentColor"/>
-            <polygon points="34 46 37 44 38 47" stroke="currentColor" fill="currentColor"/>
-            <polygon points="26 51 29 50 27 53" stroke="currentColor" fill="currentColor"/>
-            <polygon points="33 50 36 49 35 52" stroke="currentColor" fill="currentColor"/>
-        </svg>`
+        cadIcon: `<img src="static/img/chapter-coarse-aggregate.png" alt="Agregat Kasar" class="chapter-module-icon">`
     },
     {
         id: 'fine-aggregate',
         title: 'Agregat Halus',
         themeColor: '#00f0ff',
-        cadIcon: `<svg viewBox="0 0 64 64" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="26" y="10" width="12" height="3" rx="1.5" stroke="currentColor"/>
-            <line x1="28" y1="13" x2="28" y2="21" stroke="currentColor"/>
-            <line x1="36" y1="13" x2="36" y2="21" stroke="currentColor"/>
-            <path d="M28 21 L16 47 C15 49 16.5 51 19 51 H45 C47.5 51 49 49 48 47 L36 21" stroke="currentColor"/>
-            <path d="M20 42 Q26 36 32 40 T44 37" stroke="currentColor"/>
-            <circle cx="28" cy="45" r="1.1" fill="currentColor"/>
-            <circle cx="34" cy="44" r="0.9" fill="currentColor"/>
-            <circle cx="39" cy="46" r="1.2" fill="currentColor"/>
-            <circle cx="25" cy="48" r="0.8" fill="currentColor"/>
-            <circle cx="36" cy="48" r="1.0" fill="currentColor"/>
-            <line x1="26" y1="30" x2="29" y2="30" stroke="currentColor" stroke-width="1.2"/>
-            <line x1="24" y1="35" x2="28" y2="35" stroke="currentColor" stroke-width="1.2"/>
-        </svg>`
+        cadIcon: `<img src="static/img/chapter-fine-aggregate.png" alt="Agregat Halus" class="chapter-module-icon">`
     },
     {
         id: 'steel',
         title: 'Besi',
         themeColor: '#00f0ff',
-        cadIcon: `<svg viewBox="0 0 64 64" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="22" cy="41" r="9" stroke="currentColor"/>
-            <ellipse cx="22" cy="41" rx="6" ry="6" stroke="currentColor" stroke-dasharray="1.5 1.5" opacity="0.6"/>
-            <line x1="16" y1="41" x2="22" y2="35" stroke="currentColor" stroke-width="1.2"/>
-            <line x1="18" y1="47" x2="28" y2="37" stroke="currentColor" stroke-width="1.2"/>
-            <line x1="22" y1="47" x2="28" y2="41" stroke="currentColor" stroke-width="1.2"/>
-            <line x1="15.5" y1="34.5" x2="27" y2="17" stroke="currentColor"/>
-            <line x1="28.5" y1="47.5" x2="40" y2="30" stroke="currentColor"/>
-            <line x1="27" y1="17" x2="31" y2="14" stroke="currentColor"/>
-            <line x1="20" y1="28" x2="25" y2="23" stroke="currentColor" stroke-width="1.4"/>
-            <line x1="25" y1="35" x2="30" y2="30" stroke="currentColor" stroke-width="1.4"/>
-            <line x1="30" y1="42" x2="35" y2="37" stroke="currentColor" stroke-width="1.4"/>
-            <line x1="35" y1="32" x2="53" y2="23" stroke="currentColor" stroke-width="2.2"/>
-            <line x1="44" y1="27.5" x2="44" y2="44" stroke="currentColor" stroke-width="2.2"/>
-            <line x1="35" y1="48.5" x2="53" y2="39.5" stroke="currentColor" stroke-width="2.2"/>
-            <line x1="35" y1="32" x2="35" y2="35" stroke="currentColor"/>
-            <line x1="53" y1="23" x2="53" y2="26" stroke="currentColor"/>
-            <line x1="35" y1="48.5" x2="35" y2="51.5" stroke="currentColor"/>
-            <line x1="53" y1="39.5" x2="53" y2="42.5" stroke="currentColor"/>
-        </svg>`
+        cadIcon: `<img src="static/img/chapter-steel.png" alt="Besi" class="chapter-module-icon">`
     },
     {
         id: 'guides',
         title: 'Buku Modul',
         themeColor: '#00f0ff',
-        cadIcon: `<svg viewBox="0 0 64 64" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M32 23 C27 20 18 20 12 22 V47 C18 45 27 45 32 48 C37 45 46 45 52 47 V22 C46 20 37 20 32 23 Z" stroke="currentColor"/>
-            <line x1="32" y1="23" x2="32" y2="48" stroke="currentColor"/>
-            <circle cx="22" cy="33" r="6" stroke="currentColor"/>
-            <ellipse cx="22" cy="33" rx="2.5" ry="6" stroke="currentColor"/>
-            <line x1="16" y1="33" x2="28" y2="33" stroke="currentColor"/>
-            <line x1="48" y1="24" x2="39" y2="37" stroke="currentColor" stroke-width="2"/>
-            <polygon points="39 37 36 41 40 40" fill="currentColor"/>
-            <line x1="36" y1="44" x2="48" y2="44" stroke="currentColor" stroke-linecap="round" stroke-dasharray="1.5 2"/>
-        </svg>`
+        cadIcon: `<img src="static/img/chapter-guides.png" alt="Buku Modul" class="chapter-module-icon">`
     }
 ];
 
