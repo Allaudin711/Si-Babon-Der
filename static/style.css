@@ -118,7 +118,7 @@ html, body {
     background: var(--bg-header, rgba(14, 25, 51, 0.95));
     backdrop-filter: blur(14px);
     border-bottom: 1px solid var(--border-dim);
-    transition: background 0.35s ease, border-color 0.35s ease;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, opacity 0.2s ease, background 0.35s ease, border-color 0.35s ease;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -378,7 +378,7 @@ html, body {
     background: var(--bg-sidebar, rgba(14, 25, 51, 0.98));
     backdrop-filter: blur(16px);
     border-right: 1px solid var(--border-dim);
-    transition: transform var(--transition-norm), background 0.35s ease, border-color 0.35s ease;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease, opacity 0.2s ease, transform var(--transition-norm), background 0.35s ease, border-color 0.35s ease;
     display: flex;
     flex-direction: column;
     padding: 14px 12px 10px 12px;
@@ -388,7 +388,17 @@ html, body {
     height: 100%;
     box-sizing: border-box;
     position: relative;
-    transition: transform var(--transition-norm);
+}
+
+body.left-sidebar-collapsed .sidebar {
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border-right: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
 }
 
 .sidebar-heading {
@@ -954,6 +964,17 @@ html, body {
     gap: 16px;
     z-index: 30;
     position: relative;
+}
+
+body.right-sidebar-collapsed .control-panel {
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border-left: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    overflow: hidden !important;
 }
 
 .panel-card {
@@ -3719,7 +3740,7 @@ option {
 .module-stack-viewport {
     position: relative;
     width: 100%;
-    height: 180px;
+    height: 165px;
     perspective: 1000px;
     margin-bottom: 2px;
 }
@@ -3728,10 +3749,10 @@ option {
 .module-stack-card {
     position: absolute;
     inset: 0;
-    border-radius: 10px;
-    background: linear-gradient(145deg, rgba(16, 29, 59, 0.96) 0%, rgba(9, 17, 36, 0.98) 100%);
-    border: 1px solid var(--border-dim);
-    padding: 10px 11px;
+    border-radius: 12px;
+    background: linear-gradient(145deg, rgba(16, 29, 59, 0.94) 0%, rgba(9, 17, 36, 0.98) 100%);
+    border: 1.5px solid var(--border-dim);
+    padding: 10px 12px 8px 12px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -4507,4 +4528,191 @@ option {
 .btn-preview-pdf:hover {
     background: rgba(56, 189, 248, 0.15);
     color: #ffffff;
+}
+
+/* ==========================================================================
+   SIDEBAR & PANEL TOGGLE CONTROLS (DROP-SIDE & FLOATING DRAWER)
+   ========================================================================== */
+.header-right-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 10px;
+    flex-shrink: 0;
+}
+
+.btn-header-toggle {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: rgba(18, 33, 66, 0.75);
+    border: 1px solid var(--border-dim);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.btn-header-toggle:hover {
+    background: rgba(0, 240, 255, 0.15);
+    border-color: var(--cyan-neon);
+    color: var(--cyan-neon);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
+}
+
+.btn-floating-drawer {
+    position: absolute;
+    top: 14px;
+    z-index: 50;
+    background: rgba(14, 25, 51, 0.94);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--cyan-neon);
+    color: var(--cyan-neon);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    font-family: var(--font-heading);
+    letter-spacing: 0.8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 240, 255, 0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.btn-floating-drawer.drawer-left {
+    left: 12px;
+    transform: translateX(-20px);
+}
+
+.btn-floating-drawer.drawer-right {
+    right: 12px;
+    transform: translateX(20px);
+}
+
+body.left-sidebar-collapsed #btn-floating-left-toggle {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+}
+
+body.right-sidebar-collapsed #btn-floating-right-toggle {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+}
+
+/* Rebar Fine-Tuning Drawer */
+.fine-tuning-container {
+    margin-top: 10px;
+    border-top: 1px dashed rgba(56, 189, 248, 0.2);
+    padding-top: 8px;
+}
+
+.btn-toggle-fine-tune {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 10.5px;
+    font-weight: 700;
+    font-family: var(--font-heading);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 4px 0;
+    width: 100%;
+    text-align: left;
+    transition: color var(--transition-fast);
+}
+
+.btn-toggle-fine-tune:hover {
+    color: var(--cyan-neon);
+}
+
+.btn-toggle-fine-tune svg {
+    transition: transform 0.25s ease;
+}
+
+.drawer-fine-tune {
+    background: rgba(10, 19, 40, 0.7);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 6px;
+}
+
+/* Simplified Minimal CAD Stack Card Elements (matching neon reference) */
+.card-minimal-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex: 1;
+    padding: 4px 0;
+    position: relative;
+    z-index: 2;
+}
+
+.card-cad-icon-lg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    filter: drop-shadow(0 0 8px currentColor);
+    transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.module-stack-card:hover .card-cad-icon-lg {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 12px currentColor);
+}
+
+.card-title-single {
+    font-size: 13px;
+    font-weight: 800;
+    font-family: var(--font-heading);
+    letter-spacing: 0.6px;
+    text-align: center;
+    line-height: 1.2;
+}
+
+/* Layered glass acrylic shelves under active card */
+.card-stack-shelf-layers {
+    position: absolute;
+    bottom: 2px;
+    left: 20%;
+    right: 20%;
+    height: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.card-stack-shelf-layers .shelf-layer {
+    height: 2px;
+    border-radius: 2px;
+    background: var(--card-theme, var(--cyan-neon));
+    box-shadow: 0 0 8px var(--card-theme, var(--cyan-neon));
+}
+
+.card-stack-shelf-layers .shelf-layer.s1 {
+    opacity: 0.85;
+}
+
+.card-stack-shelf-layers .shelf-layer.s2 {
+    width: 75%;
+    margin: 0 auto;
+    opacity: 0.45;
 }

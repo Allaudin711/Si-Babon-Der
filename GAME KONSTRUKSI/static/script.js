@@ -1765,6 +1765,256 @@ function createConcreteElement() {
     }, 1000);
 }
 
+
+/* ==========================================================================
+   SIDEBAR & CONTROL PANEL COLLAPSE TOGGLES (DROP-SIDE & DRAWER)
+   ========================================================================== */
+let isLeftSidebarCollapsed = false;
+let isRightSidebarCollapsed = false;
+
+function toggleLeftSidebar() {
+    isLeftSidebarCollapsed = !isLeftSidebarCollapsed;
+    document.body.classList.toggle('left-sidebar-collapsed', isLeftSidebarCollapsed);
+    playSynthSound('click');
+    const arrow = document.getElementById('left-sidebar-toggle-arrow');
+    if (arrow) {
+        arrow.setAttribute('d', isLeftSidebarCollapsed ? 'M10 9l3 3-3 3' : 'M14 9l-3 3 3 3');
+    }
+    window.dispatchEvent(new Event('resize'));
+}
+
+function toggleRightSidebar() {
+    isRightSidebarCollapsed = !isRightSidebarCollapsed;
+    document.body.classList.toggle('right-sidebar-collapsed', isRightSidebarCollapsed);
+    playSynthSound('click');
+    const arrow = document.getElementById('right-sidebar-toggle-arrow');
+    if (arrow) {
+        arrow.setAttribute('d', isRightSidebarCollapsed ? 'M14 9l-3 3 3 3' : 'M10 9l3 3-3 3');
+    }
+    window.dispatchEvent(new Event('resize'));
+}
+
+
+/* ==========================================================================
+   COMPACT DROPDOWN PRESET HANDLERS FOR ELEMENT & REBAR CONFIG
+   ========================================================================== */
+function handleDimensionPresetChange(presetKey) {
+    playSynthSound('click');
+    const tipeSelect = document.getElementById('input-tipe');
+    if (!tipeSelect) return;
+
+    if (presetKey === 'silinder_std') {
+        tipeSelect.value = 'Cylinder';
+        elementData.tipe = 'Cylinder';
+        elementData.diameter = 15;
+        elementData.tinggiSilinder = 30;
+        elementData.jumlahTulangan = 0;
+        handleTipeChange(tipeSelect);
+    } else if (presetKey === 'silinder_kecil') {
+        tipeSelect.value = 'Cylinder';
+        elementData.tipe = 'Cylinder';
+        elementData.diameter = 10;
+        elementData.tinggiSilinder = 20;
+        elementData.jumlahTulangan = 0;
+        handleTipeChange(tipeSelect);
+    } else if (presetKey === 'balok_2040') {
+        tipeSelect.value = 'Beam';
+        elementData.tipe = 'Beam';
+        elementData.lebar = 20;
+        elementData.tinggi = 40;
+        elementData.panjang = 300;
+        elementData.jumlahTulangan = 4;
+        elementData.tulanganDiameter = 16;
+        handleTipeChange(tipeSelect);
+    } else if (presetKey === 'balok_2550') {
+        tipeSelect.value = 'Beam';
+        elementData.tipe = 'Beam';
+        elementData.lebar = 25;
+        elementData.tinggi = 50;
+        elementData.panjang = 400;
+        elementData.jumlahTulangan = 4;
+        elementData.tulanganDiameter = 19;
+        handleTipeChange(tipeSelect);
+    } else if (presetKey === 'balok_3060') {
+        tipeSelect.value = 'Beam';
+        elementData.tipe = 'Beam';
+        elementData.lebar = 30;
+        elementData.tinggi = 60;
+        elementData.panjang = 600;
+        elementData.jumlahTulangan = 6;
+        elementData.tulanganDiameter = 19;
+        handleTipeChange(tipeSelect);
+    } else if (presetKey === 'kolom_3030') {
+        tipeSelect.value = 'Column';
+        elementData.tipe = 'Column';
+        elementData.lebar = 30;
+        elementData.tinggi = 30;
+        elementData.panjang = 350;
+        elementData.jumlahTulangan = 4;
+        elementData.tulanganDiameter = 16;
+        handleTipeChange(tipeSelect);
+    } else if (presetKey === 'kolom_4040') {
+        tipeSelect.value = 'Column';
+        elementData.tipe = 'Column';
+        elementData.lebar = 40;
+        elementData.tinggi = 40;
+        elementData.panjang = 400;
+        elementData.jumlahTulangan = 8;
+        elementData.tulanganDiameter = 19;
+        handleTipeChange(tipeSelect);
+    } else if (presetKey === 'pelat_12') {
+        tipeSelect.value = 'Slab';
+        elementData.tipe = 'Slab';
+        elementData.lebar = 200;
+        elementData.tinggi = 12;
+        elementData.panjang = 250;
+        elementData.jumlahTulangan = 8;
+        handleTipeChange(tipeSelect);
+    } else if (presetKey === 'pelat_15') {
+        tipeSelect.value = 'Slab';
+        elementData.tipe = 'Slab';
+        elementData.lebar = 300;
+        elementData.tinggi = 15;
+        elementData.panjang = 400;
+        elementData.jumlahTulangan = 8;
+        handleTipeChange(tipeSelect);
+    } else if (presetKey === 'sloof_1520') {
+        tipeSelect.value = 'Tie Beam';
+        elementData.tipe = 'Tie Beam';
+        elementData.lebar = 15;
+        elementData.tinggi = 20;
+        elementData.panjang = 300;
+        elementData.jumlahTulangan = 4;
+        handleTipeChange(tipeSelect);
+    } else if (presetKey === 'pondasi_100') {
+        tipeSelect.value = 'Foundation';
+        elementData.tipe = 'Foundation';
+        elementData.lebar = 100;
+        elementData.tinggi = 35;
+        elementData.panjang = 100;
+        elementData.jumlahTulangan = 8;
+        handleTipeChange(tipeSelect);
+    }
+}
+
+function handleRebarPresetChange(val) {
+    if (val === 'custom') {
+        const drawer = document.getElementById('drawer-rebar-fine-tune');
+        if (drawer) drawer.style.display = 'block';
+        return;
+    }
+    let count = 4;
+    let diam = 16;
+    if (val === '0') {
+        count = 0;
+        diam = 0;
+        const sengkangSelect = document.getElementById('select-sengkang-preset');
+        if (sengkangSelect) sengkangSelect.value = 'none';
+        handleSengkangPresetChange('none');
+    } else {
+        const match = val.match(/(\d+)D(\d+)/);
+        if (match) {
+            count = parseInt(match[1], 10);
+            diam = parseInt(match[2], 10);
+        }
+    }
+    const inputCount = document.getElementById('input-tulangan-jumlah');
+    const inputDiam = document.getElementById('input-tulangan-diameter');
+    if (inputCount) inputCount.value = count;
+    if (inputDiam) inputDiam.value = diam;
+    elementData.jumlahTulangan = count;
+    elementData.tulanganDiameter = diam;
+    handleJumlahTulanganChange(count);
+}
+
+function handleSengkangPresetChange(val) {
+    if (val === 'custom') {
+        const drawer = document.getElementById('drawer-rebar-fine-tune');
+        if (drawer) drawer.style.display = 'block';
+        return;
+    }
+    let diam = 8;
+    let spacing = 150;
+    if (val === 'none') {
+        diam = 0;
+        spacing = 0;
+    } else if (val === '8_150') {
+        diam = 8;
+        spacing = 150;
+    } else if (val === '8_100') {
+        diam = 8;
+        spacing = 100;
+    } else if (val === '10_150') {
+        diam = 10;
+        spacing = 150;
+    } else if (val === '10_100') {
+        diam = 10;
+        spacing = 100;
+    }
+    const inputDiam = document.getElementById('input-sengkang-diameter');
+    const inputJarak = document.getElementById('input-sengkang-jarak');
+    if (inputDiam) inputDiam.value = diam;
+    if (inputJarak) inputJarak.value = spacing;
+    elementData.sengkangDiameter = diam;
+    elementData.sengkangJarak = spacing;
+    handleJumlahTulanganChange(elementData.jumlahTulangan);
+}
+
+function handleManualRebarInput() {
+    const inputCount = document.getElementById('input-tulangan-jumlah');
+    const inputDiam = document.getElementById('input-tulangan-diameter');
+    const inputSengDiam = document.getElementById('input-sengkang-diameter');
+    const inputSengJarak = document.getElementById('input-sengkang-jarak');
+    
+    const count = parseInt(inputCount ? inputCount.value : 0, 10) || 0;
+    const diam = parseFloat(inputDiam ? inputDiam.value : 0) || 0;
+    const sengDiam = parseFloat(inputSengDiam ? inputSengDiam.value : 0) || 0;
+    const sengJarak = parseFloat(inputSengJarak ? inputSengJarak.value : 0) || 0;
+
+    elementData.jumlahTulangan = count;
+    elementData.tulanganDiameter = diam;
+    elementData.sengkangDiameter = sengDiam;
+    elementData.sengkangJarak = sengJarak;
+
+    const rebarPreset = document.getElementById('select-rebar-preset');
+    if (rebarPreset) {
+        if (count === 0 || diam === 0) rebarPreset.value = '0';
+        else if (count === 2 && diam === 13) rebarPreset.value = '2D13';
+        else if (count === 4 && diam === 13) rebarPreset.value = '4D13';
+        else if (count === 4 && diam === 16) rebarPreset.value = '4D16';
+        else if (count === 4 && diam === 19) rebarPreset.value = '4D19';
+        else if (count === 6 && diam === 16) rebarPreset.value = '6D16';
+        else if (count === 6 && diam === 19) rebarPreset.value = '6D19';
+        else if (count === 8 && diam === 19) rebarPreset.value = '8D19';
+        else if (count === 8 && diam === 22) rebarPreset.value = '8D22';
+        else if (count === 12 && diam === 22) rebarPreset.value = '12D22';
+        else rebarPreset.value = 'custom';
+    }
+
+    const sengkangPreset = document.getElementById('select-sengkang-preset');
+    if (sengkangPreset) {
+        if (sengDiam === 0) sengkangPreset.value = 'none';
+        else if (sengDiam === 8 && sengJarak === 150) sengkangPreset.value = '8_150';
+        else if (sengDiam === 8 && sengJarak === 100) sengkangPreset.value = '8_100';
+        else if (sengDiam === 10 && sengJarak === 150) sengkangPreset.value = '10_150';
+        else if (sengDiam === 10 && sengJarak === 100) sengkangPreset.value = '10_100';
+        else sengkangPreset.value = 'custom';
+    }
+
+    handleJumlahTulanganChange(count);
+}
+
+function toggleRebarFineTuneDrawer() {
+    const drawer = document.getElementById('drawer-rebar-fine-tune');
+    const arrow = document.getElementById('fine-tune-arrow');
+    if (!drawer) return;
+    const isHidden = (drawer.style.display === 'none' || drawer.style.display === '');
+    drawer.style.display = isHidden ? 'block' : 'none';
+    if (arrow) {
+        arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+}
+
 function renderCreate() {
     if (canvasView) canvasView.classList.remove("scroll-mode");
     let selectedTipe = getNormalizedTipe(elementData.tipe);
@@ -1860,16 +2110,34 @@ function renderCreate() {
                 </select>
             </div>
 
+            <div class="input-group">
+                <label>Preset Dimensi Standar (Quick Sizing)</label>
+                <select class="custom-select" id="select-dimension-preset" onchange="handleDimensionPresetChange(this.value)">
+                    <option value="custom">-- Pilihan Ukuran Standar Cepat --</option>
+                    <option value="silinder_std">Silinder Standar ASTM C39 (D 15 cm x H 30 cm)</option>
+                    <option value="silinder_kecil">Silinder Kecil (D 10 cm x H 20 cm)</option>
+                    <option value="balok_2040">Balok Standar 20 x 40 x 300 cm</option>
+                    <option value="balok_2550">Balok Utama 25 x 50 x 400 cm</option>
+                    <option value="balok_3060">Balok Berat 30 x 60 x 600 cm</option>
+                    <option value="kolom_3030">Kolom Praktis 30 x 30 x 350 cm</option>
+                    <option value="kolom_4040">Kolom Utama 40 x 40 x 400 cm</option>
+                    <option value="pelat_12">Pelat Lantai Tebal 12 cm (250 x 200 cm)</option>
+                    <option value="pelat_15">Pelat Lantai Tebal 15 cm (300 x 400 cm)</option>
+                    <option value="sloof_1520">Sloof / Tie Beam 15 x 20 x 300 cm</option>
+                    <option value="pondasi_100">Pondasi Telapak 100 x 100 x 35 cm</option>
+                </select>
+            </div>
+
             ${isSilinder ? `
             <div class="input-group">
                 <label>${getDimensionLabel('Cylinder')}</label>
                 <div class="dimensions-grid-cylinder">
                     <div class="dim-col">
-                        <span class="dim-micro-label">Diameter (D)</span>
+                        <span class="dim-micro-label">Diameter (D cm)</span>
                         <input type="number" id="input-diameter" class="custom-input" value="${elementData.diameter || 15}" oninput="updateCylinderDimensions()" placeholder="15">
                     </div>
                     <div class="dim-col">
-                        <span class="dim-micro-label">Tinggi (H)</span>
+                        <span class="dim-micro-label">Tinggi (H cm)</span>
                         <input type="number" id="input-tinggi-silinder" class="custom-input" value="${elementData.tinggiSilinder || 30}" oninput="updateCylinderDimensions()" placeholder="30">
                     </div>
                 </div>
@@ -1890,41 +2158,70 @@ function renderCreate() {
             </div>
 
             <div class="input-group">
-                <label>${getRebarCountLabel(selectedTipe)}</label>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" id="input-tulangan-jumlah" class="custom-input" value="${elementData.jumlahTulangan !== undefined ? elementData.jumlahTulangan : 4}" min="0" max="32" oninput="handleJumlahTulanganChange(this.value)">
-                    <select class="custom-select" style="max-width: 140px;" onchange="document.getElementById('input-tulangan-jumlah').value = this.value; handleJumlahTulanganChange(this.value);">
-                        <option value="0" ${elementData.jumlahTulangan === 0 ? 'selected' : ''}>0 (Plain Concrete / Tanpa Tulangan)</option>
-                        <option value="2" ${elementData.jumlahTulangan === 2 ? 'selected' : ''}>2 Bars</option>
-                        <option value="4" ${(elementData.jumlahTulangan === 4 || elementData.jumlahTulangan === undefined) ? 'selected' : ''}>4 Bars (Std)</option>
-                        <option value="6" ${elementData.jumlahTulangan === 6 ? 'selected' : ''}>6 Bars</option>
-                        <option value="8" ${elementData.jumlahTulangan === 8 ? 'selected' : ''}>8 Bars</option>
-                        <option value="10" ${elementData.jumlahTulangan === 10 ? 'selected' : ''}>10 Bars</option>
-                        <option value="12" ${elementData.jumlahTulangan === 12 ? 'selected' : ''}>12 Bars</option>
-                        <option value="16" ${elementData.jumlahTulangan === 16 ? 'selected' : ''}>16 Bars</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label>Main Longitudinal Rebar Grade / Type</label>
-                <select class="custom-select" id="input-tulangan-tipe">
-                    <option value="Ulir (Deformed)" ${elementData.tulanganTipe.includes('Ulir') ? 'selected' : ''}>Ulir / Deformed Bar (BjTS 420)</option>
-                    <option value="Polos (Plain)" ${elementData.tulanganTipe.includes('Polos') ? 'selected' : ''}>Polos / Plain Bar (BjTP 280)</option>
+                <label>Pilihan Cepat Tulangan Utama (Rebar Preset)</label>
+                <select class="custom-select" id="select-rebar-preset" onchange="handleRebarPresetChange(this.value)">
+                    <option value="0" ${elementData.jumlahTulangan === 0 ? 'selected' : ''}>0 - Beton Polos (Tanpa Tulangan / Plain Concrete)</option>
+                    <option value="2D13" ${(elementData.jumlahTulangan === 2 && elementData.tulanganDiameter === 13) ? 'selected' : ''}>2D13 (2 Batang Utama Ø13 mm)</option>
+                    <option value="4D13" ${(elementData.jumlahTulangan === 4 && elementData.tulanganDiameter === 13) ? 'selected' : ''}>4D13 (4 Batang Utama Ø13 mm - Ringan)</option>
+                    <option value="4D16" ${(elementData.jumlahTulangan === 4 && (elementData.tulanganDiameter === 16 || !elementData.tulanganDiameter)) ? 'selected' : ''}>4D16 (4 Batang Utama Ø16 mm - Standar SNI)</option>
+                    <option value="4D19" ${(elementData.jumlahTulangan === 4 && elementData.tulanganDiameter === 19) ? 'selected' : ''}>4D19 (4 Batang Utama Ø19 mm - Balok Sedang)</option>
+                    <option value="6D16" ${(elementData.jumlahTulangan === 6 && elementData.tulanganDiameter === 16) ? 'selected' : ''}>6D16 (6 Batang Utama Ø16 mm)</option>
+                    <option value="6D19" ${(elementData.jumlahTulangan === 6 && elementData.tulanganDiameter === 19) ? 'selected' : ''}>6D19 (6 Batang Utama Ø19 mm - Kolom)</option>
+                    <option value="8D19" ${(elementData.jumlahTulangan === 8 && elementData.tulanganDiameter === 19) ? 'selected' : ''}>8D19 (8 Batang Utama Ø19 mm)</option>
+                    <option value="8D22" ${(elementData.jumlahTulangan === 8 && elementData.tulanganDiameter === 22) ? 'selected' : ''}>8D22 (8 Batang Utama Ø22 mm - Heavy Duty)</option>
+                    <option value="12D22" ${(elementData.jumlahTulangan === 12 && elementData.tulanganDiameter === 22) ? 'selected' : ''}>12D22 (12 Batang Utama Ø22 mm - Gedung Tinggi)</option>
+                    <option value="custom">Kustom / Manual Fine-Tuning...</option>
                 </select>
             </div>
 
             <div class="input-group">
-                <label>Main Rebar &amp; Stirrup Diameter (mm)</label>
-                <div class="dimensions-grid-reinforcement">
-                    <input type="number" id="input-tulangan-diameter" class="custom-input" value="${elementData.tulanganDiameter}" oninput="handleJumlahTulanganChange(elementData.jumlahTulangan)" placeholder="Main Rebar (D)">
-                    <input type="number" id="input-sengkang-diameter" class="custom-input" value="${elementData.sengkangDiameter}" placeholder="Stirrup (Ø)">
-                </div>
+                <label>Mutu Baja Tulangan Utama (Grade &amp; Tipe)</label>
+                <select class="custom-select" id="input-tulangan-tipe" onchange="elementData.tulanganTipe = this.value;">
+                    <option value="Ulir (Deformed)" ${elementData.tulanganTipe.includes('Ulir') ? 'selected' : ''}>Ulir / Deformed Bar (BjTS 420 - fy 420 MPa)</option>
+                    <option value="Polos (Plain)" ${elementData.tulanganTipe.includes('Polos') ? 'selected' : ''}>Polos / Plain Bar (BjTP 280 - fy 280 MPa)</option>
+                </select>
             </div>
 
             <div class="input-group">
-                <label>Stirrup / Tie Spacing (mm)</label>
-                <input type="number" id="input-sengkang-jarak" class="custom-input" value="${elementData.sengkangJarak}">
+                <label>Konfigurasi Begel / Sengkang (Stirrups)</label>
+                <select class="custom-select" id="select-sengkang-preset" onchange="handleSengkangPresetChange(this.value)">
+                    <option value="none" ${(!elementData.sengkangDiameter || elementData.sengkangDiameter <= 0 || elementData.jumlahTulangan === 0) ? 'selected' : ''}>Tanpa Sengkang (Plain / Silinder)</option>
+                    <option value="8_150" ${(elementData.sengkangDiameter === 8 && elementData.sengkangJarak === 150) ? 'selected' : ''}>Sengkang Ø8 mm @ 150 mm (Standar SNI Lapangan)</option>
+                    <option value="8_100" ${(elementData.sengkangDiameter === 8 && elementData.sengkangJarak === 100) ? 'selected' : ''}>Sengkang Ø8 mm @ 100 mm (Tumpuan Gempa Rapat)</option>
+                    <option value="10_150" ${(elementData.sengkangDiameter === 10 && elementData.sengkangJarak === 150) ? 'selected' : ''}>Sengkang Ø10 mm @ 150 mm (Balok / Kolom Berat)</option>
+                    <option value="10_100" ${(elementData.sengkangDiameter === 10 && elementData.sengkangJarak === 100) ? 'selected' : ''}>Sengkang Ø10 mm @ 100 mm (Heavy Duty Gempa)</option>
+                    <option value="custom">Kustom / Manual Sengkang...</option>
+                </select>
+            </div>
+
+            <!-- COLLAPSIBLE MANUAL FINE-TUNING DRAWER -->
+            <div class="fine-tuning-container">
+                <button type="button" class="btn-toggle-fine-tune" onclick="toggleRebarFineTuneDrawer()">
+                    <svg id="fine-tune-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    <span>Fine-Tuning Manual (Jumlah, Diameter, Spasi)</span>
+                </button>
+                <div id="drawer-rebar-fine-tune" class="drawer-fine-tune" style="display: none;">
+                    <div class="dimensions-grid-reinforcement">
+                        <div class="dim-col">
+                            <span class="dim-micro-label">Jumlah Batang</span>
+                            <input type="number" id="input-tulangan-jumlah" class="custom-input" value="${elementData.jumlahTulangan !== undefined ? elementData.jumlahTulangan : 4}" min="0" max="32" oninput="handleManualRebarInput()">
+                        </div>
+                        <div class="dim-col">
+                            <span class="dim-micro-label">Diameter Utama (D mm)</span>
+                            <input type="number" id="input-tulangan-diameter" class="custom-input" value="${elementData.tulanganDiameter || 16}" oninput="handleManualRebarInput()" placeholder="16">
+                        </div>
+                    </div>
+                    <div class="dimensions-grid-reinforcement" style="margin-top: 8px;">
+                        <div class="dim-col">
+                            <span class="dim-micro-label">Dia. Sengkang (Ø mm)</span>
+                            <input type="number" id="input-sengkang-diameter" class="custom-input" value="${elementData.sengkangDiameter !== undefined ? elementData.sengkangDiameter : 8}" oninput="handleManualRebarInput()" placeholder="8">
+                        </div>
+                        <div class="dim-col">
+                            <span class="dim-micro-label">Jarak Sengkang (s mm)</span>
+                            <input type="number" id="input-sengkang-jarak" class="custom-input" value="${elementData.sengkangJarak !== undefined ? elementData.sengkangJarak : 150}" oninput="handleManualRebarInput()" placeholder="150">
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -5032,90 +5329,125 @@ window.onload = function() {
    ========================================================================== */
 
 let activeModule = 'concrete'; // 'concrete' | 'fine-aggregate' | 'coarse-aggregate' | 'steel' | 'guides'
-let previewStackOrder = ['concrete', 'fine-aggregate', 'coarse-aggregate', 'steel', 'guides'];
-let activeGuideTopic = 'concrete';
-let currentSubModuleView = {
-    'fine-aggregate': 'fa-spec-grav',
-    'coarse-aggregate': 'ca-spec-grav',
+let previewStackOrder = ['concrete', 'coarse-aggregate', 'fine-aggregate', 'steel', 'guides'];
+const LAST_ACTIVE_TEST = {
+    'concrete': 'loss',
+    'fine-aggregate': 'fa-sieve',
+    'coarse-aggregate': 'ca-abrasion',
     'steel': 'st-tensile'
 };
 
 const TESTING_MODULES = [
     {
         id: 'concrete',
-        title: 'Concrete Testing',
-        subtitle: 'Beton Balok & Silinder',
-        standardBadge: 'SNI 2847 / ASTM C39',
-        summary: 'Kuat tekan silinder, momen lentur balok, UTM 2000 kN & 14 standar SNI/ASTM.',
+        title: 'Beton',
         themeColor: '#00f0ff',
-        cadIcon: `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="#00f0ff" stroke-width="1.8">
-            <polygon points="16 3 29 10 16 17 3 10" stroke="#00f0ff" fill="rgba(0,240,255,0.12)"/>
-            <polygon points="3 10 16 17 16 29 3 22" stroke="#00f0ff" fill="rgba(0,240,255,0.06)"/>
-            <polygon points="16 17 29 10 29 22 16 29" stroke="#00f0ff" fill="rgba(0,240,255,0.18)"/>
-            <line x1="9.5" y1="13.5" x2="22.5" y2="21" stroke="#00f0ff" stroke-dasharray="2 1.5"/>
-        </svg>`
-    },
-    {
-        id: 'fine-aggregate',
-        title: 'Fine Aggregate Testing',
-        subtitle: 'Agregat Halus / Pasir',
-        standardBadge: 'SNI 1970 / ASTM C128',
-        summary: 'Berat jenis & penyerapan, kadar air, lumpur #200, ayakan/FM, zat organik.',
-        themeColor: '#f59e0b',
-        cadIcon: `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="#f59e0b" stroke-width="1.8">
-            <polygon points="16 4 28 27 4 27" stroke="#f59e0b" fill="rgba(245,158,11,0.1)"/>
-            <line x1="8" y1="19" x2="24" y2="19" stroke="#f59e0b" stroke-dasharray="2 1.5"/>
-            <line x1="12" y1="11" x2="20" y2="11" stroke="#f59e0b" stroke-dasharray="2 1.5"/>
-            <circle cx="16" cy="15" r="1.5" fill="#f59e0b"/>
-            <circle cx="12" cy="23" r="1.5" fill="#f59e0b"/>
-            <circle cx="20" cy="23" r="1.5" fill="#f59e0b"/>
+        cadIcon: `<svg viewBox="0 0 64 64" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="32" cy="14" rx="14" ry="4" stroke="currentColor"/>
+            <ellipse cx="32" cy="14" rx="10" ry="2.5" stroke="currentColor" stroke-dasharray="2 2" opacity="0.6"/>
+            <line x1="18" y1="14" x2="18" y2="48" stroke="currentColor"/>
+            <line x1="46" y1="14" x2="46" y2="48" stroke="currentColor"/>
+            <path d="M18 48 C18 53.5 46 53.5 46 48" stroke="currentColor"/>
+            <path d="M18 48 C18 44 46 44 46 48" stroke="currentColor" stroke-dasharray="2 2" opacity="0.4"/>
+            <path d="M18 20 H13 V42 H18" stroke="currentColor"/>
+            <circle cx="15.5" cy="24" r="1.2" fill="currentColor"/>
+            <circle cx="15.5" cy="38" r="1.2" fill="currentColor"/>
+            <path d="M46 20 H51 V42 H46" stroke="currentColor"/>
+            <circle cx="48.5" cy="24" r="1.2" fill="currentColor"/>
+            <circle cx="48.5" cy="38" r="1.2" fill="currentColor"/>
+            <circle cx="26" cy="22" r="1" fill="currentColor"/>
+            <circle cx="38" cy="24" r="1.2" fill="currentColor"/>
+            <circle cx="28" cy="32" r="1.4" fill="currentColor"/>
+            <circle cx="36" cy="36" r="1" fill="currentColor"/>
+            <circle cx="24" cy="42" r="1.2" fill="currentColor"/>
+            <circle cx="34" cy="44" r="1.3" fill="currentColor"/>
         </svg>`
     },
     {
         id: 'coarse-aggregate',
-        title: 'Coarse Aggregate Testing',
-        subtitle: 'Agregat Kasar / Kerikil & Split',
-        standardBadge: 'SNI 1969 / ASTM C131',
-        summary: 'Berat jenis kerikil, rongga udara, gradasi ayakan, uji abrasi Los Angeles.',
-        themeColor: '#e05638',
-        cadIcon: `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="#e05638" stroke-width="1.8">
-            <polygon points="6 11 16 4 26 9 27 21 17 28 6 23" stroke="#e05638" fill="rgba(224,86,56,0.12)"/>
-            <line x1="6" y1="11" x2="17" y2="17" stroke="#e05638"/>
-            <line x1="16" y1="4" x2="17" y2="17" stroke="#e05638"/>
-            <line x1="26" y1="9" x2="17" y2="17" stroke="#e05638"/>
-            <line x1="27" y1="21" x2="17" y2="17" stroke="#e05638"/>
-            <line x1="17" y1="28" x2="17" y2="17" stroke="#e05638"/>
-            <line x1="6" y1="23" x2="17" y2="17" stroke="#e05638"/>
+        title: 'Agregat Kasar',
+        themeColor: '#00f0ff',
+        cadIcon: `<svg viewBox="0 0 64 64" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="24 16 28 11 34 13 40 10 44 16" stroke="currentColor"/>
+            <polygon points="27 15 32 12 36 15" stroke="currentColor"/>
+            <polygon points="20 18 25 15 30 18" stroke="currentColor"/>
+            <rect x="14" y="17" width="36" height="8" rx="1" stroke="currentColor"/>
+            <line x1="20" y1="17" x2="20" y2="25" stroke="currentColor"/>
+            <line x1="26" y1="17" x2="26" y2="25" stroke="currentColor"/>
+            <line x1="32" y1="17" x2="32" y2="25" stroke="currentColor"/>
+            <line x1="38" y1="17" x2="38" y2="25" stroke="currentColor"/>
+            <line x1="44" y1="17" x2="44" y2="25" stroke="currentColor"/>
+            <polygon points="14 25 50 25 41 40 23 40" stroke="currentColor"/>
+            <line x1="17" y1="28" x2="47" y2="28" stroke="currentColor" stroke-dasharray="1.5 1.5" opacity="0.6"/>
+            <line x1="26" y1="40" x2="26" y2="44" stroke="currentColor"/>
+            <line x1="38" y1="40" x2="38" y2="44" stroke="currentColor"/>
+            <line x1="16" y1="25" x2="16" y2="52" stroke="currentColor"/>
+            <line x1="48" y1="25" x2="48" y2="52" stroke="currentColor"/>
+            <line x1="12" y1="52" x2="20" y2="52" stroke="currentColor"/>
+            <line x1="44" y1="52" x2="52" y2="52" stroke="currentColor"/>
+            <polygon points="28 47 31 45 32 48" stroke="currentColor" fill="currentColor"/>
+            <polygon points="34 46 37 44 38 47" stroke="currentColor" fill="currentColor"/>
+            <polygon points="26 51 29 50 27 53" stroke="currentColor" fill="currentColor"/>
+            <polygon points="33 50 36 49 35 52" stroke="currentColor" fill="currentColor"/>
+        </svg>`
+    },
+    {
+        id: 'fine-aggregate',
+        title: 'Agregat Halus',
+        themeColor: '#00f0ff',
+        cadIcon: `<svg viewBox="0 0 64 64" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="26" y="10" width="12" height="3" rx="1.5" stroke="currentColor"/>
+            <line x1="28" y1="13" x2="28" y2="21" stroke="currentColor"/>
+            <line x1="36" y1="13" x2="36" y2="21" stroke="currentColor"/>
+            <path d="M28 21 L16 47 C15 49 16.5 51 19 51 H45 C47.5 51 49 49 48 47 L36 21" stroke="currentColor"/>
+            <path d="M20 42 Q26 36 32 40 T44 37" stroke="currentColor"/>
+            <circle cx="28" cy="45" r="1.1" fill="currentColor"/>
+            <circle cx="34" cy="44" r="0.9" fill="currentColor"/>
+            <circle cx="39" cy="46" r="1.2" fill="currentColor"/>
+            <circle cx="25" cy="48" r="0.8" fill="currentColor"/>
+            <circle cx="36" cy="48" r="1.0" fill="currentColor"/>
+            <line x1="26" y1="30" x2="29" y2="30" stroke="currentColor" stroke-width="1.2"/>
+            <line x1="24" y1="35" x2="28" y2="35" stroke="currentColor" stroke-width="1.2"/>
         </svg>`
     },
     {
         id: 'steel',
-        title: 'Steel Tensile Testing',
-        subtitle: 'Baja Tulangan (BJTS/BJTP)',
-        standardBadge: 'SNI 2052 / ASTM A615',
-        summary: 'Kuat luluh fy, kuat tarik fu, elongasi regangan patah, uji lengkung 180°.',
-        themeColor: '#f43f5e',
-        cadIcon: `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="#f43f5e" stroke-width="1.8">
-            <rect x="11" y="3" width="10" height="26" rx="2" stroke="#f43f5e" fill="rgba(244,63,94,0.1)"/>
-            <line x1="11" y1="8" x2="21" y2="11" stroke="#f43f5e" stroke-width="2"/>
-            <line x1="11" y1="13" x2="21" y2="16" stroke="#f43f5e" stroke-width="2"/>
-            <line x1="11" y1="18" x2="21" y2="21" stroke="#f43f5e" stroke-width="2"/>
-            <line x1="11" y1="23" x2="21" y2="26" stroke="#f43f5e" stroke-width="2"/>
+        title: 'Besi',
+        themeColor: '#00f0ff',
+        cadIcon: `<svg viewBox="0 0 64 64" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="22" cy="41" r="9" stroke="currentColor"/>
+            <ellipse cx="22" cy="41" rx="6" ry="6" stroke="currentColor" stroke-dasharray="1.5 1.5" opacity="0.6"/>
+            <line x1="16" y1="41" x2="22" y2="35" stroke="currentColor" stroke-width="1.2"/>
+            <line x1="18" y1="47" x2="28" y2="37" stroke="currentColor" stroke-width="1.2"/>
+            <line x1="22" y1="47" x2="28" y2="41" stroke="currentColor" stroke-width="1.2"/>
+            <line x1="15.5" y1="34.5" x2="27" y2="17" stroke="currentColor"/>
+            <line x1="28.5" y1="47.5" x2="40" y2="30" stroke="currentColor"/>
+            <line x1="27" y1="17" x2="31" y2="14" stroke="currentColor"/>
+            <line x1="20" y1="28" x2="25" y2="23" stroke="currentColor" stroke-width="1.4"/>
+            <line x1="25" y1="35" x2="30" y2="30" stroke="currentColor" stroke-width="1.4"/>
+            <line x1="30" y1="42" x2="35" y2="37" stroke="currentColor" stroke-width="1.4"/>
+            <line x1="35" y1="32" x2="53" y2="23" stroke="currentColor" stroke-width="2.2"/>
+            <line x1="44" y1="27.5" x2="44" y2="44" stroke="currentColor" stroke-width="2.2"/>
+            <line x1="35" y1="48.5" x2="53" y2="39.5" stroke="currentColor" stroke-width="2.2"/>
+            <line x1="35" y1="32" x2="35" y2="35" stroke="currentColor"/>
+            <line x1="53" y1="23" x2="53" y2="26" stroke="currentColor"/>
+            <line x1="35" y1="48.5" x2="35" y2="51.5" stroke="currentColor"/>
+            <line x1="53" y1="39.5" x2="53" y2="42.5" stroke="currentColor"/>
         </svg>`
     },
     {
         id: 'guides',
-        title: 'Testing Guides',
-        subtitle: 'Panduan Pengujian SNI & ASTM',
-        standardBadge: 'DOCS & PDF',
-        summary: 'Kumpulan SOP, manual prosedur uji & spesifikasi SNI/ASTM dengan tautan unduh dokumen PDF.',
-        themeColor: '#a855f7',
-        cadIcon: `<svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="#a855f7" stroke-width="1.8">
-            <path d="M6 4h14l6 6v18H6z" stroke="#a855f7" fill="rgba(168,85,247,0.1)"/>
-            <polyline points="20 4 20 10 26 10" stroke="#a855f7"/>
-            <line x1="10" y1="14" x2="22" y2="14" stroke="#a855f7"/>
-            <line x1="10" y1="18" x2="22" y2="18" stroke="#a855f7"/>
-            <line x1="10" y1="22" x2="18" y2="22" stroke="#a855f7"/>
+        title: 'Buku Modul',
+        themeColor: '#00f0ff',
+        cadIcon: `<svg viewBox="0 0 64 64" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M32 23 C27 20 18 20 12 22 V47 C18 45 27 45 32 48 C37 45 46 45 52 47 V22 C46 20 37 20 32 23 Z" stroke="currentColor"/>
+            <line x1="32" y1="23" x2="32" y2="48" stroke="currentColor"/>
+            <circle cx="22" cy="33" r="6" stroke="currentColor"/>
+            <ellipse cx="22" cy="33" rx="2.5" ry="6" stroke="currentColor"/>
+            <line x1="16" y1="33" x2="28" y2="33" stroke="currentColor"/>
+            <line x1="48" y1="24" x2="39" y2="37" stroke="currentColor" stroke-width="2"/>
+            <polygon points="39 37 36 41 40 40" fill="currentColor"/>
+            <line x1="36" y1="44" x2="48" y2="44" stroke="currentColor" stroke-linecap="round" stroke-dasharray="1.5 2"/>
         </svg>`
     }
 ];
@@ -5135,55 +5467,51 @@ function renderModuleCardStack() {
         const isActiveWs = (modId === activeModule);
         const layerClass = `layer-${index}`;
 
-        // Top card center target interaction vs. background card click
         let actionTargetHtml = '';
         if (isTop) {
             if (isActiveWs) {
                 actionTargetHtml = `
                     <div class="badge-active-indicator">
-                        <span class="dot-live"></span> ACTIVE WORKSPACE
+                        <span class="dot-live"></span> MODUL AKTIF
                     </div>
                 `;
             } else {
                 actionTargetHtml = `
                     <button class="btn-activate-workspace" onclick="event.stopPropagation(); activateModule('${mod.id}');" title="Klik untuk membuka workspace ${mod.title}">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                        ENTER WORKSPACE
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        BUKA MODUL
                     </button>
                 `;
             }
-        } else {
-            actionTargetHtml = `
-                <div style="font-size: 8.5px; color: var(--text-muted); font-family: var(--font-mono); text-align: center;">
-                    [ Klik kartu untuk memajukan ]
-                </div>
-            `;
         }
 
         html += `
             <div class="module-stack-card ${layerClass} ${isActiveWs ? 'is-active-workspace' : ''}" 
                  style="--card-theme: ${mod.themeColor};" 
                  onclick="handleCardStackClick('${mod.id}', ${index})" 
-                 title="${isTop ? (isActiveWs ? 'Workspace aktif: ' + mod.title : 'Klik tengah untuk masuk ke ' + mod.title) : 'Klik untuk memajukan kartu ' + mod.title}">
+                 title="${isTop ? (isActiveWs ? 'Modul aktif: ' + mod.title : 'Klik untuk masuk ke ' + mod.title) : 'Klik untuk memajukan modul ' + mod.title}">
                 
                 <div class="card-edge-strip" style="background: ${mod.themeColor};"></div>
 
-                <div class="card-header-row">
-                    <div class="card-title-group">
-                        <div class="card-cad-icon">${mod.cadIcon}</div>
-                        <div>
-                            <div class="card-title-text" style="color:${isTop ? '#fff' : 'var(--text-pure)'}">${mod.title}</div>
-                            <div class="card-sub-text">${mod.subtitle}</div>
-                        </div>
+                <div class="card-minimal-body">
+                    <div class="card-cad-icon-lg" style="color: ${mod.themeColor};">
+                        ${mod.cadIcon}
                     </div>
-                    <span class="card-sni-chip" style="color:${mod.themeColor}; border-color:${mod.themeColor}55;">${mod.standardBadge.split('/')[0].trim()}</span>
+                    <div class="card-title-single" style="color: ${isTop ? '#ffffff' : 'var(--text-pure)'}">
+                        ${mod.title}
+                    </div>
                 </div>
 
-                <div class="card-summary-text">${mod.summary}</div>
-
-                <div class="card-center-target" ${isTop && !isActiveWs ? `onclick="event.stopPropagation(); activateModule('${mod.id}');"` : ''}>
-                    ${actionTargetHtml}
-                </div>
+                ${isTop ? `
+                    <div class="card-center-target" ${!isActiveWs ? `onclick="event.stopPropagation(); activateModule('${mod.id}');"` : ''}>
+                        ${actionTargetHtml}
+                    </div>
+                    ${isActiveWs ? `
+                    <div class="card-stack-shelf-layers">
+                        <span class="shelf-layer s1"></span>
+                        <span class="shelf-layer s2"></span>
+                    </div>` : ''}
+                ` : ''}
             </div>
         `;
     });
