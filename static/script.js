@@ -5368,38 +5368,203 @@ const LAST_ACTIVE_TEST = {
     'steel': 'st-tensile'
 };
 
+// ==========================================================================
+// SINGLE SOURCE OF TRUTH: COMPREHENSIVE DESIGN TOKEN MAP FOR CHAPTER WORKSPACES
+// ==========================================================================
+const CHAPTER_THEMES = {
+    'concrete': {
+        name: 'Concrete Testing',
+        title: 'Beton',
+        code: 'SNI 03-2847 / ASTM C39',
+        cadIcon: `<img src="static/img/chapter-concrete.png" alt="Beton" class="chapter-module-icon">`,
+        // Original untouched default theme (Navy / Slate & Cyan Neon)
+        bgVoid: '#0b1426',
+        bgBase: '#101d3b',
+        bgSurface: '#16274e',
+        bgCard: 'rgba(22, 39, 78, 0.82)',
+        bgCardHover: 'rgba(30, 53, 106, 0.92)',
+        bgGlass: 'rgba(18, 33, 66, 0.75)',
+        bgInput: '#0d1933',
+        bgSidebar: 'rgba(14, 25, 51, 0.98)',
+        bgHeader: 'rgba(14, 25, 51, 0.95)',
+        bgPanel: 'rgba(14, 25, 51, 0.96)',
+        bgCanvas: 'radial-gradient(circle at 50% 50%, #172a56 0%, #0d1733 100%)',
+        bgBanner: 'linear-gradient(135deg, rgba(16, 29, 59, 0.95) 0%, rgba(10, 18, 38, 0.95) 100%)',
+        borderDim: 'rgba(56, 189, 248, 0.2)',
+        borderBright: 'rgba(56, 189, 248, 0.42)',
+        borderGlow: 'rgba(0, 240, 255, 0.55)',
+        accent: '#00f0ff',
+        accentGlow: 'rgba(0, 240, 255, 0.25)',
+        accentDim: 'rgba(0, 240, 255, 0.08)',
+        accentBorder: 'rgba(0, 240, 255, 0.35)'
+    },
+    'coarse-aggregate': {
+        name: 'Coarse Aggregate Testing',
+        title: 'Agregat Kasar',
+        code: 'SNI 1969 / ASTM C127',
+        cadIcon: `<img src="static/img/chapter-coarse-aggregate.png" alt="Agregat Kasar" class="chapter-module-icon">`,
+        // Warm copper / terracotta / earthy bronze dominant base tone
+        bgVoid: '#150a07',
+        bgBase: '#1d0e09',
+        bgSurface: '#2a140d',
+        bgCard: 'rgba(44, 21, 14, 0.88)',
+        bgCardHover: 'rgba(60, 29, 19, 0.94)',
+        bgGlass: 'rgba(36, 17, 11, 0.78)',
+        bgInput: '#150a06',
+        bgSidebar: 'rgba(26, 12, 8, 0.98)',
+        bgHeader: 'rgba(26, 12, 8, 0.95)',
+        bgPanel: 'rgba(26, 12, 8, 0.96)',
+        bgCanvas: 'radial-gradient(circle at 50% 50%, #3e1b10 0%, #150906 100%)',
+        bgBanner: 'linear-gradient(135deg, rgba(52, 24, 16, 0.96) 0%, rgba(26, 12, 8, 0.96) 100%)',
+        borderDim: 'rgba(224, 86, 56, 0.24)',
+        borderBright: 'rgba(224, 86, 56, 0.5)',
+        borderGlow: 'rgba(224, 86, 56, 0.65)',
+        accent: '#e05638',
+        accentGlow: 'rgba(224, 86, 56, 0.32)',
+        accentDim: 'rgba(224, 86, 56, 0.12)',
+        accentBorder: 'rgba(224, 86, 56, 0.45)'
+    },
+    'fine-aggregate': {
+        name: 'Fine Aggregate Testing',
+        title: 'Agregat Halus',
+        code: 'SNI 1970 / ASTM C128',
+        cadIcon: `<img src="static/img/chapter-fine-aggregate.png" alt="Agregat Halus" class="chapter-module-icon">`,
+        // Warm amber / burnt-orange dominant base tone
+        bgVoid: '#140a04',
+        bgBase: '#1a0e06',
+        bgSurface: '#241308',
+        bgCard: 'rgba(38, 20, 8, 0.88)',
+        bgCardHover: 'rgba(52, 28, 12, 0.94)',
+        bgGlass: 'rgba(32, 17, 7, 0.78)',
+        bgInput: '#130a04',
+        bgSidebar: 'rgba(24, 13, 5, 0.98)',
+        bgHeader: 'rgba(24, 13, 5, 0.95)',
+        bgPanel: 'rgba(24, 13, 5, 0.96)',
+        bgCanvas: 'radial-gradient(circle at 50% 50%, #351a08 0%, #150903 100%)',
+        bgBanner: 'linear-gradient(135deg, rgba(45, 23, 9, 0.96) 0%, rgba(22, 11, 4, 0.96) 100%)',
+        borderDim: 'rgba(245, 158, 11, 0.22)',
+        borderBright: 'rgba(245, 158, 11, 0.48)',
+        borderGlow: 'rgba(245, 158, 11, 0.65)',
+        accent: '#f59e0b',
+        accentGlow: 'rgba(245, 158, 11, 0.32)',
+        accentDim: 'rgba(245, 158, 11, 0.12)',
+        accentBorder: 'rgba(245, 158, 11, 0.42)'
+    },
+    'steel': {
+        name: 'Steel Tensile Testing',
+        title: 'Besi',
+        code: 'SNI 2052 / ASTM A615',
+        cadIcon: `<img src="static/img/chapter-steel.png" alt="Besi" class="chapter-module-icon">`,
+        // Crimson / gunmetal steel dominant base tone
+        bgVoid: '#13070b',
+        bgBase: '#1c0a10',
+        bgSurface: '#280e17',
+        bgCard: 'rgba(42, 14, 24, 0.88)',
+        bgCardHover: 'rgba(58, 19, 33, 0.94)',
+        bgGlass: 'rgba(34, 12, 20, 0.78)',
+        bgInput: '#14060b',
+        bgSidebar: 'rgba(24, 8, 14, 0.98)',
+        bgHeader: 'rgba(24, 8, 14, 0.95)',
+        bgPanel: 'rgba(24, 8, 14, 0.96)',
+        bgCanvas: 'radial-gradient(circle at 50% 50%, #3a1221 0%, #14060b 100%)',
+        bgBanner: 'linear-gradient(135deg, rgba(50, 16, 28, 0.96) 0%, rgba(24, 8, 14, 0.96) 100%)',
+        borderDim: 'rgba(244, 63, 94, 0.22)',
+        borderBright: 'rgba(244, 63, 94, 0.48)',
+        borderGlow: 'rgba(244, 63, 94, 0.65)',
+        accent: '#f43f5e',
+        accentGlow: 'rgba(244, 63, 94, 0.32)',
+        accentDim: 'rgba(244, 63, 94, 0.12)',
+        accentBorder: 'rgba(244, 63, 94, 0.42)'
+    },
+    'guides': {
+        name: 'Testing Guides',
+        title: 'Buku Modul',
+        code: 'SNI & ASTM COMPENDIUM',
+        cadIcon: `<img src="static/img/chapter-guides.png" alt="Buku Modul" class="chapter-module-icon">`,
+        // Deep purple / violet obsidian dominant base tone
+        bgVoid: '#0f061b',
+        bgBase: '#160927',
+        bgSurface: '#210d3a',
+        bgCard: 'rgba(35, 14, 60, 0.88)',
+        bgCardHover: 'rgba(49, 20, 84, 0.94)',
+        bgGlass: 'rgba(29, 12, 50, 0.78)',
+        bgInput: '#11061f',
+        bgSidebar: 'rgba(20, 8, 35, 0.98)',
+        bgHeader: 'rgba(20, 8, 35, 0.95)',
+        bgPanel: 'rgba(20, 8, 35, 0.96)',
+        bgCanvas: 'radial-gradient(circle at 50% 50%, #301354 0%, #11061f 100%)',
+        bgBanner: 'linear-gradient(135deg, rgba(42, 16, 74, 0.96) 0%, rgba(21, 8, 37, 0.96) 100%)',
+        borderDim: 'rgba(168, 85, 247, 0.22)',
+        borderBright: 'rgba(168, 85, 247, 0.48)',
+        borderGlow: 'rgba(168, 85, 247, 0.65)',
+        accent: '#a855f7',
+        accentGlow: 'rgba(168, 85, 247, 0.32)',
+        accentDim: 'rgba(168, 85, 247, 0.12)',
+        accentBorder: 'rgba(168, 85, 247, 0.42)'
+    }
+};
+
+// Derived Testing Modules Roster referencing single source of truth
 const TESTING_MODULES = [
     {
         id: 'concrete',
-        title: 'Beton',
-        themeColor: '#00f0ff',
-        cadIcon: `<img src="static/img/chapter-concrete.png" alt="Beton" class="chapter-module-icon">`
+        title: CHAPTER_THEMES['concrete'].title,
+        themeColor: CHAPTER_THEMES['concrete'].accent,
+        cadIcon: CHAPTER_THEMES['concrete'].cadIcon
     },
     {
         id: 'coarse-aggregate',
-        title: 'Agregat Kasar',
-        themeColor: '#00f0ff',
-        cadIcon: `<img src="static/img/chapter-coarse-aggregate.png" alt="Agregat Kasar" class="chapter-module-icon">`
+        title: CHAPTER_THEMES['coarse-aggregate'].title,
+        themeColor: CHAPTER_THEMES['coarse-aggregate'].accent,
+        cadIcon: CHAPTER_THEMES['coarse-aggregate'].cadIcon
     },
     {
         id: 'fine-aggregate',
-        title: 'Agregat Halus',
-        themeColor: '#00f0ff',
-        cadIcon: `<img src="static/img/chapter-fine-aggregate.png" alt="Agregat Halus" class="chapter-module-icon">`
+        title: CHAPTER_THEMES['fine-aggregate'].title,
+        themeColor: CHAPTER_THEMES['fine-aggregate'].accent,
+        cadIcon: CHAPTER_THEMES['fine-aggregate'].cadIcon
     },
     {
         id: 'steel',
-        title: 'Besi',
-        themeColor: '#00f0ff',
-        cadIcon: `<img src="static/img/chapter-steel.png" alt="Besi" class="chapter-module-icon">`
+        title: CHAPTER_THEMES['steel'].title,
+        themeColor: CHAPTER_THEMES['steel'].accent,
+        cadIcon: CHAPTER_THEMES['steel'].cadIcon
     },
     {
         id: 'guides',
-        title: 'Buku Modul',
-        themeColor: '#00f0ff',
-        cadIcon: `<img src="static/img/chapter-guides.png" alt="Buku Modul" class="chapter-module-icon">`
+        title: CHAPTER_THEMES['guides'].title,
+        themeColor: CHAPTER_THEMES['guides'].accent,
+        cadIcon: CHAPTER_THEMES['guides'].cadIcon
     }
 ];
+
+// Apply dynamic chapter theme colors to root CSS variables
+function applyChapterTheme(moduleId) {
+    const theme = CHAPTER_THEMES[moduleId] || CHAPTER_THEMES['concrete'];
+    const root = document.documentElement;
+
+    root.style.setProperty('--bg-void', theme.bgVoid);
+    root.style.setProperty('--bg-base', theme.bgBase);
+    root.style.setProperty('--bg-surface', theme.bgSurface);
+    root.style.setProperty('--bg-card', theme.bgCard);
+    root.style.setProperty('--bg-card-hover', theme.bgCardHover);
+    root.style.setProperty('--bg-glass', theme.bgGlass);
+    root.style.setProperty('--bg-input', theme.bgInput);
+    root.style.setProperty('--bg-sidebar', theme.bgSidebar);
+    root.style.setProperty('--bg-header', theme.bgHeader);
+    root.style.setProperty('--bg-panel', theme.bgPanel);
+    root.style.setProperty('--bg-canvas', theme.bgCanvas);
+    root.style.setProperty('--bg-banner', theme.bgBanner);
+    root.style.setProperty('--border-dim', theme.borderDim);
+    root.style.setProperty('--border-bright', theme.borderBright);
+    root.style.setProperty('--border-glow', theme.borderGlow);
+    root.style.setProperty('--chapter-accent', theme.accent);
+    root.style.setProperty('--chapter-accent-glow', theme.accentGlow);
+    root.style.setProperty('--chapter-accent-dim', theme.accentDim);
+    root.style.setProperty('--chapter-accent-border', theme.accentBorder);
+
+    document.body.setAttribute('data-chapter', moduleId);
+}
 
 // Initialize and Render Stacked Cards
 function renderModuleCardStack() {
@@ -5407,10 +5572,14 @@ function renderModuleCardStack() {
     const dotsContainer = document.getElementById('stack-dots');
     if (!stackViewport) return;
 
+    // Active workspace theme tokens
+    const activeTheme = CHAPTER_THEMES[activeModule] || CHAPTER_THEMES['concrete'];
+
     let html = '';
     previewStackOrder.forEach((modId, index) => {
         const mod = TESTING_MODULES.find(m => m.id === modId);
         if (!mod) return;
+        const modTheme = CHAPTER_THEMES[modId] || CHAPTER_THEMES['concrete'];
 
         const isTop = (index === 0);
         const isActiveWs = (modId === activeModule);
@@ -5420,13 +5589,13 @@ function renderModuleCardStack() {
         if (isTop) {
             if (isActiveWs) {
                 actionTargetHtml = `
-                    <div class="badge-active-indicator">
-                        <span class="dot-live"></span> MODUL AKTIF
+                    <div class="badge-active-indicator" style="background: ${activeTheme.accentDim}; border-color: ${activeTheme.accentBorder}; color: ${activeTheme.accent};">
+                        <span class="dot-live" style="background: ${activeTheme.accent}; box-shadow: 0 0 8px ${activeTheme.accent};"></span> MODUL AKTIF
                     </div>
                 `;
             } else {
                 actionTargetHtml = `
-                    <button class="btn-activate-workspace" onclick="event.stopPropagation(); activateModule('${mod.id}');" title="Klik untuk membuka workspace ${mod.title}">
+                    <button class="btn-activate-workspace" onclick="event.stopPropagation(); activateModule('${mod.id}');" title="Klik untuk membuka workspace ${mod.title}" style="border-color: ${modTheme.accent}; color: ${modTheme.accent};">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
                         BUKA MODUL
                     </button>
@@ -5436,14 +5605,14 @@ function renderModuleCardStack() {
 
         html += `
             <div class="module-stack-card ${layerClass} ${isActiveWs ? 'is-active-workspace' : ''}" 
-                 style="--card-theme: ${mod.themeColor};" 
+                 style="--card-theme: ${modTheme.accent}; --card-theme-glow: ${modTheme.accentGlow}; --card-theme-dim: ${modTheme.accentDim}; --card-theme-border: ${modTheme.accentBorder}; ${isActiveWs ? `border-color: ${activeTheme.accent}; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7), 0 0 20px ${activeTheme.accentGlow};` : ''}" 
                  onclick="handleCardStackClick('${mod.id}', ${index})" 
                  title="${isTop ? (isActiveWs ? 'Modul aktif: ' + mod.title : 'Klik untuk masuk ke ' + mod.title) : 'Klik untuk memajukan modul ' + mod.title}">
                 
-                <div class="card-edge-strip" style="background: ${mod.themeColor};"></div>
+                <div class="card-edge-strip" style="background: ${modTheme.accent};"></div>
 
                 <div class="card-minimal-body">
-                    <div class="card-cad-icon-lg" style="color: ${mod.themeColor};">
+                    <div class="card-cad-icon-lg" style="color: ${modTheme.accent};">
                         ${mod.cadIcon}
                     </div>
                     <div class="card-title-single" style="color: ${isTop ? '#ffffff' : 'var(--text-pure)'}">
@@ -5457,8 +5626,8 @@ function renderModuleCardStack() {
                     </div>
                     ${isActiveWs ? `
                     <div class="card-stack-shelf-layers">
-                        <span class="shelf-layer s1"></span>
-                        <span class="shelf-layer s2"></span>
+                        <span class="shelf-layer s1" style="background: ${activeTheme.accent}; box-shadow: 0 0 8px ${activeTheme.accentGlow};"></span>
+                        <span class="shelf-layer s2" style="background: ${activeTheme.accent}; box-shadow: 0 0 8px ${activeTheme.accentGlow};"></span>
                     </div>` : ''}
                 ` : ''}
             </div>
@@ -5473,7 +5642,8 @@ function renderModuleCardStack() {
         TESTING_MODULES.forEach(m => {
             const isFront = (previewStackOrder[0] === m.id);
             const isWs = (activeModule === m.id);
-            dotsHtml += `<span class="stack-dot ${isFront ? 'active' : ''}" onclick="bringCardToFront('${m.id}')" title="${m.title} ${isWs ? '(Aktif)' : ''}" style="${isWs ? 'border: 1px solid var(--cyan-neon);' : ''}"></span>`;
+            const mTheme = CHAPTER_THEMES[m.id] || CHAPTER_THEMES['concrete'];
+            dotsHtml += `<span class="stack-dot ${isFront ? 'active' : ''}" onclick="bringCardToFront('${m.id}')" title="${m.title} ${isWs ? '(Aktif)' : ''}" style="${isFront ? `background: ${activeTheme.accent}; box-shadow: 0 0 6px ${activeTheme.accentGlow};` : ''} ${isWs ? `border: 1px solid ${activeTheme.accent};` : ''}"></span>`;
         });
         dotsContainer.innerHTML = dotsHtml;
     }
@@ -5516,154 +5686,6 @@ function bringCardToFront(moduleId) {
         previewStackOrder.unshift(moduleId);
         renderModuleCardStack();
     }
-}
-
-// Commit and Activate Module Workspace
-// Comprehensive Design Token Map for Chapter Workspaces
-const CHAPTER_THEMES = {
-    'concrete': {
-        name: 'Concrete Testing',
-        // Original untouched default theme (Navy / Slate & Cyan Neon)
-        bgVoid: '#0b1426',
-        bgBase: '#101d3b',
-        bgSurface: '#16274e',
-        bgCard: 'rgba(22, 39, 78, 0.82)',
-        bgCardHover: 'rgba(30, 53, 106, 0.92)',
-        bgGlass: 'rgba(18, 33, 66, 0.75)',
-        bgInput: '#0d1933',
-        bgSidebar: 'rgba(14, 25, 51, 0.98)',
-        bgHeader: 'rgba(14, 25, 51, 0.95)',
-        bgPanel: 'rgba(14, 25, 51, 0.96)',
-        bgCanvas: 'radial-gradient(circle at 50% 50%, #172a56 0%, #0d1733 100%)',
-        bgBanner: 'linear-gradient(135deg, rgba(16, 29, 59, 0.95) 0%, rgba(10, 18, 38, 0.95) 100%)',
-        borderDim: 'rgba(56, 189, 248, 0.2)',
-        borderBright: 'rgba(56, 189, 248, 0.42)',
-        borderGlow: 'rgba(0, 240, 255, 0.55)',
-        accent: '#00f0ff',
-        accentGlow: 'rgba(0, 240, 255, 0.25)',
-        accentDim: 'rgba(0, 240, 255, 0.08)',
-        accentBorder: 'rgba(0, 240, 255, 0.35)'
-    },
-    'fine-aggregate': {
-        name: 'Fine Aggregate Testing',
-        // Warm amber / burnt-orange dominant base tone
-        bgVoid: '#140a04',
-        bgBase: '#1a0e06',
-        bgSurface: '#241308',
-        bgCard: 'rgba(38, 20, 8, 0.88)',
-        bgCardHover: 'rgba(52, 28, 12, 0.94)',
-        bgGlass: 'rgba(32, 17, 7, 0.78)',
-        bgInput: '#130a04',
-        bgSidebar: 'rgba(24, 13, 5, 0.98)',
-        bgHeader: 'rgba(24, 13, 5, 0.95)',
-        bgPanel: 'rgba(24, 13, 5, 0.96)',
-        bgCanvas: 'radial-gradient(circle at 50% 50%, #351a08 0%, #150903 100%)',
-        bgBanner: 'linear-gradient(135deg, rgba(45, 23, 9, 0.96) 0%, rgba(22, 11, 4, 0.96) 100%)',
-        borderDim: 'rgba(245, 158, 11, 0.22)',
-        borderBright: 'rgba(245, 158, 11, 0.48)',
-        borderGlow: 'rgba(245, 158, 11, 0.65)',
-        accent: '#f59e0b',
-        accentGlow: 'rgba(245, 158, 11, 0.32)',
-        accentDim: 'rgba(245, 158, 11, 0.12)',
-        accentBorder: 'rgba(245, 158, 11, 0.42)'
-    },
-    'coarse-aggregate': {
-        name: 'Coarse Aggregate Testing',
-        // Warm copper / terracotta / earthy bronze dominant base tone
-        bgVoid: '#150a07',
-        bgBase: '#1d0e09',
-        bgSurface: '#2a140d',
-        bgCard: 'rgba(44, 21, 14, 0.88)',
-        bgCardHover: 'rgba(60, 29, 19, 0.94)',
-        bgGlass: 'rgba(36, 17, 11, 0.78)',
-        bgInput: '#150a06',
-        bgSidebar: 'rgba(26, 12, 8, 0.98)',
-        bgHeader: 'rgba(26, 12, 8, 0.95)',
-        bgPanel: 'rgba(26, 12, 8, 0.96)',
-        bgCanvas: 'radial-gradient(circle at 50% 50%, #3e1b10 0%, #150906 100%)',
-        bgBanner: 'linear-gradient(135deg, rgba(52, 24, 16, 0.96) 0%, rgba(26, 12, 8, 0.96) 100%)',
-        borderDim: 'rgba(224, 86, 56, 0.24)',
-        borderBright: 'rgba(224, 86, 56, 0.5)',
-        borderGlow: 'rgba(224, 86, 56, 0.65)',
-        accent: '#e05638',
-        accentGlow: 'rgba(224, 86, 56, 0.32)',
-        accentDim: 'rgba(224, 86, 56, 0.12)',
-        accentBorder: 'rgba(224, 86, 56, 0.45)'
-    },
-    'steel': {
-        name: 'Steel Tensile Testing',
-        // Crimson / gunmetal steel dominant base tone
-        bgVoid: '#13070b',
-        bgBase: '#1c0a10',
-        bgSurface: '#280e17',
-        bgCard: 'rgba(42, 14, 24, 0.88)',
-        bgCardHover: 'rgba(58, 19, 33, 0.94)',
-        bgGlass: 'rgba(34, 12, 20, 0.78)',
-        bgInput: '#14060b',
-        bgSidebar: 'rgba(24, 8, 14, 0.98)',
-        bgHeader: 'rgba(24, 8, 14, 0.95)',
-        bgPanel: 'rgba(24, 8, 14, 0.96)',
-        bgCanvas: 'radial-gradient(circle at 50% 50%, #3a1221 0%, #14060b 100%)',
-        bgBanner: 'linear-gradient(135deg, rgba(50, 16, 28, 0.96) 0%, rgba(24, 8, 14, 0.96) 100%)',
-        borderDim: 'rgba(244, 63, 94, 0.22)',
-        borderBright: 'rgba(244, 63, 94, 0.48)',
-        borderGlow: 'rgba(244, 63, 94, 0.65)',
-        accent: '#f43f5e',
-        accentGlow: 'rgba(244, 63, 94, 0.32)',
-        accentDim: 'rgba(244, 63, 94, 0.12)',
-        accentBorder: 'rgba(244, 63, 94, 0.42)'
-    },
-    'guides': {
-        name: 'Testing Guides',
-        // Deep purple / violet obsidian dominant base tone
-        bgVoid: '#0f061b',
-        bgBase: '#160927',
-        bgSurface: '#210d3a',
-        bgCard: 'rgba(35, 14, 60, 0.88)',
-        bgCardHover: 'rgba(49, 20, 84, 0.94)',
-        bgGlass: 'rgba(29, 12, 50, 0.78)',
-        bgInput: '#11061f',
-        bgSidebar: 'rgba(20, 8, 35, 0.98)',
-        bgHeader: 'rgba(20, 8, 35, 0.95)',
-        bgPanel: 'rgba(20, 8, 35, 0.96)',
-        bgCanvas: 'radial-gradient(circle at 50% 50%, #301354 0%, #11061f 100%)',
-        bgBanner: 'linear-gradient(135deg, rgba(42, 16, 74, 0.96) 0%, rgba(21, 8, 37, 0.96) 100%)',
-        borderDim: 'rgba(168, 85, 247, 0.22)',
-        borderBright: 'rgba(168, 85, 247, 0.48)',
-        borderGlow: 'rgba(168, 85, 247, 0.65)',
-        accent: '#a855f7',
-        accentGlow: 'rgba(168, 85, 247, 0.32)',
-        accentDim: 'rgba(168, 85, 247, 0.12)',
-        accentBorder: 'rgba(168, 85, 247, 0.42)'
-    }
-};
-
-// Apply dynamic chapter theme colors to root CSS variables
-function applyChapterTheme(moduleId) {
-    const theme = CHAPTER_THEMES[moduleId] || CHAPTER_THEMES['concrete'];
-    const root = document.documentElement;
-
-    root.style.setProperty('--bg-void', theme.bgVoid);
-    root.style.setProperty('--bg-base', theme.bgBase);
-    root.style.setProperty('--bg-surface', theme.bgSurface);
-    root.style.setProperty('--bg-card', theme.bgCard);
-    root.style.setProperty('--bg-card-hover', theme.bgCardHover);
-    root.style.setProperty('--bg-glass', theme.bgGlass);
-    root.style.setProperty('--bg-input', theme.bgInput);
-    root.style.setProperty('--bg-sidebar', theme.bgSidebar);
-    root.style.setProperty('--bg-header', theme.bgHeader);
-    root.style.setProperty('--bg-panel', theme.bgPanel);
-    root.style.setProperty('--bg-canvas', theme.bgCanvas);
-    root.style.setProperty('--bg-banner', theme.bgBanner);
-    root.style.setProperty('--border-dim', theme.borderDim);
-    root.style.setProperty('--border-bright', theme.borderBright);
-    root.style.setProperty('--border-glow', theme.borderGlow);
-    root.style.setProperty('--chapter-accent', theme.accent);
-    root.style.setProperty('--chapter-accent-glow', theme.accentGlow);
-    root.style.setProperty('--chapter-accent-dim', theme.accentDim);
-    root.style.setProperty('--chapter-accent-border', theme.accentBorder);
-
-    document.body.setAttribute('data-chapter', moduleId);
 }
 
 function activateModule(moduleId) {
