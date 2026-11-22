@@ -86,6 +86,18 @@ function getFuturisticTestingMachineSVG(isTesting = false) {
 const panelView = document.getElementById('panel-view');
 const canvasView = document.getElementById('canvas-view');
 
+// Active Chapter & Module State
+var activeModule = 'concrete'; // 'concrete' | 'fine-aggregate' | 'coarse-aggregate' | 'steel' | 'guides'
+var activeChapter = 'concrete';
+window.activeModule = 'concrete';
+window.activeChapter = 'concrete';
+var activeGuideTopic = 'concrete';
+var currentSubModuleView = {
+    'fine-aggregate': 'fa-spec-grav',
+    'coarse-aggregate': 'ca-spec-grav',
+    'steel': 'st-tensile'
+};
+
 let elementData = {
     tipe: 'Beam',
     panjang: 100,
@@ -2016,6 +2028,7 @@ function toggleRebarFineTuneDrawer() {
 }
 
 function renderCreate() {
+    if (activeModule !== 'concrete') return;
     if (canvasView) canvasView.classList.remove("scroll-mode");
     let selectedTipe = getNormalizedTipe(elementData.tipe);
     let isSilinder = selectedTipe === 'Cylinder';
@@ -2366,6 +2379,7 @@ function cycleCuring(index) {
 }
 
 function renderLossMaterial() {
+    if (activeModule !== 'concrete') return;
     if (canvasView) canvasView.classList.remove("scroll-mode");
     if (storedConcreteList.length === 0) {
         canvasView.innerHTML = `
@@ -2714,6 +2728,7 @@ function getEnemyAvatarHTML(enemyName) {
 }
 
 function renderPertempuran() {
+    if (activeModule !== 'concrete') return;
     if (canvasView) canvasView.classList.remove("scroll-mode");
     let materialOptionsHtml = '';
     if (storedConcreteList.length === 0) {
@@ -3142,6 +3157,7 @@ function updateHpUI() {
    TAB 4: LAB TESTING (SIMULATION OF TEST MARK 2000 kN UTM MACHINE)
    ========================================================================== */
 function renderPengujian() {
+    if (activeModule !== 'concrete') return;
     if (canvasView) canvasView.classList.remove("scroll-mode");
 
     // Ensure testState.selectedMethod is restricted to active methods (#1, #2, #3, #10, #11)
@@ -4411,6 +4427,7 @@ function printReportPDF() {
 }
 
 function renderEmptyAnalisisUI() {
+    if (activeModule !== 'concrete') return;
     if (canvasView) {
         canvasView.classList.add("scroll-mode");
         canvasView.innerHTML = `
@@ -4528,6 +4545,7 @@ function renderEmptyAnalisisUI() {
 }
 
 function renderAnalisis() {
+    if (activeModule !== 'concrete') return;
     if (canvasView) canvasView.classList.add("scroll-mode");
 
     // Empty State Check: If no tests have been executed by user, display empty state
@@ -4821,6 +4839,7 @@ function renderAnalisis() {
 }
 
 function renderRAB() {
+    if (activeModule !== 'concrete') return;
     if (storedConcreteList.length === 0) {
         canvasView.innerHTML = `
             <div style="text-align: center; color: var(--blue-neon); padding: 40px; background: rgba(18, 33, 66, 0.7); border: 1px solid var(--border-bright); border-radius: 16px;">
@@ -4934,6 +4953,7 @@ function renderRAB() {
    TAB 7: JEJAK KARBON (GREEN CONCRETE EMISSIONS)
    ========================================================================== */
 function renderKarbon() {
+    if (activeModule !== 'concrete') return;
     if (storedConcreteList.length === 0) {
         canvasView.innerHTML = `
             <div style="text-align: center; color: var(--blue-neon); padding: 40px; background: rgba(18, 33, 66, 0.7); border: 1px solid var(--border-bright); border-radius: 16px;">
@@ -5220,6 +5240,7 @@ function copyTableToClipboard() {
 }
 
 function renderEkspor() {
+    if (activeModule !== 'concrete') return;
     if (canvasView) canvasView.classList.add("scroll-mode");
     canvasView.innerHTML = `
         <div style="display: flex; flex-direction: column; width: 100%; height: 100%; padding: 24px; overflow-y: auto;">
@@ -5292,6 +5313,15 @@ function toggleMobileMenu() {
 }
 
 function switchTab(element, tabName) {
+    if (activeModule !== 'concrete') {
+        activeModule = 'concrete';
+        activeChapter = 'concrete';
+        window.activeModule = 'concrete';
+        window.activeChapter = 'concrete';
+        currentActiveTab = tabName;
+        updateSidebarAndWorkspaceForModule();
+        return;
+    }
     playSynthSound('click');
     battleState.isBattling = false;
     document.querySelectorAll('.btn-nav').forEach(btn => btn.classList.remove('active'));
@@ -5328,7 +5358,8 @@ window.onload = function() {
    CHAPTER / MODULE TESTING SWITCHER (SNI & ASTM MULTI-MODULE WORKSPACE ENGINE)
    ========================================================================== */
 
-let activeModule = 'concrete'; // 'concrete' | 'fine-aggregate' | 'coarse-aggregate' | 'steel' | 'guides'
+activeModule = 'concrete'; // 'concrete' | 'fine-aggregate' | 'coarse-aggregate' | 'steel' | 'guides'
+activeChapter = 'concrete';
 let previewStackOrder = ['concrete', 'coarse-aggregate', 'fine-aggregate', 'steel', 'guides'];
 const LAST_ACTIVE_TEST = {
     'concrete': 'loss',
@@ -5639,6 +5670,9 @@ function activateModule(moduleId) {
     if (!TESTING_MODULES.find(m => m.id === moduleId)) return;
 
     activeModule = moduleId;
+    activeChapter = moduleId;
+    window.activeModule = moduleId;
+    window.activeChapter = moduleId;
     applyChapterTheme(moduleId);
     bringCardToFront(moduleId);
     playSynthSound('hydraulic');
@@ -6356,7 +6390,7 @@ function updateSidebarAndWorkspaceForModule() {
                     Kembali ke Beton (Concrete)
                 </button>
                 <button class="btn-nav ${activeSub === 'fa-spec-grav' ? 'active' : ''}" onclick="switchSubModuleView('fine-aggregate', 'fa-spec-grav', this)">
-                    <span style="color:#f59e0b; font-weight:800;">1.</span> <span>Berat Jenis &amp; Serap</span>
+                    <span style="color:#f59e0b; font-weight:800;">1.</span> <span>Berat Jenis &amp; Penyerapan Air</span>
                     <span class="nav-badge">C128</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'fa-moisture' ? 'active' : ''}" onclick="switchSubModuleView('fine-aggregate', 'fa-moisture', this)">
@@ -6364,11 +6398,11 @@ function updateSidebarAndWorkspaceForModule() {
                     <span class="nav-badge">C566</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'fa-silt' ? 'active' : ''}" onclick="switchSubModuleView('fine-aggregate', 'fa-silt', this)">
-                    <span style="color:#f59e0b; font-weight:800;">3.</span> <span>Kadar Lumpur #200</span>
+                    <span style="color:#f59e0b; font-weight:800;">3.</span> <span>Kandungan Lumpur #200</span>
                     <span class="nav-badge">C117</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'fa-unit-weight' ? 'active' : ''}" onclick="switchSubModuleView('fine-aggregate', 'fa-unit-weight', this)">
-                    <span style="color:#f59e0b; font-weight:800;">4.</span> <span>Berat Isi &amp; Rongga</span>
+                    <span style="color:#f59e0b; font-weight:800;">4.</span> <span>Bobot Isi &amp; Rongga Udara</span>
                     <span class="nav-badge">C29</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'fa-sieve' ? 'active' : ''}" onclick="switchSubModuleView('fine-aggregate', 'fa-sieve', this)">
@@ -6376,7 +6410,7 @@ function updateSidebarAndWorkspaceForModule() {
                     <span class="nav-badge">C136</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'fa-organic' ? 'active' : ''}" onclick="switchSubModuleView('fine-aggregate', 'fa-organic', this)">
-                    <span style="color:#f59e0b; font-weight:800;">6.</span> <span>Zat Organik (NaOH)</span>
+                    <span style="color:#f59e0b; font-weight:800;">6.</span> <span>Zat Organik / NaOH</span>
                     <span class="nav-badge">C40</span>
                 </button>
             `;
@@ -6393,27 +6427,27 @@ function updateSidebarAndWorkspaceForModule() {
                     Kembali ke Beton (Concrete)
                 </button>
                 <button class="btn-nav ${activeSub === 'ca-spec-grav' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-spec-grav', this)">
-                    <span style="color:#e05638; font-weight:800;">1.</span> <span>Berat Jenis &amp; Serap</span>
+                    <span style="color:#e05638; font-weight:800;">1.</span> <span>Berat Jenis &amp; Penyerapan Air</span>
                     <span class="nav-badge">C127</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'ca-moisture' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-moisture', this)">
-                    <span style="color:#e05638; font-weight:800;">2.</span> <span>Kadar Air Kerikil</span>
+                    <span style="color:#e05638; font-weight:800;">2.</span> <span>Kadar Air Asli</span>
                     <span class="nav-badge">C566</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'ca-silt' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-silt', this)">
-                    <span style="color:#e05638; font-weight:800;">3.</span> <span>Kadar Lumpur #200</span>
+                    <span style="color:#e05638; font-weight:800;">3.</span> <span>Kandungan Lumpur #200</span>
                     <span class="nav-badge">C117</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'ca-unit-weight' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-unit-weight', this)">
-                    <span style="color:#e05638; font-weight:800;">4.</span> <span>Berat Isi &amp; Rongga</span>
+                    <span style="color:#e05638; font-weight:800;">4.</span> <span>Bobot Isi &amp; Rongga Udara</span>
                     <span class="nav-badge">C29</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'ca-gradation' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-gradation', this)">
-                    <span style="color:#e05638; font-weight:800;">5.</span> <span>Gradasi Butir Maks</span>
+                    <span style="color:#e05638; font-weight:800;">5.</span> <span>Gradasi &amp; Ayakan</span>
                     <span class="nav-badge">C136</span>
                 </button>
                 <button class="btn-nav ${activeSub === 'ca-abrasion' ? 'active' : ''}" onclick="switchSubModuleView('coarse-aggregate', 'ca-abrasion', this)">
-                    <span style="color:#e05638; font-weight:800;">6.</span> <span>Keausan Los Angeles</span>
+                    <span style="color:#e05638; font-weight:800;">6.</span> <span>Keausan Los Angeles / Abrasi</span>
                     <span class="nav-badge">C131</span>
                 </button>
             `;
@@ -6430,20 +6464,20 @@ function updateSidebarAndWorkspaceForModule() {
                     Kembali ke Beton (Concrete)
                 </button>
                 <button class="btn-nav ${activeSub === 'st-tensile' ? 'active' : ''}" onclick="switchSubModuleView('steel', 'st-tensile', this)">
-                    <span style="color:#f43f5e; font-weight:800;">1.</span> <span>Kuat Tarik &amp; Luluh</span>
+                    <span style="color:#f43f5e; font-weight:800;">1.</span> <span>Tarik Baja Tulangan</span>
                     <span class="nav-badge">A615</span>
                 </button>
+                <button class="btn-nav ${activeSub === 'st-yield-limit' ? 'active' : ''}" onclick="switchSubModuleView('steel', 'st-yield-limit', this)">
+                    <span style="color:#f43f5e; font-weight:800;">2.</span> <span>Yield &amp; Tensile Limit</span>
+                    <span class="nav-badge">SNI 2052</span>
+                </button>
                 <button class="btn-nav ${activeSub === 'st-elongation' ? 'active' : ''}" onclick="switchSubModuleView('steel', 'st-elongation', this)">
-                    <span style="color:#f43f5e; font-weight:800;">2.</span> <span>Regangan Patah / Elongasi</span>
+                    <span style="color:#f43f5e; font-weight:800;">3.</span> <span>Elongasi</span>
                     <span class="nav-badge">A370</span>
                 </button>
-                <button class="btn-nav ${activeSub === 'st-bend' ? 'active' : ''}" onclick="switchSubModuleView('steel', 'st-bend', this)">
-                    <span style="color:#f43f5e; font-weight:800;">3.</span> <span>Uji Lengkung Dingin 180°</span>
-                    <span class="nav-badge">E290</span>
-                </button>
-                <button class="btn-nav ${activeSub === 'st-weight-tol' ? 'active' : ''}" onclick="switchSubModuleView('steel', 'st-weight-tol', this)">
-                    <span style="color:#f43f5e; font-weight:800;">4.</span> <span>Toleransi Berat &amp; Sirip</span>
-                    <span class="nav-badge">SNI 2052</span>
+                <button class="btn-nav ${activeSub === 'st-modulus' ? 'active' : ''}" onclick="switchSubModuleView('steel', 'st-modulus', this)">
+                    <span style="color:#f43f5e; font-weight:800;">4.</span> <span>Modulus Elastisitas Baja</span>
+                    <span class="nav-badge">SNI 2847</span>
                 </button>
             `;
         }
@@ -6713,79 +6747,362 @@ function renderFAGenericView(subViewId) {
     let desc = "";
 
     if (subViewId === 'fa-moisture') {
-        title = "KADAR AIR ASLI AGREGAT HALUS";
+        title = "KADAR AIR ASLI AGREGAT HALUS (PASIR)";
         code = "SNI 03-1971-1990 / ASTM C566";
-        desc = "Pengukuran persentase kelembaban air bebas pada pasir untuk mengoreksi takaran air pencampur beton.";
+        desc = "Pengukuran kadar air bebas pasir untuk koreksi takaran air pencampur beton di batching plant.";
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span>
+                            ${title}
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
+                    </div>
+                    <span class="module-header-code">${code}</span>
+                </div>
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>PARAMETER PENIMBANGAN OVEN (110 &plusmn; 5)&deg;C</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Cawan / Wadah Kosong (W1)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-m-w1" value="150.0" step="0.1" oninput="calcFAMoisture()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Cawan + Contoh Pasir Basah (W2)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-m-w2" value="650.0" step="0.1" oninput="calcFAMoisture()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Cawan + Contoh Kering Oven (W3)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-m-w3" value="625.0" step="0.1" oninput="calcFAMoisture()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>HASIL KALKULASI KADAR AIR</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
+                        </div>
+                        <div class="testing-result-box" id="fa-m-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Rumus SNI: w = [(W2 - W3) / (W3 - W1)] &times; 100%. Digunakan untuk mengoreksi penambahan air pada mix design.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcFAMoisture();
     } else if (subViewId === 'fa-silt') {
-        title = "UJI KADAR LUMPUR (LOLOS SARINGAN NO. 200 / 75 μm)";
+        title = "UJI KANDUNGAN LUMPUR / LOLOS SARINGAN NO. 200 (75 &mu;m)";
         code = "SNI 03-4142-1996 / ASTM C117";
-        desc = "Pembersihan partikel lempung dan debu dengan pencucian air. Batas maksimum kadar lumpur pasir beton adalah 5.0%.";
+        desc = "Pengukuran kadar lumpur dan partikel lempung halus pada pasir beton dengan metode pencucian saringan.";
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span>
+                            ${title}
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
+                    </div>
+                    <span class="module-header-code">${code}</span>
+                </div>
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>PARAMETER PENCUCIAN DENGAN AIR</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Kering Oven Pasir Semula (W1)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-silt-w1" value="500.0" step="0.1" oninput="calcFASilt()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Kering Pasir Tertahan #200 Setelah Dicuci (W2)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-silt-w2" value="482.0" step="0.1" oninput="calcFASilt()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>EVALUASI KADAR LUMPUR SNI</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
+                        </div>
+                        <div class="testing-result-box" id="fa-silt-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Standar SNI 03-4142: Pasir untuk beton struktural tidak boleh mengandung lumpur lebih dari 5.0%.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcFASilt();
     } else if (subViewId === 'fa-unit-weight') {
-        title = "BERAT ISI DAN RONGGA UDARA DALAM AGREGAT";
+        title = "BOBOT ISI DAN RONGGA UDARA DALAM AGREGAT HALUS";
         code = "SNI 03-4804-1998 / ASTM C29";
-        desc = "Penentuan berat volume gembur dan padat (rodding) serta persentase rongga antar-butiran pasir.";
+        desc = "Penentuan berat volume gembur dan padat (rodding) serta persentase rongga udara antar-butir pasir.";
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg></span>
+                            ${title}
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
+                    </div>
+                    <span class="module-header-code">${code}</span>
+                </div>
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>PARAMETER BEJANA UKUR KALIBRASI</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Volume Bejana Ukur (V)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-uw-vol" value="5.0" step="0.1" oninput="calcFAUnitWeight()">
+                                <span class="testing-input-unit">Liter</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Bejana Kosong (Wb)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-uw-wempty" value="2.5" step="0.1" oninput="calcFAUnitWeight()">
+                                <span class="testing-input-unit">kg</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Bejana + Pasir Padat / Rodding (Wp)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-uw-wfull" value="10.8" step="0.1" oninput="calcFAUnitWeight()">
+                                <span class="testing-input-unit">kg</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Jenis SSD Pasir (Gssd)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-uw-gssd" value="2.60" step="0.01" oninput="calcFAUnitWeight()">
+                                <span class="testing-input-unit">gr/cm&sup3;</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>HASIL BOBOT ISI &amp; RONGGA UDARA</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
+                        </div>
+                        <div class="testing-result-box" id="fa-uw-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Standar SNI 03-4804: Bobot isi padat pasir umumnya berkisar antara 1400 - 1750 kg/m&sup3;.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcFAUnitWeight();
     } else if (subViewId === 'fa-organic') {
         title = "UJI KANDUNGAN ZAT ORGANIK (METODE NaOH 3%)";
         code = "SNI 03-2816-1992 / ASTM C40";
-        desc = "Identifikasi senyawa asam organik berbahaya menggunakan pelat warna standar Gardner (Plat No. 1 hingga No. 5).";
+        desc = "Identifikasi kandungan senyawa organik asam berbahaya menggunakan larutan NaOH dan pembanding warna standar Gardner.";
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 2v7.31L4.35 19.46A2 2 0 0 0 6.09 22h11.82a2 2 0 0 0 1.74-2.54L14 9.31V2"></path></svg></span>
+                            ${title}
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
+                    </div>
+                    <span class="module-header-code">${code}</span>
+                </div>
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>HASIL REAKSI CAIRAN REAGEN SETELAH 24 JAM</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>COLOR COMPARATOR</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Warna Cairan di Atas Pasir (Standar Gardner)</label>
+                            <select class="custom-select" id="fa-org-plate" onchange="calcFAOrganic()">
+                                <option value="1">Plat No. 1: Kuning Sangat Muda (Sangat Bersih)</option>
+                                <option value="2" selected>Plat No. 2: Kuning Muda (Bersih / Layak)</option>
+                                <option value="3">Plat No. 3: Kuning Kemerahan (Batas Ambang SNI)</option>
+                                <option value="4">Plat No. 4: Coklat Muda (Melebihi Ambang Batas)</option>
+                                <option value="5">Plat No. 5: Coklat Tua / Gelap (Ditolak / Bahaya)</option>
+                            </select>
+                        </div>
+                        <div style="background: rgba(8, 16, 36, 0.85); border: 1px solid var(--border-dim); border-radius: 8px; padding: 12px; margin-top: 12px;">
+                            <div style="font-size: 11px; font-weight: 800; color: #f59e0b; margin-bottom: 6px;">PROSEDUR PENGUJIAN:</div>
+                            <ol style="font-size: 11px; color: var(--text-muted); margin: 0; padding-left: 18px; line-height: 1.5;">
+                                <li>Isi botol kaca dengan 130 ml contoh pasir.</li>
+                                <li>Tambahkan larutan NaOH 3% hingga volume 200 ml.</li>
+                                <li>Kocok kuat-kuat selama 10 menit lalu diamkan 24 jam.</li>
+                                <li>Bandingkan warna larutan jernih di atas pasir dengan pelat standar warna Gardner.</li>
+                            </ol>
+                        </div>
+                    </div>
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>VERIFIKASI PERSYARATAN BETON STRUKTURAL</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">SNI COMPLIANCE</span>
+                        </div>
+                        <div class="testing-result-box" id="fa-org-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Pasal SNI 03-2816: Pasir yang menghasilkan warna lebih tua dari Plat No. 3 tidak boleh digunakan untuk beton struktural kecuali pengujian kuat tekan mortar 7 &amp; 28 hari mencapai &ge; 95% dari pasir pembanding.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcFAOrganic();
     }
+}
 
-    canvasView.innerHTML = `
-        <div class="module-workspace-container">
-            <div class="module-header-banner">
-                <div>
-                    <div class="module-header-title">
-                        <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span>
-                        ${title}
-                    </div>
-                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
-                </div>
-                <span class="module-header-code">${code}</span>
+function calcFAMoisture() {
+    let w1 = parseFloat(document.getElementById('fa-m-w1')?.value) || 150.0;
+    let w2 = parseFloat(document.getElementById('fa-m-w2')?.value) || 650.0;
+    let w3 = parseFloat(document.getElementById('fa-m-w3')?.value) || 625.0;
+
+    let waterWeight = w2 - w3;
+    let dryWeight = w3 - w1;
+    let moisturePct = dryWeight > 0 ? ((waterWeight / dryWeight) * 100).toFixed(2) : '0.00';
+
+    let resBox = document.getElementById('fa-m-result-box');
+    if (resBox) {
+        resBox.innerHTML = `
+            <div class="result-row">
+                <span class="result-label">Berat Air Menguap (W2 - W3):</span>
+                <span class="result-val">${waterWeight.toFixed(1)} gram</span>
             </div>
-
-            <div class="testing-calc-grid">
-                <div class="testing-calc-card">
-                    <div class="testing-calc-header">
-                        <span>PARAMETER UJI LABORATORIUM</span>
-                        <span class="telemetry-chip live-chip"><span class="dot-live"></span>ONLINE</span>
-                    </div>
-                    <p style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
-                        Simulasi pengujian laboratorium terkalibrasi otomatis sesuai prosedur standar BSN &amp; ASTM.
-                        Parameter uji siap dihitung untuk melengkapi mix design proporsi campuran beton SNI 2847:2019.
-                    </p>
-                    <div style="background: rgba(8, 16, 36, 0.85); border: 1px solid var(--border-dim); border-radius: 8px; padding: 12px;">
-                        <div style="font-size: 11px; font-weight: 800; color: #f59e0b; margin-bottom: 6px;">PROSEDUR RESMI SNI:</div>
-                        <ul style="font-size: 11px; color: var(--text-muted); margin: 0; padding-left: 18px; line-height: 1.5;">
-                            <li>Persiapan benda uji representatif dengan pembagi contoh (sample splitter).</li>
-                            <li>Pengeringan dalam oven suhu (110 &plusmn; 5)°C hingga berat konstan.</li>
-                            <li>Pengukuran massa presisi neraca analitik ketelitian 0.1 gram.</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="testing-calc-card">
-                    <div class="testing-calc-header">
-                        <span>STATUS KELAYAKAN MATERIAL</span>
-                        <span class="telemetry-chip" style="color:var(--accent-emerald);">TERVERIFIKASI</span>
-                    </div>
-                    <div class="testing-result-box">
-                        <div class="result-row">
-                            <span class="result-label">Status Kelayakan:</span>
-                            <span class="result-val status-pass">MEMENUHI PERSYARATAN</span>
-                        </div>
-                        <div class="result-row">
-                            <span class="result-label">Standar Rujukan:</span>
-                            <span class="result-val">${code.split('/')[0].trim()}</span>
-                        </div>
-                    </div>
-                    <button class="btn-action" style="padding:10px 14px; font-size:11.5px; margin-top:8px;" onclick="printReportPDF()">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                        Cetak Lembar Uji Laboratorium (PDF)
-                    </button>
-                </div>
+            <div class="result-row">
+                <span class="result-label">Berat Pasir Kering Oven (W3 - W1):</span>
+                <span class="result-val">${dryWeight.toFixed(1)} gram</span>
             </div>
-        </div>
-    `;
+            <div class="result-row">
+                <span class="result-label">Kadar Air Bebas (w):</span>
+                <span class="result-val status-pass" style="font-size:14px; font-weight:800;">${moisturePct}%</span>
+            </div>
+            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
+                <span class="result-label">Evaluasi Mix Design:</span>
+                <span class="result-val status-pass">Koreksi air campuran = ${waterWeight.toFixed(1)} gr/kg agregat</span>
+            </div>
+        `;
+    }
+}
+
+function calcFASilt() {
+    let w1 = parseFloat(document.getElementById('fa-silt-w1')?.value) || 500.0;
+    let w2 = parseFloat(document.getElementById('fa-silt-w2')?.value) || 482.0;
+
+    let siltWeight = Math.max(0, w1 - w2);
+    let siltPct = w1 > 0 ? ((siltWeight / w1) * 100).toFixed(2) : '0.00';
+    let isPass = parseFloat(siltPct) <= 5.0;
+
+    let resBox = document.getElementById('fa-silt-result-box');
+    if (resBox) {
+        resBox.innerHTML = `
+            <div class="result-row">
+                <span class="result-label">Berat Lumpur Lolos #200 (W1 - W2):</span>
+                <span class="result-val">${siltWeight.toFixed(1)} gram</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Kadar Lumpur Terukur:</span>
+                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}" style="font-size:14px; font-weight:800;">${siltPct}%</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Batas Maksimum SNI 03-4142:</span>
+                <span class="result-val">&le; 5.0%</span>
+            </div>
+            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
+                <span class="result-label">Status Kelayakan Pasir:</span>
+                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}">${isPass ? '✓ MEMENUHI SYARAT BETON' : '✗ PERLU PENCUCIAN ULANG'}</span>
+            </div>
+        `;
+    }
+}
+
+function calcFAUnitWeight() {
+    let volL = parseFloat(document.getElementById('fa-uw-vol')?.value) || 5.0;
+    let wb = parseFloat(document.getElementById('fa-uw-wempty')?.value) || 2.5;
+    let wp = parseFloat(document.getElementById('fa-uw-wfull')?.value) || 10.8;
+    let gssd = parseFloat(document.getElementById('fa-uw-gssd')?.value) || 2.60;
+
+    let netWeight = Math.max(0, wp - wb);
+    let volM3 = volL / 1000.0;
+    let unitWeight = volM3 > 0 ? (netWeight / volM3).toFixed(1) : '0.0';
+    let voidsPct = gssd > 0 ? ((1 - (parseFloat(unitWeight) / (gssd * 1000))) * 100).toFixed(2) : '0.00';
+
+    let resBox = document.getElementById('fa-uw-result-box');
+    if (resBox) {
+        resBox.innerHTML = `
+            <div class="result-row">
+                <span class="result-label">Berat Bersih Pasir (Wp - Wb):</span>
+                <span class="result-val">${netWeight.toFixed(2)} kg</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Bobot Isi Padat (Unit Weight):</span>
+                <span class="result-val status-pass" style="font-size:14px; font-weight:800;">${unitWeight} kg/m&sup3;</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Persentase Rongga Udara (Voids):</span>
+                <span class="result-val" style="color:var(--cyan-neon); font-weight:700;">${voidsPct}%</span>
+            </div>
+            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
+                <span class="result-label">Evaluasi SNI 03-4804:</span>
+                <span class="result-val status-pass">✓ BOBOT ISI NORMAL UNTUK CAMPURAN BETON</span>
+            </div>
+        `;
+    }
+}
+
+function calcFAOrganic() {
+    let plate = parseInt(document.getElementById('fa-org-plate')?.value) || 2;
+    let isPass = plate <= 3;
+
+    let resBox = document.getElementById('fa-org-result-box');
+    if (resBox) {
+        let msg = isPass ? '✓ MEMENUHI PERSYARATAN (LAYAK PAKAI)' : '✗ TIDAK MEMENUHI (MENGANDUNG ZAT ASAM BERBAHAYA)';
+        let desc = isPass ? 'Warna larutan lebih muda atau sama dengan Plat No. 3 (Standar SNI).' : 'Warna larutan lebih tua dari Plat No. 3, dapat menghambat hidrasi semen!';
+        resBox.innerHTML = `
+            <div class="result-row">
+                <span class="result-label">Peringkat Warna Plat Gardner:</span>
+                <span class="result-val" style="color:#f59e0b; font-weight:800;">Plat No. ${plate}</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Batas Toleransi SNI 03-2816:</span>
+                <span class="result-val">&le; Plat No. 3</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Status Kelayakan:</span>
+                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}" style="font-size:13px; font-weight:800;">${msg}</span>
+            </div>
+            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
+                <span class="result-label">Keterangan Teknis:</span>
+                <span class="result-val" style="font-size:11px;">${desc}</span>
+            </div>
+        `;
+    }
 }
 
 function renderFineAggregateReferenceGuide(subViewId) {
@@ -6804,7 +7121,7 @@ function renderFineAggregateReferenceGuide(subViewId) {
             </div>
             <div class="spec-item">Kadar Lumpur Maksimum: <span style="color:var(--accent-emerald); font-weight:800;">&le; 5.0%</span></div>
             <div class="spec-item">Penyerapan Air (Absorption): <span style="color:var(--accent-emerald); font-weight:800;">&le; 3.0%</span></div>
-            <div class="spec-item">Berat Jenis Curah Kering: <span style="color:var(--cyan-neon); font-weight:800;">&ge; 2.40 gr/cm³</span></div>
+            <div class="spec-item">Berat Jenis Curah Kering: <span style="color:var(--cyan-neon); font-weight:800;">&ge; 2.40 gr/cm&sup3;</span></div>
             <div class="spec-item">Modulus Kehalusan (FM): <span style="color:#f59e0b; font-weight:800;">2.20 - 3.10</span></div>
             <div class="spec-item">Kandungan Zat Organik: <span>Lebih muda dari Plat No. 3</span></div>
         </div>
@@ -6820,7 +7137,7 @@ function renderFineAggregateReferenceGuide(subViewId) {
                 <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Sampling representatif ASTM D75</label>
                 <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Kalibrasi neraca analitik &plusmn;0.1g</label>
                 <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Uji kerucut terpancung (cone test) SSD</label>
-                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Pengkondisian suhu 23 &plusmn; 2°C</label>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Pengkondisian suhu 23 &plusmn; 2&deg;C</label>
             </div>
         </div>
 
@@ -6832,110 +7149,358 @@ function renderFineAggregateReferenceGuide(subViewId) {
 }
 
 /* ==========================================================================
-   MODULE 3 WORKSPACE: COARSE AGGREGATE TESTING (SNI 1969 / ASTM C131)
+   MODULE 3 WORKSPACE: COARSE AGGREGATE TESTING (SNI 1969 / ASTM C127 / C131)
    ========================================================================== */
 function renderCoarseAggregateWorkspace(subViewId) {
     if (!canvasView || !panelView) return;
     canvasView.classList.add('scroll-mode');
 
-    let title = "Pengujian Agregat Kasar";
-    let code = "SNI 1969 / ASTM C127";
-    let desc = "";
+    let curSub = subViewId || 'ca-spec-grav';
 
-    if (subViewId === 'ca-spec-grav') {
-        title = "BERAT JENIS &amp; PENYERAPAN AIR KERIKIL (HYDROSTATIC BALANCE)";
-        code = "SNI 1969:2016 / ASTM C127";
-        desc = "Metode penimbangan keranjang kawat dalam air untuk menentukan Bulk Specific Gravity dan penyerapan kerikil.";
-    } else if (subViewId === 'ca-abrasion') {
-        title = "UJI KEAUSAN AGREGAT DENGAN MESIN LOS ANGELES (LA ABRASION)";
-        code = "SNI 2417:2008 / ASTM C131";
-        desc = "Pengujian degradasi mekanis bola baja (500 putaran) untuk ketahanan aus beton struktural (maks. 40%).";
-    } else {
-        title = "PENGUJIAN LABORATORIUM AGREGAT KASAR";
-        code = "SNI 03-1968 / ASTM C136";
-        desc = "Gradasi butir maksimum, berat isi, dan kadar lumpur agregat kasar sesuai standar konstruksi jalan & gedung.";
+    if (curSub === 'ca-spec-grav') {
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#e05638;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="6 11 16 4 26 9 27 21 17 28 6 23"></polygon></svg></span>
+                            BERAT JENIS &amp; PENYERAPAN AIR KERIKIL (HYDROSTATIC BALANCE)
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                            Metode penimbangan keranjang kawat dalam air untuk menentukan Bulk Specific Gravity dan penyerapan kerikil.
+                        </div>
+                    </div>
+                    <span class="module-header-code">SNI 1969:2016 / ASTM C127</span>
+                </div>
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>PARAMETER PENIMBANGAN HIDROSTATIS</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Kering Oven Kerikil (A)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-a" value="2980" step="1" oninput="calcCASpecGrav()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Benda Uji Jenuh Kering Permukaan / SSD (B)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-b" value="3040" step="1" oninput="calcCASpecGrav()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Contoh Dalam Air (C)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-c" value="1890" step="1" oninput="calcCASpecGrav()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>HASIL EVALUASI SPESIFIKASI</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
+                        </div>
+                        <div class="testing-result-box" id="ca-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Batas SNI: Penyerapan air kerikil &le; 2.5%, dan Berat Jenis Curah Kering &ge; 2.50.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcCASpecGrav();
+    } else if (curSub === 'ca-moisture') {
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#e05638;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="6 11 16 4 26 9 27 21 17 28 6 23"></polygon></svg></span>
+                            UJI KADAR AIR ASLI AGREGAT KASAR (KERIKIL)
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                            Pengukuran persentase kandungan air bebas pada kerikil untuk koreksi air pencampur beton batching plant.
+                        </div>
+                    </div>
+                    <span class="module-header-code">SNI 03-1971-1990 / ASTM C566</span>
+                </div>
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>PARAMETER PENIMBANGAN OVEN (KERIKIL)</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Wadah / Talam (W1)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-m-w1" value="250.0" step="1" oninput="calcCAMoisture()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Wadah + Kerikil Basah (W2)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-m-w2" value="2250.0" step="1" oninput="calcCAMoisture()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Wadah + Kerikil Kering Oven (W3)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-m-w3" value="2210.0" step="1" oninput="calcCAMoisture()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>HASIL KALKULASI KADAR AIR KERIKIL</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
+                        </div>
+                        <div class="testing-result-box" id="ca-m-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Rumus SNI: w = [(W2 - W3) / (W3 - W1)] &times; 100%. Digunakan untuk koreksi takaran air pencampur beton.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcCAMoisture();
+    } else if (curSub === 'ca-silt') {
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#e05638;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="6 11 16 4 26 9 27 21 17 28 6 23"></polygon></svg></span>
+                            UJI KANDUNGAN LUMPUR / LEWAT AYAKAN NO. 200 (&lt; 75 &mu;m)
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                            Pemisahan partikel debu, lanau, dan lempung pada kerikil melalui pencucian dan penyaringan basah.
+                        </div>
+                    </div>
+                    <span class="module-header-code">SNI 03-4142-1996 / ASTM C117</span>
+                </div>
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>PARAMETER PENCUCIAN KERIKIL</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Kering Oven Kerikil Semula (W1)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-silt-w1" value="2500.0" step="1" oninput="calcCASilt()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Kering Kerikil Setelah Dicuci Lolos #200 (W2)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-silt-w2" value="2482.5" step="0.5" oninput="calcCASilt()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>EVALUASI KANDUNGAN LUMPUR SNI</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
+                        </div>
+                        <div class="testing-result-box" id="ca-silt-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Batas SNI: Kandungan lumpur pada agregat kasar beton tidak boleh melebihi 1.0% berat kering.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcCASilt();
+    } else if (curSub === 'ca-unit-weight') {
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#e05638;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg></span>
+                            BOBOT ISI DAN RONGGA UDARA AGREGAT KASAR
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                            Pengukuran berat volume kondisi padat (rodding) serta persentase rongga antar-butiran batu pecah/kerikil.
+                        </div>
+                    </div>
+                    <span class="module-header-code">SNI 03-4804-1998 / ASTM C29</span>
+                </div>
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>PARAMETER BEJANA UKUR KALIBRASI (10 LITER)</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Volume Bejana Ukur (V)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-uw-vol" value="10.0" step="0.1" oninput="calcCAUnitWeight()">
+                                <span class="testing-input-unit">Liter</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Bejana Kosong (Wb)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-uw-wempty" value="4.2" step="0.1" oninput="calcCAUnitWeight()">
+                                <span class="testing-input-unit">kg</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Bejana + Kerikil Padat / Rodding (Wp)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-uw-wfull" value="19.8" step="0.1" oninput="calcCAUnitWeight()">
+                                <span class="testing-input-unit">kg</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Jenis SSD Kerikil (Gssd)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-uw-gssd" value="2.65" step="0.01" oninput="calcCAUnitWeight()">
+                                <span class="testing-input-unit">gr/cm&sup3;</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>HASIL BOBOT ISI &amp; RONGGA UDARA</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
+                        </div>
+                        <div class="testing-result-box" id="ca-uw-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Standar SNI 03-4804: Bobot isi padat kerikil normal berkisar antara 1400 - 1700 kg/m&sup3;.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcCAUnitWeight();
+    } else if (curSub === 'ca-gradation') {
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#e05638;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span>
+                            ANALISIS SARINGAN &amp; GRADASI BUTIR AGREGAT KASAR
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                            Distribusi ukuran butir kerikil / batu pecah ukuran nominal 10 - 20 mm (ASTM C33 Size 57/67).
+                        </div>
+                    </div>
+                    <span class="module-header-code">SNI 03-1968-1990 / ASTM C136</span>
+                </div>
+                <div class="testing-calc-card" style="width: 100%;">
+                    <div class="testing-calc-header">
+                        <span>DATA TIMBANGAN TERTARIK AYAKAN (BERAT SAMPEL: 5000 GRAM)</span>
+                        <span class="telemetry-chip live-chip"><span class="dot-live"></span>SIEVE TOWER</span>
+                    </div>
+                    <div class="sieve-table-container">
+                        <table class="sieve-table">
+                            <thead>
+                                <tr>
+                                    <th>Nomor Ayakan</th>
+                                    <th>Ukuran Lubang (mm)</th>
+                                    <th>Berat Tertahan (gr)</th>
+                                    <th>% Tertahan</th>
+                                    <th>% Tertahan Kumulatif</th>
+                                    <th>% Lolos Kumulatif</th>
+                                    <th>Batas ASTM C33 (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ca-sieve-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:10px;">
+                        <div style="font-size: 13px; font-weight: 800; color: #e05638;">
+                            Ukuran Butir Maksimum Nominal: <span style="color:var(--text-pure);">19 mm (3/4 Inch)</span>
+                        </div>
+                        <button class="btn-action" style="max-width:200px; padding:8px 16px; font-size:11px;" onclick="resetCASieveDefault()">
+                            Reset ke Standar SNI
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        renderCASieveTable();
+    } else if (curSub === 'ca-abrasion') {
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#e05638;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></span>
+                            UJI KEAUSAN AGREGAT DENGAN MESIN LOS ANGELES (LA ABRASION)
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                            Pengujian degradasi mekanis bola baja (500 putaran) untuk ketahanan aus beton struktural (maks. 40%).
+                        </div>
+                    </div>
+                    <span class="module-header-code">SNI 2417:2008 / ASTM C131</span>
+                </div>
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>PARAMETER PENGUJIAN DRUM LOS ANGELES</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Benda Uji Semula (M1)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-la-m1" value="5000" step="10" oninput="calcCAAbrasion()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Jumlah Putaran Drum Mesin LA</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-la-rev" value="500" step="50" readonly style="opacity:0.8;">
+                                <span class="testing-input-unit">Putaran</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Jumlah Bola Baja Pemukul (Grading A)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-la-balls" value="12" readonly style="opacity:0.8;">
+                                <span class="testing-input-unit">Bola Baja</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Tertahan Saringan No. 12 (1.7 mm) Setelah Pengujian (M2)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="ca-la-m2" value="3840" step="5" oninput="calcCAAbrasion()">
+                                <span class="testing-input-unit">gram</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>HASIL EVALUASI TINGKAT KEAUSAN</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
+                        </div>
+                        <div class="testing-result-box" id="ca-la-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Batas SNI 2417: Keausan &le; 40% untuk beton mutu struktural, dan &le; 50% untuk lapis pondasi perkerasan jalan.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcCAAbrasion();
     }
 
-    canvasView.innerHTML = `
-        <div class="module-workspace-container">
-            <div class="module-header-banner">
-                <div>
-                    <div class="module-header-title">
-                        <span style="color:#e05638;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="6 11 16 4 26 9 27 21 17 28 6 23"></polygon></svg></span>
-                        ${title}
-                    </div>
-                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
-                </div>
-                <span class="module-header-code">${code}</span>
-            </div>
-
-            <div class="testing-calc-grid">
-                <div class="testing-calc-card">
-                    <div class="testing-calc-header">
-                        <span>PARAMETER UJI LABORATORIUM</span>
-                        <span class="telemetry-chip live-chip"><span class="dot-live"></span>CALC READY</span>
-                    </div>
-                    <div class="testing-input-group">
-                        <label>Berat Kering Oven Kerikil (A)</label>
-                        <div class="testing-input-row">
-                            <input type="number" id="ca-a" value="2980" step="1" oninput="calcCASpecGrav()">
-                            <span class="testing-input-unit">gram</span>
-                        </div>
-                    </div>
-                    <div class="testing-input-group">
-                        <label>Berat Benda Uji Jenuh Kering Permukaan / SSD (B)</label>
-                        <div class="testing-input-row">
-                            <input type="number" id="ca-b" value="3040" step="1" oninput="calcCASpecGrav()">
-                            <span class="testing-input-unit">gram</span>
-                        </div>
-                    </div>
-                    <div class="testing-input-group">
-                        <label>Berat Contoh Dalam Air (C)</label>
-                        <div class="testing-input-row">
-                            <input type="number" id="ca-c" value="1890" step="1" oninput="calcCASpecGrav()">
-                            <span class="testing-input-unit">gram</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="testing-calc-card">
-                    <div class="testing-calc-header">
-                        <span>HASIL EVALUASI SPESIFIKASI</span>
-                        <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
-                    </div>
-                    <div class="testing-result-box" id="ca-result-box">
-                        <!-- Populated dynamically -->
-                    </div>
-                    <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
-                        *Batas SNI: Penyerapan air kerikil &le; 2.5%, dan Keausan Los Angeles &le; 40% untuk beton mutu tinggi.
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    calcCASpecGrav();
-
-    // Right Panel
-    panelView.innerHTML = `
-        <div class="panel-card">
-            <div class="card-title">
-                <span style="display:flex; align-items:center; gap:8px;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e05638" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-                    STANDAR AGREGAT KASAR
-                </span>
-            </div>
-            <div class="spec-item">Keausan LA Abrasion: <span style="color:var(--accent-emerald); font-weight:800;">&le; 40.0%</span></div>
-            <div class="spec-item">Kadar Lumpur Agregat Kasar: <span style="color:var(--accent-emerald); font-weight:800;">&le; 1.0%</span></div>
-            <div class="spec-item">Penyerapan Air Kerikil: <span style="color:var(--cyan-neon); font-weight:800;">&le; 2.5%</span></div>
-            <div class="spec-item">Berat Jenis Curah Kering: <span style="color:var(--text-pure); font-weight:800;">&ge; 2.50 gr/cm³</span></div>
-            <div class="spec-item">Ukuran Butir Nominal: <span>10 - 20 mm (Pecah)</span></div>
-        </div>
-
-        <button class="btn-action" onclick="activateModule('concrete')" style="background: rgba(18, 33, 66, 0.95); border: 1px solid var(--border-bright);">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><polyline points="15 18 9 12 15 6"></polyline></svg>
-            Kembali ke Workspace Beton
-        </button>
-    `;
+    // Right Panel SNI/ASTM Reference Guide
+    renderCoarseAggregateReferenceGuide(curSub);
 }
 
 function calcCASpecGrav() {
@@ -6950,12 +7515,13 @@ function calcCASpecGrav() {
     let Gssd = (B / denom).toFixed(3);
     let Gsa = (A / (A - C)).toFixed(3);
     let Sw = (((B - A) / A) * 100).toFixed(2);
+    let isPass = (parseFloat(Sw) <= 2.5 && parseFloat(Gsb) >= 2.50);
 
     let resBox = document.getElementById('ca-result-box');
     if (resBox) {
         resBox.innerHTML = `
             <div class="result-row">
-                <span class="result-label">1. Berat Jenis Curah (Bulk Specific Gravity):</span>
+                <span class="result-label">1. Berat Jenis Curah Kering (Bulk Specific Gravity):</span>
                 <span class="result-val">${Gsb}</span>
             </div>
             <div class="result-row">
@@ -6968,136 +7534,229 @@ function calcCASpecGrav() {
             </div>
             <div class="result-row">
                 <span class="result-label">4. Penyerapan Air (Water Absorption):</span>
-                <span class="result-val status-pass">${Sw}%</span>
+                <span class="result-val ${parseFloat(Sw) <= 2.5 ? 'status-pass' : 'status-fail'}">${Sw}%</span>
             </div>
             <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
                 <span class="result-label">Evaluasi SNI 1969:2016:</span>
-                <span class="result-val status-pass">✓ MEMENUHI SYARAT BETON STRUKTURAL</span>
+                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}">${isPass ? '✓ MEMENUHI SYARAT BETON STRUKTURAL' : '✗ DI LUAR STANDAR'}</span>
             </div>
         `;
     }
 }
 
-/* ==========================================================================
-   MODULE 4 WORKSPACE: STEEL TENSILE TESTING (SNI 2052 / ASTM A615)
-   ========================================================================== */
-function renderSteelWorkspace(subViewId) {
-    if (!canvasView || !panelView) return;
-    canvasView.classList.add('scroll-mode');
+function calcCAMoisture() {
+    let w1 = parseFloat(document.getElementById('ca-m-w1')?.value) || 250.0;
+    let w2 = parseFloat(document.getElementById('ca-m-w2')?.value) || 2250.0;
+    let w3 = parseFloat(document.getElementById('ca-m-w3')?.value) || 2210.0;
 
-    canvasView.innerHTML = `
-        <div class="module-workspace-container">
-            <div class="module-header-banner">
-                <div>
-                    <div class="module-header-title">
-                        <span style="color:#f43f5e;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="11" y="3" width="10" height="26" rx="2"></rect><line x1="11" y1="8" x2="21" y2="11"></line><line x1="11" y1="14" x2="21" y2="17"></line></svg></span>
-                        UJI TARIK BAJA TULANGAN BETON SIRIP (DEFORMED REBAR)
-                    </div>
-                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
-                        Verifikasi Kuat Leleh (fy), Kuat Tarik (fu), Rasio Gempa (fu/fy &ge; 1.25), dan Regangan Patah (&delta;5).
-                    </div>
-                </div>
-                <span class="module-header-code">SNI 2052:2017 / ASTM A615</span>
+    let waterWeight = Math.max(0, w2 - w3);
+    let dryWeight = Math.max(1, w3 - w1);
+    let moisturePct = ((waterWeight / dryWeight) * 100).toFixed(2);
+
+    let resBox = document.getElementById('ca-m-result-box');
+    if (resBox) {
+        resBox.innerHTML = `
+            <div class="result-row">
+                <span class="result-label">Berat Air Kerikil (W2 - W3):</span>
+                <span class="result-val">${waterWeight.toFixed(1)} gram</span>
             </div>
-
-            <div class="testing-calc-grid">
-                <div class="testing-calc-card">
-                    <div class="testing-calc-header">
-                        <span>PARAMETER BENDA UJI BAJA</span>
-                        <span class="telemetry-chip live-chip"><span class="dot-live"></span>TENSILE MACHINE</span>
-                    </div>
-                    <div class="testing-input-group">
-                        <label>Mutu Baja Tulangan</label>
-                        <select class="custom-select" id="st-grade" onchange="calcSteelTensile()">
-                            <option value="420" selected>BJTS 420B (Ulir / Deformed - fy 420 MPa)</option>
-                            <option value="280">BJTP 280 (Polos / Plain - fy 280 MPa)</option>
-                            <option value="520">BJTS 520 (High-Strength Deformed - fy 520 MPa)</option>
-                        </select>
-                    </div>
-                    <div class="testing-input-group">
-                        <label>Diameter Nominal Tulangan</label>
-                        <select class="custom-select" id="st-diam" onchange="calcSteelTensile()">
-                            <option value="10">D10 (Luas: 78.5 mm²)</option>
-                            <option value="12">D12 (Luas: 113.1 mm²)</option>
-                            <option value="16" selected>D16 (Luas: 201.1 mm²)</option>
-                            <option value="19">D19 (Luas: 283.5 mm²)</option>
-                            <option value="25">D25 (Luas: 490.9 mm²)</option>
-                        </select>
-                    </div>
-                    <div class="testing-input-group">
-                        <label>Gaya Leleh Terukur / Yield Load (Py)</label>
-                        <div class="testing-input-row">
-                            <input type="number" id="st-py" value="92.5" step="0.5" oninput="calcSteelTensile()">
-                            <span class="testing-input-unit">kN</span>
-                        </div>
-                    </div>
-                    <div class="testing-input-group">
-                        <label>Gaya Tarik Maksimum / Ultimate Load (Pu)</label>
-                        <div class="testing-input-row">
-                            <input type="number" id="st-pu" value="122.8" step="0.5" oninput="calcSteelTensile()">
-                            <span class="testing-input-unit">kN</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="testing-calc-card">
-                    <div class="testing-calc-header">
-                        <span>HASIL KUAT TARIK &amp; DAKTILITAS GEMPA</span>
-                        <span class="telemetry-chip" style="color:var(--accent-emerald);">ISO 6935-2</span>
-                    </div>
-                    <div class="testing-result-box" id="st-result-box">
-                        <!-- Populated dynamically -->
-                    </div>
-                    <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
-                        *Pasal 18 SNI 2847:2019 mensyaratkan rasio fu/fy &ge; 1.25 untuk struktur penahan beban gempa (SRPMK).
-                    </div>
-                </div>
+            <div class="result-row">
+                <span class="result-label">Berat Kerikil Kering Oven (W3 - W1):</span>
+                <span class="result-val">${dryWeight.toFixed(1)} gram</span>
             </div>
-
-            <!-- Stress-Strain Schematic SVG Canvas -->
-            <div class="testing-calc-card" style="width: 100%;">
-                <div class="testing-calc-header">
-                    <span>KURVA TEGANGAN - REGANGAN (STRESS-STRAIN &sigma; - &epsilon;)</span>
-                    <span class="telemetry-chip live-chip"><span class="dot-live"></span>REAL-TIME TELEMETRY</span>
-                </div>
-                <div style="position: relative; width: 100%; height: 200px; background: rgba(8, 16, 36, 0.95); border: 1px solid var(--border-dim); border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                    <svg width="100%" height="100%" viewBox="0 0 500 180" preserveAspectRatio="none" style="padding: 10px;">
-                        <!-- Axes -->
-                        <line x1="40" y1="150" x2="480" y2="150" stroke="#475569" stroke-width="1.5"/>
-                        <line x1="40" y1="20" x2="40" y2="150" stroke="#475569" stroke-width="1.5"/>
-                        <!-- Grid Lines -->
-                        <line x1="40" y1="100" x2="480" y2="100" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
-                        <line x1="40" y1="50" x2="480" y2="50" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
-                        <!-- Stress-Strain Curve -->
-                        <path d="M 40 150 L 120 70 L 170 72 Q 280 25 360 30 Q 420 35 440 65" fill="none" stroke="var(--cyan-neon)" stroke-width="3" filter="drop-shadow(0 0 6px rgba(0,240,255,0.6))"/>
-                        <!-- Feature Points -->
-                        <circle cx="120" cy="70" r="4" fill="#fbbf24"/>
-                        <text x="125" y="65" fill="#fbbf24" font-size="10" font-family="monospace">Batas Leleh fy</text>
-                        <circle cx="360" cy="30" r="4" fill="#f43f5e"/>
-                        <text x="365" y="25" fill="#f43f5e" font-size="10" font-family="monospace">Beban Ultimit fu</text>
-                        <circle cx="440" cy="65" r="4" fill="#10b981"/>
-                        <text x="390" y="85" fill="#10b981" font-size="10" font-family="monospace">Patah (Rupture)</text>
-                    </svg>
-                </div>
+            <div class="result-row">
+                <span class="result-label">Kadar Air Aktual Kerikil (w):</span>
+                <span class="result-val status-pass" style="font-size:14px; font-weight:800;">${moisturePct}%</span>
             </div>
-        </div>
-    `;
-    calcSteelTensile();
+            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
+                <span class="result-label">Koreksi Batching Plant:</span>
+                <span class="result-val status-pass">Koreksi air = ${(waterWeight / (dryWeight / 1000)).toFixed(1)} gram/kg kerikil</span>
+            </div>
+        `;
+    }
+}
 
-    // Right Panel
+function calcCASilt() {
+    let w1 = parseFloat(document.getElementById('ca-silt-w1')?.value) || 2500.0;
+    let w2 = parseFloat(document.getElementById('ca-silt-w2')?.value) || 2482.5;
+
+    let siltWeight = Math.max(0, w1 - w2);
+    let siltPct = w1 > 0 ? ((siltWeight / w1) * 100).toFixed(2) : '0.00';
+    let isPass = parseFloat(siltPct) <= 1.0;
+
+    let resBox = document.getElementById('ca-silt-result-box');
+    if (resBox) {
+        resBox.innerHTML = `
+            <div class="result-row">
+                <span class="result-label">Berat Lumpur Lolos #200 (W1 - W2):</span>
+                <span class="result-val">${siltWeight.toFixed(1)} gram</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Kadar Lumpur Terukur:</span>
+                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}" style="font-size:14px; font-weight:800;">${siltPct}%</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Batas Maksimum SNI 03-4142:</span>
+                <span class="result-val">&le; 1.0%</span>
+            </div>
+            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
+                <span class="result-label">Evaluasi SNI Agregat Kasar:</span>
+                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}">${isPass ? '✓ MEMENUHI STANDAR (BERSIH)' : '✗ PERLU PENCUCIAN ULANG'}</span>
+            </div>
+        `;
+    }
+}
+
+function calcCAUnitWeight() {
+    let volL = parseFloat(document.getElementById('ca-uw-vol')?.value) || 10.0;
+    let wb = parseFloat(document.getElementById('ca-uw-wempty')?.value) || 4.2;
+    let wp = parseFloat(document.getElementById('ca-uw-wfull')?.value) || 19.8;
+    let gssd = parseFloat(document.getElementById('ca-uw-gssd')?.value) || 2.65;
+
+    let netWeight = Math.max(0, wp - wb);
+    let volM3 = volL / 1000.0;
+    let unitWeight = volM3 > 0 ? (netWeight / volM3).toFixed(1) : '0.0';
+    let voidsPct = gssd > 0 ? ((1 - (parseFloat(unitWeight) / (gssd * 1000))) * 100).toFixed(2) : '0.00';
+
+    let resBox = document.getElementById('ca-uw-result-box');
+    if (resBox) {
+        resBox.innerHTML = `
+            <div class="result-row">
+                <span class="result-label">Berat Bersih Kerikil (Wp - Wb):</span>
+                <span class="result-val">${netWeight.toFixed(2)} kg</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Bobot Isi Padat Kerikil:</span>
+                <span class="result-val status-pass" style="font-size:14px; font-weight:800;">${unitWeight} kg/m&sup3;</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Persentase Rongga Udara (Voids):</span>
+                <span class="result-val" style="color:var(--cyan-neon); font-weight:700;">${voidsPct}%</span>
+            </div>
+            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
+                <span class="result-label">Evaluasi SNI 03-4804:</span>
+                <span class="result-val status-pass">✓ BOBOT ISI NORMAL AGREGAT KASAR</span>
+            </div>
+        `;
+    }
+}
+
+const DEFAULT_CA_SIEVE_WEIGHTS = [0, 250, 1850, 1950, 750, 160, 40];
+const CA_SIEVE_SPECS = [
+    { name: '1 1/2" (37.5 mm)', size: 37.5, minPass: 100, maxPass: 100 },
+    { name: '1" (25.0 mm)', size: 25.0, minPass: 95, maxPass: 100 },
+    { name: '3/4" (19.0 mm)', size: 19.0, minPass: 60, maxPass: 80 },
+    { name: '1/2" (12.5 mm)', size: 12.5, minPass: 25, maxPass: 60 },
+    { name: '3/8" (9.5 mm)', size: 9.5, minPass: 10, maxPass: 30 },
+    { name: 'No. 4 (4.75 mm)', size: 4.75, minPass: 0, maxPass: 10 },
+    { name: 'Pan Dasar', size: 0, minPass: 0, maxPass: 5 }
+];
+
+function renderCASieveTable(weights) {
+    const tbody = document.getElementById('ca-sieve-tbody');
+    if (!tbody) return;
+
+    let wtList = weights || DEFAULT_CA_SIEVE_WEIGHTS;
+    let totalSample = wtList.reduce((a, b) => a + b, 0) || 5000;
+
+    let kumulatifTertahan = 0;
+    let rowsHtml = '';
+
+    CA_SIEVE_SPECS.forEach((spec, idx) => {
+        let w = wtList[idx] || 0;
+        let pct = (w / totalSample) * 100;
+        kumulatifTertahan += pct;
+        let pctLolos = Math.max(0, 100 - kumulatifTertahan);
+
+        rowsHtml += `
+            <tr>
+                <td style="font-weight:700; color:var(--text-pure);">${spec.name}</td>
+                <td>${spec.size > 0 ? spec.size : '-'}</td>
+                <td><input type="number" class="ca-sieve-input" data-index="${idx}" value="${w}" oninput="recalcCASieve()"></td>
+                <td>${pct.toFixed(1)}%</td>
+                <td style="color:#e05638; font-weight:700;">${kumulatifTertahan.toFixed(1)}%</td>
+                <td style="color:var(--accent-emerald); font-weight:700;">${pctLolos.toFixed(1)}%</td>
+                <td style="color:var(--text-muted);">${spec.minPass}% - ${spec.maxPass}%</td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = rowsHtml;
+}
+
+function recalcCASieve() {
+    let inputs = document.querySelectorAll('.ca-sieve-input');
+    let weights = [];
+    inputs.forEach(inp => weights.push(parseFloat(inp.value) || 0));
+    renderCASieveTable(weights);
+}
+
+function resetCASieveDefault() {
+    renderCASieveTable(DEFAULT_CA_SIEVE_WEIGHTS);
+}
+
+function calcCAAbrasion() {
+    let m1 = parseFloat(document.getElementById('ca-la-m1')?.value) || 5000;
+    let m2 = parseFloat(document.getElementById('ca-la-m2')?.value) || 3840;
+
+    let lossWeight = Math.max(0, m1 - m2);
+    let lossPct = m1 > 0 ? ((lossWeight / m1) * 100).toFixed(2) : '0.00';
+    let isPass = parseFloat(lossPct) <= 40.0;
+
+    let resBox = document.getElementById('ca-la-result-box');
+    if (resBox) {
+        resBox.innerHTML = `
+            <div class="result-row">
+                <span class="result-label">Berat Butir Aus Lolos #12 (M1 - M2):</span>
+                <span class="result-val">${lossWeight} gram</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Nilai Keausan Los Angeles:</span>
+                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}" style="font-size:14px; font-weight:800;">${lossPct}%</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Batas Maksimum SNI 2417:</span>
+                <span class="result-val">&le; 40.0% (Beton Struktural)</span>
+            </div>
+            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
+                <span class="result-label">Status Ketahanan Aus:</span>
+                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}">${isPass ? '✓ MEMENUHI PERSYARATAN KEAUSAN' : '✗ BATU MUDAH PECAH / AUS'}</span>
+            </div>
+        `;
+    }
+}
+
+function renderCoarseAggregateReferenceGuide(subViewId) {
+    if (!panelView) return;
+
     panelView.innerHTML = `
         <div class="panel-card">
             <div class="card-title">
                 <span style="display:flex; align-items:center; gap:8px;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-                    STANDAR BAJA TULANGAN
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e05638" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    STANDAR AGREGAT KASAR (SNI / ASTM)
                 </span>
             </div>
-            <div class="spec-item">Standar Acuan: <span style="color:var(--cyan-neon); font-weight:800;">SNI 2052:2017</span></div>
-            <div class="spec-item">Kuat Luluh Desain: <span style="color:var(--accent-gold); font-weight:800;">fy = 420 MPa</span></div>
-            <div class="spec-item">Rasio Daktilitas Gempa: <span style="color:var(--accent-emerald); font-weight:800;">fu / fy &ge; 1.25</span></div>
-            <div class="spec-item">Elongasi Minimum (&delta;5): <span style="color:var(--text-pure); font-weight:800;">&ge; 12.0%</span></div>
-            <div class="spec-item">Uji Lengkung Mandrel 180°: <span>Radius 3d - 5d (Tanpa Retak)</span></div>
+            <div class="spec-item">Keausan LA Abrasion: <span style="color:var(--accent-emerald); font-weight:800;">&le; 40.0%</span></div>
+            <div class="spec-item">Kadar Lumpur Agregat Kasar: <span style="color:var(--accent-emerald); font-weight:800;">&le; 1.0%</span></div>
+            <div class="spec-item">Penyerapan Air Kerikil: <span style="color:var(--cyan-neon); font-weight:800;">&le; 2.5%</span></div>
+            <div class="spec-item">Berat Jenis Curah Kering: <span style="color:var(--text-pure); font-weight:800;">&ge; 2.50 gr/cm&sup3;</span></div>
+            <div class="spec-item">Ukuran Butir Nominal: <span>10 - 20 mm (Pecah)</span></div>
+        </div>
+
+        <div class="panel-card">
+            <div class="card-title">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-neon)" stroke-width="2.2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                    CHECKLIST PENGUJIAN AGREGAT KASAR
+                </span>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); display:flex; flex-direction:column; gap:6px;">
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Sampling batu pecah representatif ASTM D75</label>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Kondisi jenuh kering permukaan (SSD) 24 jam</label>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Penimbangan keranjang gantung hidrostatik</label>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Bola baja abrasi Los Angeles terkalibrasi</label>
+            </div>
         </div>
 
         <button class="btn-action" onclick="activateModule('concrete')" style="background: rgba(18, 33, 66, 0.95); border: 1px solid var(--border-bright);">
@@ -7105,6 +7764,285 @@ function renderSteelWorkspace(subViewId) {
             Kembali ke Workspace Beton
         </button>
     `;
+}
+
+/* ==========================================================================
+   MODULE 4 WORKSPACE: STEEL TENSILE TESTING (SNI 2052 / ASTM A615 / A370)
+   ========================================================================== */
+function renderSteelWorkspace(subViewId) {
+    if (!canvasView || !panelView) return;
+    canvasView.classList.add('scroll-mode');
+
+    let curSub = subViewId || 'st-tensile';
+
+    if (curSub === 'st-tensile') {
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#f43f5e;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="11" y="3" width="10" height="26" rx="2"></rect><line x1="11" y1="8" x2="21" y2="11"></line><line x1="11" y1="14" x2="21" y2="17"></line></svg></span>
+                            UJI TARIK BAJA TULANGAN BETON SIRIP (DEFORMED REBAR)
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                            Verifikasi Kuat Leleh (fy), Kuat Tarik (fu), Rasio Gempa (fu/fy &ge; 1.25), dan Regangan Patah (&delta;5).
+                        </div>
+                    </div>
+                    <span class="module-header-code">SNI 2052:2017 / ASTM A615</span>
+                </div>
+
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>PARAMETER BENDA UJI BAJA</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>TENSILE MACHINE</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Mutu Baja Tulangan</label>
+                            <select class="custom-select" id="st-grade" onchange="calcSteelTensile()">
+                                <option value="420" selected>BJTS 420B (Ulir / Deformed - fy 420 MPa)</option>
+                                <option value="280">BJTP 280 (Polos / Plain - fy 280 MPa)</option>
+                                <option value="520">BJTS 520 (High-Strength Deformed - fy 520 MPa)</option>
+                            </select>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Diameter Nominal Tulangan</label>
+                            <select class="custom-select" id="st-diam" onchange="calcSteelTensile()">
+                                <option value="10">D10 (Luas: 78.5 mm&sup2;)</option>
+                                <option value="12">D12 (Luas: 113.1 mm&sup2;)</option>
+                                <option value="16" selected>D16 (Luas: 201.1 mm&sup2;)</option>
+                                <option value="19">D19 (Luas: 283.5 mm&sup2;)</option>
+                                <option value="25">D25 (Luas: 490.9 mm&sup2;)</option>
+                            </select>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Gaya Leleh Terukur / Yield Load (Py)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="st-py" value="92.5" step="0.5" oninput="calcSteelTensile()">
+                                <span class="testing-input-unit">kN</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Gaya Tarik Maksimum / Ultimate Load (Pu)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="st-pu" value="122.8" step="0.5" oninput="calcSteelTensile()">
+                                <span class="testing-input-unit">kN</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>HASIL KUAT TARIK &amp; DAKTILITAS GEMPA</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">ISO 6935-2</span>
+                        </div>
+                        <div class="testing-result-box" id="st-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Pasal 18 SNI 2847:2019 mensyaratkan rasio fu/fy &ge; 1.25 untuk struktur penahan beban gempa (SRPMK).
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testing-calc-card" style="width: 100%;">
+                    <div class="testing-calc-header">
+                        <span>KURVA TEGANGAN - REGANGAN (STRESS-STRAIN &sigma; - &epsilon;)</span>
+                        <span class="telemetry-chip live-chip"><span class="dot-live"></span>REAL-TIME TELEMETRY</span>
+                    </div>
+                    <div style="position: relative; width: 100%; height: 200px; background: rgba(8, 16, 36, 0.95); border: 1px solid var(--border-dim); border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                        <svg width="100%" height="100%" viewBox="0 0 500 180" preserveAspectRatio="none" style="padding: 10px;">
+                            <line x1="40" y1="150" x2="480" y2="150" stroke="#475569" stroke-width="1.5"/>
+                            <line x1="40" y1="20" x2="40" y2="150" stroke="#475569" stroke-width="1.5"/>
+                            <line x1="40" y1="100" x2="480" y2="100" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
+                            <line x1="40" y1="50" x2="480" y2="50" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
+                            <path d="M 40 150 L 120 70 L 170 72 Q 280 25 360 30 Q 420 35 440 65" fill="none" stroke="var(--cyan-neon)" stroke-width="3" filter="drop-shadow(0 0 6px rgba(0,240,255,0.6))"/>
+                            <circle cx="120" cy="70" r="4" fill="#fbbf24"/>
+                            <text x="125" y="65" fill="#fbbf24" font-size="10" font-family="monospace">Batas Leleh fy</text>
+                            <circle cx="360" cy="30" r="4" fill="#f43f5e"/>
+                            <text x="365" y="25" fill="#f43f5e" font-size="10" font-family="monospace">Beban Ultimit fu</text>
+                            <circle cx="440" cy="65" r="4" fill="#10b981"/>
+                            <text x="390" y="85" fill="#10b981" font-size="10" font-family="monospace">Patah (Rupture)</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcSteelTensile();
+    } else if (curSub === 'st-yield-limit') {
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#f43f5e;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></span>
+                            VERIFIKASI BATAS KUAT LELEH &amp; KEKUATAN TARIK (YIELD &amp; TENSILE LIMIT)
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                            Pengendalian mutu tulangan gempa: batas kuat leleh aktual fy tidak boleh melebihi nilai nominal lebih dari 125 MPa (SNI 2847 Pasal 20).
+                        </div>
+                    </div>
+                    <span class="module-header-code">SNI 2052:2017 / SNI 2847:2019</span>
+                </div>
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>PARAMETER HASIL UJI TARIK AKTUAL</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Mutu Baja Nominal</label>
+                            <select class="custom-select" id="st-yl-grade" onchange="calcSteelYieldLimit()">
+                                <option value="420" selected>BJTS 420B (Ulir / Deformed - fy nominal 420 MPa)</option>
+                                <option value="280">BJTP 280 (Polos / Plain - fy nominal 280 MPa)</option>
+                                <option value="520">BJTS 520 (High-Strength - fy nominal 520 MPa)</option>
+                            </select>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Kuat Leleh Terukur / Actual Yield Strength (fy)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="st-yl-fy" value="435.0" step="1" oninput="calcSteelYieldLimit()">
+                                <span class="testing-input-unit">MPa</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Kuat Tarik Terukur / Actual Ultimate Strength (fu)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="st-yl-fu" value="585.0" step="1" oninput="calcSteelYieldLimit()">
+                                <span class="testing-input-unit">MPa</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>VERIFIKASI PERSYARATAN SNI 2847</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
+                        </div>
+                        <div class="testing-result-box" id="st-yl-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Ketentuan Gempa: Kuat leleh aktual tidak boleh &gt; (fy nominal + 125 MPa) untuk mencegah keruntuhan geser getas mendadak.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcSteelYieldLimit();
+    } else if (curSub === 'st-elongation') {
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#f43f5e;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></span>
+                            UJI REGANGAN PATAH / ELONGASI BAJA TULANGAN
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                            Pengukuran daktilitas baja dari pertambahan panjang relatif setelah benda uji patah ditarik (Gauge Length 5d / 8d).
+                        </div>
+                    </div>
+                    <span class="module-header-code">SNI 2052:2017 / ASTM A370</span>
+                </div>
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>PARAMETER PENGUKURAN GAUGE LENGTH</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Diameter Batang Baja (db)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="st-el-diam" value="16" step="1" oninput="calcSteelElongation()">
+                                <span class="testing-input-unit">mm</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Panjang Ukur Awal / Gauge Length (L0 = 5 &times; db)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="st-el-l0" value="80.0" step="0.5" oninput="calcSteelElongation()">
+                                <span class="testing-input-unit">mm</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Panjang Setelah Patah Disatukan (Lu)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="st-el-lu" value="93.6" step="0.5" oninput="calcSteelElongation()">
+                                <span class="testing-input-unit">mm</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>HASIL DAKTILITAS &amp; REGANGAN PATAH</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
+                        </div>
+                        <div class="testing-result-box" id="st-el-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Standar SNI 2052: Nilai elongasi minimum untuk BJTS 420B ukuran D10-D19 adalah &ge; 12.0%, dan ukuran D20-D32 adalah &ge; 10.0%.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcSteelElongation();
+    } else if (curSub === 'st-modulus') {
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#f43f5e;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span>
+                            MODULUS ELASTISITAS BAJA TULANGAN (ES)
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                            Verifikasi kekakuan elastis linear rasio tegangan (&sigma;) terhadap regangan aksial (&epsilon;) pada baja tulangan struktural.
+                        </div>
+                    </div>
+                    <span class="module-header-code">SNI 2847:2019 Pasal 20.2.2</span>
+                </div>
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>PARAMETER REGANGAN ELASTIS (STRAIN GAUGE)</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Tegangan Uji Fase Elastis (&sigma;)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="st-mod-sigma" value="300.0" step="5" oninput="calcSteelModulus()">
+                                <span class="testing-input-unit">MPa</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Regangan Aksial Terukur (&epsilon;)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="st-mod-eps" value="0.00150" step="0.00005" oninput="calcSteelModulus()">
+                                <span class="testing-input-unit">mm/mm</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Kuat Leleh Nominal (fy)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="st-mod-fynom" value="420" step="10" oninput="calcSteelModulus()">
+                                <span class="testing-input-unit">MPa</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>HASIL KALKULASI MODULUS ELASTISITAS</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
+                        </div>
+                        <div class="testing-result-box" id="st-mod-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Pasal 20.2.2.2 SNI 2847:2019: Modulus elastisitas baja tulangan non-prategang Es ditetapkan sebesar 200.000 MPa (200 GPa).
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcSteelModulus();
+    }
+
+    // Right Panel SNI/ASTM Reference Guide
+    renderSteelReferenceGuide(curSub);
 }
 
 function calcSteelTensile() {
@@ -7123,15 +8061,15 @@ function calcSteelTensile() {
         resBox.innerHTML = `
             <div class="result-row">
                 <span class="result-label">Luas Penampang Nominal (A):</span>
-                <span class="result-val">${A.toFixed(1)} mm²</span>
+                <span class="result-val">${A.toFixed(1)} mm&sup2;</span>
             </div>
             <div class="result-row">
                 <span class="result-label">1. Kuat Luluh Aktual (fy):</span>
-                <span class="result-val" style="color:var(--accent-gold);">${fy} MPa</span>
+                <span class="result-val" style="color:var(--accent-gold); font-weight:800;">${fy} MPa</span>
             </div>
             <div class="result-row">
                 <span class="result-label">2. Kuat Tarik Aktual (fu):</span>
-                <span class="result-val" style="color:#f43f5e;">${fu} MPa</span>
+                <span class="result-val" style="color:#f43f5e; font-weight:800;">${fu} MPa</span>
             </div>
             <div class="result-row">
                 <span class="result-label">3. Rasio Kekuatan Tarik (fu / fy):</span>
@@ -7143,6 +8081,148 @@ function calcSteelTensile() {
             </div>
         `;
     }
+}
+
+function calcSteelYieldLimit() {
+    let fynom = parseFloat(document.getElementById('st-yl-grade')?.value) || 420;
+    let fy = parseFloat(document.getElementById('st-yl-fy')?.value) || 435.0;
+    let fu = parseFloat(document.getElementById('st-yl-fu')?.value) || 585.0;
+
+    let maxFy = fynom + 125;
+    let ratio = (fu / fy).toFixed(2);
+    let isFyPass = (fy >= fynom && fy <= maxFy);
+    let isRatioPass = (parseFloat(ratio) >= 1.25);
+    let isOverallPass = isFyPass && isRatioPass;
+
+    let resBox = document.getElementById('st-yl-result-box');
+    if (resBox) {
+        resBox.innerHTML = `
+            <div class="result-row">
+                <span class="result-label">Batas Kuat Leleh SNI (fy min - fy maks):</span>
+                <span class="result-val">${fynom} MPa - ${maxFy} MPa</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Kuat Leleh Terukur (fy):</span>
+                <span class="result-val ${isFyPass ? 'status-pass' : 'status-fail'}" style="font-weight:800;">${fy} MPa</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Rasio Daktilitas Gempa (fu / fy):</span>
+                <span class="result-val ${isRatioPass ? 'status-pass' : 'status-fail'}">${ratio} (Syarat &ge; 1.25)</span>
+            </div>
+            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
+                <span class="result-label">Evaluasi SNI 2847 Pasal 20:</span>
+                <span class="result-val ${isOverallPass ? 'status-pass' : 'status-fail'}">${isOverallPass ? '✓ LOLOS BATAS YIELD & DAKTILITAS' : '✗ MELEBIHI TOLERANSI'}</span>
+            </div>
+        `;
+    }
+}
+
+function calcSteelElongation() {
+    let db = parseFloat(document.getElementById('st-el-diam')?.value) || 16;
+    let l0 = parseFloat(document.getElementById('st-el-l0')?.value) || 80.0;
+    let lu = parseFloat(document.getElementById('st-el-lu')?.value) || 93.6;
+
+    let deltaL = Math.max(0, lu - l0);
+    let elongPct = l0 > 0 ? ((deltaL / l0) * 100).toFixed(2) : '0.00';
+    let minElong = (db <= 19) ? 12.0 : 10.0;
+    let isPass = parseFloat(elongPct) >= minElong;
+
+    let resBox = document.getElementById('st-el-result-box');
+    if (resBox) {
+        resBox.innerHTML = `
+            <div class="result-row">
+                <span class="result-label">Pertambahan Panjang (&Delta;L = Lu - L0):</span>
+                <span class="result-val">${deltaL.toFixed(1)} mm</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Regangan Patah Aktual (&delta;5):</span>
+                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}" style="font-size:14px; font-weight:800;">${elongPct}%</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Syarat Minimum SNI 2052:</span>
+                <span class="result-val">&ge; ${minElong.toFixed(1)}%</span>
+            </div>
+            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
+                <span class="result-label">Status Daktilitas Baja:</span>
+                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}">${isPass ? '✓ MEMENUHI SYARAT REGANGAN PATAH' : '✗ BAJA TERLALU GETAS'}</span>
+            </div>
+        `;
+    }
+}
+
+function calcSteelModulus() {
+    let sigma = parseFloat(document.getElementById('st-mod-sigma')?.value) || 300.0;
+    let eps = parseFloat(document.getElementById('st-mod-eps')?.value) || 0.0015;
+    let fynom = parseFloat(document.getElementById('st-mod-fynom')?.value) || 420;
+
+    let E = eps > 0 ? Math.round(sigma / eps) : 200000;
+    let E_gpa = (E / 1000).toFixed(1);
+    let eps_y = (fynom / E).toFixed(5);
+    let deviasi = Math.abs(((E - 200000) / 200000) * 100).toFixed(2);
+    let isPass = parseFloat(deviasi) <= 5.0;
+
+    let resBox = document.getElementById('st-mod-result-box');
+    if (resBox) {
+        resBox.innerHTML = `
+            <div class="result-row">
+                <span class="result-label">Modulus Elastisitas Aktual (E = &sigma;/&epsilon;):</span>
+                <span class="result-val status-pass" style="font-size:14px; font-weight:800;">${E.toLocaleString()} MPa (${E_gpa} GPa)</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Nilai Acuan Desain SNI 2847 (Es):</span>
+                <span class="result-val">200.000 MPa</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Regangan Titik Leleh Teoritis (&epsilon;y = fy/Es):</span>
+                <span class="result-val" style="color:var(--accent-gold); font-weight:700;">${eps_y}</span>
+            </div>
+            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
+                <span class="result-label">Evaluasi SNI 2847:</span>
+                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}">${isPass ? '✓ TEPAT SESUAI KETENTUAN DESAIN' : '✗ DEVIASI MODULUS TINGGI'}</span>
+            </div>
+        `;
+    }
+}
+
+function renderSteelReferenceGuide(subViewId) {
+    if (!panelView) return;
+
+    panelView.innerHTML = `
+        <div class="panel-card">
+            <div class="card-title">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    STANDAR BAJA TULANGAN (SNI 2052)
+                </span>
+            </div>
+            <div class="spec-item">Standar Acuan: <span style="color:var(--cyan-neon); font-weight:800;">SNI 2052:2017</span></div>
+            <div class="spec-item">Kuat Luluh Desain: <span style="color:var(--accent-gold); font-weight:800;">fy = 420 MPa</span></div>
+            <div class="spec-item">Rasio Daktilitas Gempa: <span style="color:var(--accent-emerald); font-weight:800;">fu / fy &ge; 1.25</span></div>
+            <div class="spec-item">Elongasi Minimum (&delta;5): <span style="color:var(--text-pure); font-weight:800;">&ge; 12.0%</span></div>
+            <div class="spec-item">Modulus Elastisitas (Es): <span style="color:#f43f5e; font-weight:800;">200.000 MPa</span></div>
+            <div class="spec-item">Uji Lengkung Mandrel 180&deg;: <span>Radius 3d - 5d (Tanpa Retak)</span></div>
+        </div>
+
+        <div class="panel-card">
+            <div class="card-title">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cyan-neon)" stroke-width="2.2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                    CHECKLIST UJI TARIK BAJA
+                </span>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); display:flex; flex-direction:column; gap:6px;">
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Pengukuran berat per meter (toleransi &plusmn;5%)</label>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Pembuatan tanda gauge length (5d / 8d)</label>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Kecepatan tarik mesin UTM 10 - 30 MPa/detik</label>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" checked> Pengukuran leher patahan (necking reduction)</label>
+            </div>
+        </div>
+
+        <button class="btn-action" onclick="activateModule('concrete')" style="background: rgba(18, 33, 66, 0.95); border: 1px solid var(--border-bright);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline; margin-right:6px;"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            Kembali ke Workspace Beton
+        </button>
+    `;
 }
 
 // Auto-initialize module switcher once DOM is loaded
