@@ -14,9 +14,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     
     <!-- Custom Engineering Stylesheet -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20261122_03">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20261123_01">
 </head>
-<body>
+<body class="left-sidebar-collapsed right-sidebar-collapsed">
 
     <!-- ==========================================================================
          INTERACTIVE CAD BLUEPRINT LOADING / SPLASH SCREEN
@@ -137,8 +137,13 @@
             </div>
         </div>
 
-        <!-- Header Right Action Tools -->
+                <!-- Header Right Action Tools -->
         <div class="header-right-tools">
+            <button class="btn-lang-toggle" id="btn-lang-toggle" onclick="toggleLanguage()" title="Ganti Bahasa / Switch Language (ID / EN)">
+                <span class="lang-tag lang-id active">ID</span>
+                <span class="lang-sep">/</span>
+                <span class="lang-tag lang-en">EN</span>
+            </button>
             <button class="btn-header-toggle" id="btn-toggle-right-sidebar" onclick="toggleRightSidebar()" title="Sembunyikan/Tampilkan Panel Kontrol Kanan">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="15" y1="3" x2="15" y2="21"></line><path id="right-sidebar-toggle-arrow" d="M10 9l3 3-3 3"></path></svg>
             </button>
@@ -222,14 +227,12 @@
 
         <!-- Main Workspace (Center Canvas 3D & Right Control Panel) -->
         <main class="main-container">
-            <!-- Floating Canvas Drawer Toggles (persists across workspace renders) -->
-            <button id="btn-floating-left-toggle" class="btn-floating-drawer drawer-left" onclick="toggleLeftSidebar()" title="Tampilkan Navigasi Kiri">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                <span>NAV</span>
+            <!-- Edge Chevron Toggle Buttons (Subtle, Semi-Transparent Pinned Tabs) -->
+            <button id="btn-edge-left-toggle" class="btn-edge-toggle edge-left" onclick="toggleLeftSidebar()" title="Toggle Navigation Panel">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </button>
-            <button id="btn-floating-right-toggle" class="btn-floating-drawer drawer-right" onclick="toggleRightSidebar()" title="Tampilkan Panel Kontrol">
-                <span>PANEL</span>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <button id="btn-edge-right-toggle" class="btn-edge-toggle edge-right" onclick="toggleRightSidebar()" title="Toggle Control Panel">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
 
             <!-- Center 3D CAD Simulation Viewport -->
@@ -248,6 +251,6 @@
     <div id="hud-toast-container"></div>
 
     <!-- Core Simulation Logic -->
-    <script src="{{ url_for('static', filename='script.js') }}?v=20261122_03"></script>
+    <script src="{{ url_for('static', filename='script.js') }}?v=20261123_01"></script>
 </body>
 </html>
