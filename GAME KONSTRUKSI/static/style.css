@@ -4647,47 +4647,50 @@ option {
     font-size: 10px;
 }
 
-/* Edge Chevron Toggle Buttons (Subtle, Semi-Transparent Pinned Tabs) */
+/* Edge Triangle Toggle Buttons (Subtle, Semi-Transparent Pinned Tabs) */
 .btn-edge-toggle {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    z-index: 55;
-    width: 22px;
-    height: 52px;
+    z-index: 60;
+    width: 16px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(14, 25, 51, 0.55);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 240, 255, 0.22);
-    color: rgba(255, 255, 255, 0.7);
+    background: rgba(14, 25, 51, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
-    opacity: 0.45;
-    transition: opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    opacity: 0.6;
+    transition: opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, right 0.35s ease, box-shadow 0.2s ease;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
     padding: 0;
 }
 
 .btn-edge-toggle:hover {
     opacity: 1;
-    background: rgba(18, 32, 64, 0.95);
+    background: rgba(16, 29, 59, 0.88);
     border-color: var(--chapter-accent, #00f0ff);
-    color: #ffffff;
-    box-shadow: 0 0 16px var(--chapter-accent-glow, rgba(0, 240, 255, 0.35));
+    color: var(--chapter-accent, #00f0ff);
+    box-shadow: 0 0 14px var(--chapter-accent-glow, rgba(0, 240, 255, 0.35));
 }
 
 .btn-edge-toggle.edge-left {
     left: 0;
     border-left: none;
-    border-radius: 0 8px 8px 0;
+    border-radius: 0 6px 6px 0;
 }
 
 .btn-edge-toggle.edge-right {
-    right: 0;
     border-right: none;
-    border-radius: 8px 0 0 8px;
+    border-radius: 6px 0 0 6px;
+}
+
+body.right-sidebar-collapsed #btn-edge-right-toggle {
+    right: 0;
 }
 
 body:not(.right-sidebar-collapsed) #btn-edge-right-toggle {
@@ -4700,11 +4703,12 @@ body:not(.right-sidebar-collapsed) #btn-edge-right-toggle {
     }
 }
 
-/* Chevron Direction Rotations */
+/* Triangle Direction Rotations */
 .btn-edge-toggle svg {
     transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Left Toggle: OPEN = inward (<, 180deg), COLLAPSED = outward (>, 0deg) */
 body.left-sidebar-collapsed #btn-edge-left-toggle svg {
     transform: rotate(0deg);
 }
@@ -4712,11 +4716,12 @@ body:not(.left-sidebar-collapsed) #btn-edge-left-toggle svg {
     transform: rotate(180deg);
 }
 
+/* Right Toggle: OPEN = inward (>, 0deg), COLLAPSED = outward (<, 180deg) */
 body.right-sidebar-collapsed #btn-edge-right-toggle svg {
-    transform: rotate(0deg);
+    transform: rotate(180deg);
 }
 body:not(.right-sidebar-collapsed) #btn-edge-right-toggle svg {
-    transform: rotate(180deg);
+    transform: rotate(0deg);
 }
 
 /* Micro-transitions for smooth workspace switching */
