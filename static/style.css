@@ -5154,3 +5154,94 @@ body:not(.right-sidebar-collapsed) #btn-edge-right-toggle svg {
     gap: 4px;
     margin-top: 2px;
 }
+
+/* ==========================================================================
+   MULTI-METHOD TABS & COMPARISON CARDS (FINE AGGREGATE SILT CONTENT)
+   ========================================================================== */
+.method-tabs-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-dim);
+    padding-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-method-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    font-size: 11.5px;
+    font-weight: 700;
+    font-family: var(--font-heading);
+    border-radius: 6px;
+    cursor: pointer;
+    background: rgba(14, 25, 52, 0.7);
+    color: var(--text-muted);
+    border: 1px solid var(--border-dim);
+    transition: all 0.2s ease;
+}
+
+.btn-method-tab:hover {
+    color: var(--text-pure);
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-method-tab.active {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.2);
+    border-color: #f59e0b;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
+}
+
+.btn-method-tab .tab-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.4);
+    font-family: var(--font-mono);
+}
+
+.fa-comparison-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+    margin-top: 14px;
+}
+
+.fa-comparison-card {
+    background: rgba(14, 25, 52, 0.85);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.2s ease;
+}
+
+.fa-comparison-card:hover {
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+.fa-comparison-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-dim);
+    padding-bottom: 8px;
+}
+
+.fa-comparison-title {
+    font-size: 12.5px;
+    font-weight: 800;
+    font-family: var(--font-heading);
+    color: #f59e0b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}

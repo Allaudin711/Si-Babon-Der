@@ -6611,7 +6611,7 @@ function switchSubModuleView(moduleId, subViewId, element) {
 }
 
 /* ==========================================================================
-   MODULE 2 WORKSPACE: FINE AGGREGATE TESTING (SNI 1970 / ASTM C128)
+   MODULE 2 WORKSPACE: FINE AGGREGATE TESTING (SNI 1970 / ASTM C128 / C566 / C117)
    ========================================================================== */
 function renderFineAggregateWorkspace(subViewId) {
     if (!canvasView || !panelView) return;
@@ -6622,6 +6622,8 @@ function renderFineAggregateWorkspace(subViewId) {
         renderFASpecGravWorkspace();
     } else if (subViewId === 'fa-moisture') {
         renderFAMoistureWorkspace();
+    } else if (subViewId === 'fa-silt') {
+        renderFASiltWorkspace();
     } else if (subViewId === 'fa-sieve') {
         canvasView.innerHTML = `
             <div class="module-workspace-container">
@@ -6673,8 +6675,9 @@ function renderFineAggregateWorkspace(subViewId) {
             </div>
         `;
         renderFASieveTable();
+    
     } else {
-        // Generic fallback for other sub-views
+        // Generic fallback for other sub-views (Unit Weight, Organic)
         renderFAGenericView(subViewId);
     }
 
@@ -6682,12 +6685,6 @@ function renderFineAggregateWorkspace(subViewId) {
     renderFineAggregateReferenceGuide(subViewId);
 }
 
-/* ==========================================================================
-   DYNAMIC MULTI-SAMPLE LAB REPORT & REAL-TIME CALCULATION (SNI 1970 / ASTM C128)
-   ========================================================================== */
-/* ==========================================================================
-   DYNAMIC MULTI-SAMPLE LAB REPORT & REAL-TIME CALCULATION (SNI 1970 / ASTM C128)
-   ========================================================================== */
 const DEFAULT_FA_SPEC_GRAV_SAMPLES = [
     { name: 'Sampel I', sah: 500.0, aah: 490.5, bah: 650.0, cah: 962.2 },
     { name: 'Sampel II', sah: 500.0, aah: 489.8, bah: 650.0, cah: 961.8 }
@@ -7131,6 +7128,7 @@ function calcFASpecGrav() {
     }
 }
 
+
 const DEFAULT_FA_SIEVE_WEIGHTS = [0, 42, 168, 245, 230, 185, 95, 35];
 const FA_SIEVE_SPECS = [
     { name: '3/8" (9.5 mm)', size: 9.5, minZ2: 100, maxZ2: 100 },
@@ -7194,185 +7192,6 @@ function resetFASieveDefault() {
     renderFASieveTable(DEFAULT_FA_SIEVE_WEIGHTS);
 }
 
-function renderFAGenericView(subViewId) {
-    let title = "Pengujian Agregat Halus";
-    let code = "SNI 1970";
-    let desc = "";
-
-    if (subViewId === 'fa-silt') {
-        title = "UJI KANDUNGAN LUMPUR / LOLOS SARINGAN NO. 200 (75 &mu;m)";
-        code = "SNI 03-4142-1996 / ASTM C117";
-        desc = "Pengukuran kadar lumpur dan partikel lempung halus pada pasir beton dengan metode pencucian saringan.";
-        canvasView.innerHTML = `
-            <div class="module-workspace-container">
-                <div class="module-header-banner">
-                    <div>
-                        <div class="module-header-title">
-                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span>
-                            ${title}
-                        </div>
-                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
-                    </div>
-                    <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> ${code}</span>
-                </div>
-                <div class="testing-calc-grid">
-                    <div class="testing-calc-card">
-                        <div class="testing-calc-header">
-                            <span>PARAMETER PENCUCIAN DENGAN AIR</span>
-                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Kering Oven Pasir Semula (W1)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-silt-w1" value="500.0" step="0.1" oninput="calcFASilt()">
-                                <span class="testing-input-unit">gram</span>
-                            </div>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Kering Pasir Tertahan #200 Setelah Dicuci (W2)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-silt-w2" value="482.0" step="0.1" oninput="calcFASilt()">
-                                <span class="testing-input-unit">gram</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="testing-calc-card">
-                        <div class="testing-calc-header">
-                            <span>EVALUASI KADAR LUMPUR SNI</span>
-                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
-                        </div>
-                        <div class="testing-result-box" id="fa-silt-result-box"></div>
-                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
-                            *Standar SNI 03-4142: Pasir untuk beton struktural tidak boleh mengandung lumpur lebih dari 5.0%.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        calcFASilt();
-    } else if (subViewId === 'fa-unit-weight') {
-        title = "BOBOT ISI DAN RONGGA UDARA DALAM AGREGAT HALUS";
-        code = "SNI 03-4804-1998 / ASTM C29";
-        desc = "Penentuan berat volume gembur dan padat (rodding) serta persentase rongga udara antar-butir pasir.";
-        canvasView.innerHTML = `
-            <div class="module-workspace-container">
-                <div class="module-header-banner">
-                    <div>
-                        <div class="module-header-title">
-                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg></span>
-                            ${title}
-                        </div>
-                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
-                    </div>
-                    <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> ${code}</span>
-                </div>
-                <div class="testing-calc-grid">
-                    <div class="testing-calc-card">
-                        <div class="testing-calc-header">
-                            <span>PARAMETER BEJANA UKUR KALIBRASI</span>
-                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Volume Bejana Ukur (V)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-uw-vol" value="5.0" step="0.1" oninput="calcFAUnitWeight()">
-                                <span class="testing-input-unit">Liter</span>
-                            </div>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Bejana Kosong (Wb)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-uw-wempty" value="2.5" step="0.1" oninput="calcFAUnitWeight()">
-                                <span class="testing-input-unit">kg</span>
-                            </div>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Bejana + Pasir Padat / Rodding (Wp)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-uw-wfull" value="10.8" step="0.1" oninput="calcFAUnitWeight()">
-                                <span class="testing-input-unit">kg</span>
-                            </div>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Jenis SSD Pasir (Gssd)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-uw-gssd" value="2.60" step="0.01" oninput="calcFAUnitWeight()">
-                                <span class="testing-input-unit">gr/cm&sup3;</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="testing-calc-card">
-                        <div class="testing-calc-header">
-                            <span>HASIL BOBOT ISI &amp; RONGGA UDARA</span>
-                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
-                        </div>
-                        <div class="testing-result-box" id="fa-uw-result-box"></div>
-                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
-                            *Standar SNI 03-4804: Bobot isi padat pasir umumnya berkisar antara 1400 - 1750 kg/m&sup3;.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        calcFAUnitWeight();
-    } else if (subViewId === 'fa-organic') {
-        title = "UJI KANDUNGAN ZAT ORGANIK (METODE NaOH 3%)";
-        code = "SNI 03-2816-1992 / ASTM C40";
-        desc = "Identifikasi kandungan senyawa organik asam berbahaya menggunakan larutan NaOH dan pembanding warna standar Gardner.";
-        canvasView.innerHTML = `
-            <div class="module-workspace-container">
-                <div class="module-header-banner">
-                    <div>
-                        <div class="module-header-title">
-                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 2v7.31L4.35 19.46A2 2 0 0 0 6.09 22h11.82a2 2 0 0 0 1.74-2.54L14 9.31V2"></path></svg></span>
-                            ${title}
-                        </div>
-                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
-                    </div>
-                    <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> ${code}</span>
-                </div>
-                <div class="testing-calc-grid">
-                    <div class="testing-calc-card">
-                        <div class="testing-calc-header">
-                            <span>HASIL REAKSI CAIRAN REAGEN SETELAH 24 JAM</span>
-                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>COLOR COMPARATOR</span>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Warna Cairan di Atas Pasir (Standar Gardner)</label>
-                            <select class="custom-select" id="fa-org-plate" onchange="calcFAOrganic()">
-                                <option value="1">Plat No. 1: Kuning Sangat Muda (Sangat Bersih)</option>
-                                <option value="2" selected>Plat No. 2: Kuning Muda (Bersih / Layak)</option>
-                                <option value="3">Plat No. 3: Kuning Kemerahan (Batas Ambang SNI)</option>
-                                <option value="4">Plat No. 4: Coklat Muda (Melebihi Ambang Batas)</option>
-                                <option value="5">Plat No. 5: Coklat Tua / Gelap (Ditolak / Bahaya)</option>
-                            </select>
-                        </div>
-                        <div style="background: rgba(8, 16, 36, 0.85); border: 1px solid var(--border-dim); border-radius: 8px; padding: 12px; margin-top: 12px;">
-                            <div style="font-size: 11px; font-weight: 800; color: #f59e0b; margin-bottom: 6px;">PROSEDUR PENGUJIAN:</div>
-                            <ol style="font-size: 11px; color: var(--text-muted); margin: 0; padding-left: 18px; line-height: 1.5;">
-                                <li>Isi botol kaca dengan 130 ml contoh pasir.</li>
-                                <li>Tambahkan larutan NaOH 3% hingga volume 200 ml.</li>
-                                <li>Kocok kuat-kuat selama 10 menit lalu diamkan 24 jam.</li>
-                                <li>Bandingkan warna larutan jernih di atas pasir dengan pelat standar warna Gardner.</li>
-                            </ol>
-                        </div>
-                    </div>
-                    <div class="testing-calc-card">
-                        <div class="testing-calc-header">
-                            <span>VERIFIKASI PERSYARATAN BETON STRUKTURAL</span>
-                            <span class="telemetry-chip" style="color:var(--accent-emerald);">SNI COMPLIANCE</span>
-                        </div>
-                        <div class="testing-result-box" id="fa-org-result-box"></div>
-                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
-                            *Pasal SNI 03-2816: Pasir yang menghasilkan warna lebih tua dari Plat No. 3 tidak boleh digunakan untuk beton struktural kecuali pengujian kuat tekan mortar 7 &amp; 28 hari mencapai &ge; 95% dari pasir pembanding.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        calcFAOrganic();
-    }
-}
 
 /* ==========================================================================
    DYNAMIC MULTI-SAMPLE MOISTURE CONTENT TEST (ASTM C566 / SNI 03-1971-1990)
@@ -7805,37 +7624,1021 @@ function calcFAMoisture() {
         `;
     }
 }
+/* ==========================================================================
+   DYNAMIC DUAL-METHOD SILT CONTENT TESTING (SNI 2816:2014 / SNI 2417 / ASTM C117)
+   ========================================================================== */
+let faSiltActiveTab = 'wash'; // 'wash' | 'shake' | 'summary'
 
-function calcFASilt() {
-    let w1 = parseFloat(document.getElementById('fa-silt-w1')?.value) || 500.0;
-    let w2 = parseFloat(document.getElementById('fa-silt-w2')?.value) || 482.0;
+const DEFAULT_FA_SILT_WASH_SAMPLES = [
+    { name: 'Sampel I', aah: 500.0, bah: 484.5 },
+    { name: 'Sampel II', aah: 500.0, bah: 482.0 }
+];
 
-    let siltWeight = Math.max(0, w1 - w2);
-    let siltPct = w1 > 0 ? ((siltWeight / w1) * 100).toFixed(2) : '0.00';
-    let isPass = parseFloat(siltPct) <= 5.0;
+const DEFAULT_FA_SILT_SHAKE_SAMPLES = [
+    { name: 'Sampel I', vl: 4.0, vah: 130.0 },
+    { name: 'Sampel II', vl: 4.5, vah: 130.0 }
+];
 
-    let resBox = document.getElementById('fa-silt-result-box');
+let faSiltWashSamples = JSON.parse(JSON.stringify(DEFAULT_FA_SILT_WASH_SAMPLES));
+let faSiltShakeSamples = JSON.parse(JSON.stringify(DEFAULT_FA_SILT_SHAKE_SAMPLES));
+
+function switchFASiltTab(tabId) {
+    if (tabId !== 'wash' && tabId !== 'shake' && tabId !== 'summary') return;
+    faSiltActiveTab = tabId;
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFASiltWorkspace();
+}
+
+function addFASiltWashSample() {
+    if (faSiltWashSamples.length >= 6) {
+        if (typeof showToast === 'function') showToast(currentLang === 'EN' ? 'Maximum 6 samples allowed' : 'Jumlah sampel maksimum adalah 6', 'warning');
+        return;
+    }
+    const idx = faSiltWashSamples.length + 1;
+    const lastSample = faSiltWashSamples[faSiltWashSamples.length - 1];
+    faSiltWashSamples.push({
+        name: currentLang === 'EN' ? `Sample ${getRomanNumeral(idx)}` : `Sampel ${getRomanNumeral(idx)}`,
+        aah: 500.0,
+        bah: lastSample ? Number((lastSample.bah - 1.2).toFixed(1)) : 484.0
+    });
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFASiltWorkspace();
+    if (typeof showToast === 'function') showToast(currentLang === 'EN' ? `Sample ${getRomanNumeral(idx)} added` : `Sampel ${getRomanNumeral(idx)} berhasil ditambahkan`, 'success');
+}
+
+function removeFASiltWashSample() {
+    if (faSiltWashSamples.length <= 1) {
+        if (typeof showToast === 'function') showToast(currentLang === 'EN' ? 'Minimum 1 sample required' : 'Minimal harus ada 1 sampel pengujian', 'warning');
+        return;
+    }
+    const removed = faSiltWashSamples.pop();
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFASiltWorkspace();
+    if (typeof showToast === 'function') showToast(currentLang === 'EN' ? `${removed.name} removed` : `${removed.name} dihapus`, 'info');
+}
+
+function resetFASiltWashDefaults() {
+    faSiltWashSamples = JSON.parse(JSON.stringify(DEFAULT_FA_SILT_WASH_SAMPLES));
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFASiltWorkspace();
+    if (typeof showToast === 'function') showToast(currentLang === 'EN' ? 'Reset to default Duplo samples (SNI 2417)' : 'Parameter sampel di-reset ke standar Duplo (SNI 2417)', 'info');
+}
+
+function updateFASiltWashSampleValue(sampleIdx, paramKey, val) {
+    const parsed = parseFloat(val);
+    if (!isNaN(parsed) && faSiltWashSamples[sampleIdx]) {
+        faSiltWashSamples[sampleIdx][paramKey] = parsed;
+        const rowMap = { aah: 0, bah: 1 };
+        const rowIdx = rowMap[paramKey];
+        if (rowIdx !== undefined) {
+            const rowInputs = document.querySelectorAll('#fa-silt-wash-input-tbody tr');
+            if (rowInputs[rowIdx]) {
+                const inp = rowInputs[rowIdx].querySelectorAll('input')[sampleIdx];
+                if (inp && parseFloat(inp.value) !== parsed) {
+                    inp.value = parsed;
+                }
+            }
+        }
+    }
+    calcFASiltWash();
+}
+
+function addFASiltShakeSample() {
+    if (faSiltShakeSamples.length >= 6) {
+        if (typeof showToast === 'function') showToast(currentLang === 'EN' ? 'Maximum 6 samples allowed' : 'Jumlah sampel maksimum adalah 6', 'warning');
+        return;
+    }
+    const idx = faSiltShakeSamples.length + 1;
+    const lastSample = faSiltShakeSamples[faSiltShakeSamples.length - 1];
+    faSiltShakeSamples.push({
+        name: currentLang === 'EN' ? `Sample ${getRomanNumeral(idx)}` : `Sampel ${getRomanNumeral(idx)}`,
+        vl: lastSample ? Number((lastSample.vl + 0.3).toFixed(1)) : 4.0,
+        vah: 130.0
+    });
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFASiltWorkspace();
+    if (typeof showToast === 'function') showToast(currentLang === 'EN' ? `Sample ${getRomanNumeral(idx)} added` : `Sampel ${getRomanNumeral(idx)} berhasil ditambahkan`, 'success');
+}
+
+function removeFASiltShakeSample() {
+    if (faSiltShakeSamples.length <= 1) {
+        if (typeof showToast === 'function') showToast(currentLang === 'EN' ? 'Minimum 1 sample required' : 'Minimal harus ada 1 sampel pengujian', 'warning');
+        return;
+    }
+    const removed = faSiltShakeSamples.pop();
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFASiltWorkspace();
+    if (typeof showToast === 'function') showToast(currentLang === 'EN' ? `${removed.name} removed` : `${removed.name} dihapus`, 'info');
+}
+
+function resetFASiltShakeDefaults() {
+    faSiltShakeSamples = JSON.parse(JSON.stringify(DEFAULT_FA_SILT_SHAKE_SAMPLES));
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFASiltWorkspace();
+    if (typeof showToast === 'function') showToast(currentLang === 'EN' ? 'Reset to default Duplo samples (Settlement)' : 'Parameter sampel di-reset ke standar Duplo (Kocokan)', 'info');
+}
+
+function updateFASiltShakeSampleValue(sampleIdx, paramKey, val) {
+    const parsed = parseFloat(val);
+    if (!isNaN(parsed) && faSiltShakeSamples[sampleIdx]) {
+        faSiltShakeSamples[sampleIdx][paramKey] = parsed;
+        const rowMap = { vl: 0, vah: 1 };
+        const rowIdx = rowMap[paramKey];
+        if (rowIdx !== undefined) {
+            const rowInputs = document.querySelectorAll('#fa-silt-shake-input-tbody tr');
+            if (rowInputs[rowIdx]) {
+                const inp = rowInputs[rowIdx].querySelectorAll('input')[sampleIdx];
+                if (inp && parseFloat(inp.value) !== parsed) {
+                    inp.value = parsed;
+                }
+            }
+        }
+    }
+    calcFASiltShake();
+}
+
+function renderFASiltWorkspace() {
+    if (!canvasView) return;
+    canvasView.classList.add('scroll-mode');
+
+    const isEn = (currentLang === 'EN');
+
+    // Header banner
+    const bannerHTML = `
+        <div class="module-header-banner">
+            <div>
+                <div class="module-header-title">
+                    <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span>
+                    ${isEn ? 'FINE AGGREGATE SILT CONTENT TEST (#200 / 75 µm)' : 'UJI KANDUNGAN LUMPUR / LOLOS SARINGAN NO. 200 (75 µm)'}
+                </div>
+                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                    ${isEn 
+                        ? 'Measurement of fine silt and clay particles passing sieve #200 via Wash Method (ASTM C117 / SNI 2417:2008) and Volumetric Settlement Method.' 
+                        : 'Pengukuran kadar lumpur dan debu halus lolos saringan #200 dengan Metode Cucian (SNI 2417:2008 / ASTM C117) dan Metode Kocokan / Volumetrik.'}
+                </div>
+            </div>
+            <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> SNI 2816:2014 / SNI 2417:2008 / ASTM C117</span>
+        </div>
+    `;
+
+    // Method Switcher Tabs
+    const tabsHTML = `
+        <div class="method-tabs-nav">
+            <button class="btn-method-tab ${faSiltActiveTab === 'wash' ? 'active' : ''}" onclick="switchFASiltTab('wash')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                ${isEn ? '1. Wash Method (ASTM C117)' : '1. Metode Cucian (ASTM C117 / SNI 2417)'}
+                <span class="tab-badge">GRAVIMETRI</span>
+            </button>
+            <button class="btn-method-tab ${faSiltActiveTab === 'shake' ? 'active' : ''}" onclick="switchFASiltTab('shake')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                ${isEn ? '2. Settlement Method' : '2. Metode Kocokan / Volumetrik'}
+                <span class="tab-badge">VOLUMETRIK</span>
+            </button>
+            <button class="btn-method-tab ${faSiltActiveTab === 'summary' ? 'active' : ''}" onclick="switchFASiltTab('summary')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                ${isEn ? '3. Method Comparison & Summary' : '3. Ringkasan & Komparasi Kedua Metode'}
+            </button>
+        </div>
+    `;
+
+    let contentHTML = '';
+
+    if (faSiltActiveTab === 'wash') {
+        const n = faSiltWashSamples.length;
+        const isDuplo = (n === 2);
+
+        let sampleHeadersHTML = '';
+        faSiltWashSamples.forEach((s, idx) => {
+            const sName = isEn ? `Sample ${getRomanNumeral(idx + 1)}` : (s.name || `Sampel ${getRomanNumeral(idx + 1)}`);
+            sampleHeadersHTML += `<th class="fa-sample-col-header">${sName}</th>`;
+        });
+
+        const inputRowsDef = [
+            {
+                no: 1,
+                label: isEn ? 'Initial Oven-Dry Sample Mass (AAH)' : 'Berat Kering Oven Pasir Awal (AAH)',
+                symbol: 'AAH',
+                unit: 'gram',
+                key: 'aah',
+                step: '0.1'
+            },
+            {
+                no: 2,
+                label: isEn ? 'Oven-Dry Mass After Washing (BAH)' : 'Berat Kering Oven Setelah Dicuci Tertahan #200 (BAH)',
+                symbol: 'BAH',
+                unit: 'gram',
+                key: 'bah',
+                step: '0.1'
+            }
+        ];
+
+        let inputRowsHTML = '';
+        inputRowsDef.forEach(r => {
+            let cellsHTML = '';
+            faSiltWashSamples.forEach((s, sIdx) => {
+                const val = s[r.key] !== undefined ? s[r.key] : 0;
+                let legacyId = '';
+                if (sIdx === 0) {
+                    if (r.key === 'aah') legacyId = 'id="fa-silt-w1"';
+                    else if (r.key === 'bah') legacyId = 'id="fa-silt-w2"';
+                }
+                cellsHTML += `
+                    <td class="fa-sample-cell">
+                        <input type="number" class="fa-sample-input" ${legacyId} value="${val}" step="${r.step}" oninput="updateFASiltWashSampleValue(${sIdx}, '${r.key}', this.value)">
+                    </td>
+                `;
+            });
+
+            inputRowsHTML += `
+                <tr>
+                    <td style="text-align:center; font-weight:700; color:var(--text-muted);">${r.no}</td>
+                    <td style="font-weight:600;">${r.label}</td>
+                    <td style="text-align:center;"><span class="formula-code">${r.symbol}</span></td>
+                    <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">${r.unit}</td>
+                    ${cellsHTML}
+                </tr>
+            `;
+        });
+
+        contentHTML = `
+            <!-- Dynamic Sample Controller Toolbar -->
+            <div class="sample-controller-toolbar">
+                <div class="sample-count-badge">
+                    <span>${isEn ? 'TEST SAMPLES:' : 'JUMLAH SAMPEL PENGUJIAN:'}</span>
+                    <span class="sample-count-pill" id="fa-silt-wash-sample-count-pill">
+                        ${n} ${isEn ? 'SAMPLES' : 'SAMPEL'} ${isDuplo ? '(DUPLO)' : ''}
+                    </span>
+                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
+                        ${isDuplo ? (isEn ? '• Standard Duplo ASTM C117' : '• Standar Uji Duplo SNI 2417:2008 / ASTM C117') : ''}
+                    </span>
+                </div>
+                <div class="sample-actions-group">
+                    <button class="btn-sample-action btn-add-sample" onclick="addFASiltWashSample()" ${n >= 6 ? 'disabled' : ''} title="Tambah Kolom Sampel">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        ${isEn ? 'Add Sample' : 'Tambah Sampel'}
+                    </button>
+                    <button class="btn-sample-action btn-remove-sample" onclick="removeFASiltWashSample()" ${n <= 1 ? 'disabled' : ''} title="Kurangi Kolom Sampel">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        ${isEn ? 'Remove Sample' : 'Kurangi Sampel'}
+                    </button>
+                    <button class="btn-sample-action btn-reset-sample" onclick="resetFASiltWashDefaults()" title="Kembali ke Standar Duplo">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                        ${isEn ? 'Reset Default' : 'Reset Standar'}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table 1: Lab Data Input Grid -->
+            <div class="testing-calc-card" style="width: 100%;">
+                <div class="testing-calc-header">
+                    <span>${isEn ? 'TABLE 1: WASH METHOD MEASUREMENT DATA (GRAVIMETRIC)' : 'TABEL 1: DATA PENGUKURAN METODE CUCIAN (GRAVIMETRI)'}</span>
+                    <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT GRID</span>
+                </div>
+                <div class="fa-table-scroll-wrap">
+                    <table class="fa-report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">No</th>
+                                <th>${isEn ? 'Measurement Parameter' : 'Parameter Pengukuran Benda Uji'}</th>
+                                <th style="text-align: center;">${isEn ? 'Lab Symbol' : 'Notasi Lab'}</th>
+                                <th style="text-align: center;">${isEn ? 'Unit' : 'Satuan'}</th>
+                                ${sampleHeadersHTML}
+                            </tr>
+                        </thead>
+                        <tbody id="fa-silt-wash-input-tbody">
+                            ${inputRowsHTML}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                    ${isEn 
+                        ? '*Specimen washed over sieve #200 (75 µm) until wash water is clear, then oven-dried to constant mass per ASTM C117.' 
+                        : '*Benda uji dicuci di atas saringan No. 200 (75 µm) hingga air bilasan jernih, lalu dikeringkan oven 110±5°C sesuai SNI 2417:2008.'}
+                </div>
+            </div>
+
+            <!-- Table 2: Intermediate & Output Calculation Grid -->
+            <div class="testing-calc-card" style="width: 100%; margin-top: 14px;">
+                <div class="testing-calc-header">
+                    <span>${isEn ? 'TABLE 2: SILT CONTENT CALCULATION RESULTS (WASH METHOD)' : 'TABEL 2: HASIL PERHITUNGAN KANDUNGAN LUMPUR (METODE CUCIAN)'}</span>
+                    <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED REAL-TIME</span>
+                </div>
+                <div class="fa-table-scroll-wrap">
+                    <table class="fa-report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">No</th>
+                                <th>${isEn ? 'Calculation Parameter' : 'Parameter Hasil Perhitungan'}</th>
+                                <th>${isEn ? 'Formula / Calculation Notation' : 'Notasi &amp; Rumus Perhitungan'}</th>
+                                <th style="text-align: center;">${isEn ? 'Unit' : 'Satuan'}</th>
+                                ${sampleHeadersHTML}
+                                <th class="fa-avg-col-header">${isEn ? 'AVERAGE' : 'RATA-RATA'}</th>
+                                <th style="text-align: center;">${isEn ? 'SNI 2816:2014 Threshold' : 'Batas SNI 2816:2014'}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fa-silt-wash-output-tbody">
+                            <!-- Populated dynamically via calcFASiltWash -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="fa-silt-wash-summary-metrics">
+                    <!-- Populated dynamically via calcFASiltWash -->
+                </div>
+            </div>
+        `;
+    } else if (faSiltActiveTab === 'shake') {
+        const n = faSiltShakeSamples.length;
+        const isDuplo = (n === 2);
+
+        let sampleHeadersHTML = '';
+        faSiltShakeSamples.forEach((s, idx) => {
+            const sName = isEn ? `Sample ${getRomanNumeral(idx + 1)}` : (s.name || `Sampel ${getRomanNumeral(idx + 1)}`);
+            sampleHeadersHTML += `<th class="fa-sample-col-header">${sName}</th>`;
+        });
+
+        const inputRowsDef = [
+            {
+                no: 1,
+                label: isEn ? 'Settled Silt Layer Volume (VL)' : 'Volume Endapan Lumpur Lapisan Atas (VL)',
+                symbol: 'VL',
+                unit: 'mL (cc)',
+                key: 'vl',
+                step: '0.1'
+            },
+            {
+                no: 2,
+                label: isEn ? 'Settled Sand Volume (VAH)' : 'Volume Agregat Halus / Pasir Bersih (VAH)',
+                symbol: 'VAH',
+                unit: 'mL (cc)',
+                key: 'vah',
+                step: '1.0'
+            }
+        ];
+
+        let inputRowsHTML = '';
+        inputRowsDef.forEach(r => {
+            let cellsHTML = '';
+            faSiltShakeSamples.forEach((s, sIdx) => {
+                const val = s[r.key] !== undefined ? s[r.key] : 0;
+                cellsHTML += `
+                    <td class="fa-sample-cell">
+                        <input type="number" class="fa-sample-input" value="${val}" step="${r.step}" oninput="updateFASiltShakeSampleValue(${sIdx}, '${r.key}', this.value)">
+                    </td>
+                `;
+            });
+
+            inputRowsHTML += `
+                <tr>
+                    <td style="text-align:center; font-weight:700; color:var(--text-muted);">${r.no}</td>
+                    <td style="font-weight:600;">${r.label}</td>
+                    <td style="text-align:center;"><span class="formula-code">${r.symbol}</span></td>
+                    <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">${r.unit}</td>
+                    ${cellsHTML}
+                </tr>
+            `;
+        });
+
+        contentHTML = `
+            <!-- Dynamic Sample Controller Toolbar -->
+            <div class="sample-controller-toolbar">
+                <div class="sample-count-badge">
+                    <span>${isEn ? 'TEST SAMPLES:' : 'JUMLAH SAMPEL PENGUJIAN:'}</span>
+                    <span class="sample-count-pill" id="fa-silt-shake-sample-count-pill">
+                        ${n} ${isEn ? 'SAMPLES' : 'SAMPEL'} ${isDuplo ? '(DUPLO)' : ''}
+                    </span>
+                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
+                        ${isDuplo ? (isEn ? '• Standard Duplo Volumetric Test' : '• Standar Uji Duplo Pengendapan Tabung') : ''}
+                    </span>
+                </div>
+                <div class="sample-actions-group">
+                    <button class="btn-sample-action btn-add-sample" onclick="addFASiltShakeSample()" ${n >= 6 ? 'disabled' : ''} title="Tambah Kolom Sampel">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        ${isEn ? 'Add Sample' : 'Tambah Sampel'}
+                    </button>
+                    <button class="btn-sample-action btn-remove-sample" onclick="removeFASiltShakeSample()" ${n <= 1 ? 'disabled' : ''} title="Kurangi Kolom Sampel">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        ${isEn ? 'Remove Sample' : 'Kurangi Sampel'}
+                    </button>
+                    <button class="btn-sample-action btn-reset-sample" onclick="resetFASiltShakeDefaults()" title="Kembali ke Standar Duplo">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                        ${isEn ? 'Reset Default' : 'Reset Standar'}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table 1: Lab Data Input Grid -->
+            <div class="testing-calc-card" style="width: 100%;">
+                <div class="testing-calc-header">
+                    <span>${isEn ? 'TABLE 1: SETTLEMENT MEASUREMENT DATA (VOLUMETRIC)' : 'TABEL 1: DATA PENGUKURAN METODE KOCOKAN (VOLUMETRIK)'}</span>
+                    <span class="telemetry-chip live-chip"><span class="dot-live"></span>CYLINDER TUBE</span>
+                </div>
+                <div class="fa-table-scroll-wrap">
+                    <table class="fa-report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">No</th>
+                                <th>${isEn ? 'Measurement Parameter' : 'Parameter Pengukuran Benda Uji'}</th>
+                                <th style="text-align: center;">${isEn ? 'Lab Symbol' : 'Notasi Lab'}</th>
+                                <th style="text-align: center;">${isEn ? 'Unit' : 'Satuan'}</th>
+                                ${sampleHeadersHTML}
+                            </tr>
+                        </thead>
+                        <tbody id="fa-silt-shake-input-tbody">
+                            ${inputRowsHTML}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                    ${isEn 
+                        ? '*Specimen placed in 250 mL graduated cylinder with water/brine, shaken vigorously for 1-2 minutes, then settled undisturbed for 24 hours.' 
+                        : '*Pasir dimasukkan ke dalam gelas ukur 250 mL berisi air/larutan garam, dikocok kuat 1-2 menit, lalu didiamkan mengendap selama 24 jam.'}
+                </div>
+            </div>
+
+            <!-- Table 2: Intermediate & Output Calculation Grid -->
+            <div class="testing-calc-card" style="width: 100%; margin-top: 14px;">
+                <div class="testing-calc-header">
+                    <span>${isEn ? 'TABLE 2: SILT CONTENT CALCULATION RESULTS (SETTLEMENT METHOD)' : 'TABEL 2: HASIL PERHITUNGAN KANDUNGAN LUMPUR (METODE KOCOKAN)'}</span>
+                    <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED REAL-TIME</span>
+                </div>
+                <div class="fa-table-scroll-wrap">
+                    <table class="fa-report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">No</th>
+                                <th>${isEn ? 'Calculation Parameter' : 'Parameter Hasil Perhitungan'}</th>
+                                <th>${isEn ? 'Formula / Calculation Notation' : 'Notasi &amp; Rumus Perhitungan'}</th>
+                                <th style="text-align: center;">${isEn ? 'Unit' : 'Satuan'}</th>
+                                ${sampleHeadersHTML}
+                                <th class="fa-avg-col-header">${isEn ? 'AVERAGE' : 'RATA-RATA'}</th>
+                                <th style="text-align: center;">${isEn ? 'SNI 2816:2014 Threshold' : 'Batas SNI 2816:2014'}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fa-silt-shake-output-tbody">
+                            <!-- Populated dynamically via calcFASiltShake -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="fa-silt-shake-summary-metrics">
+                    <!-- Populated dynamically via calcFASiltShake -->
+                </div>
+            </div>
+        `;
+    } else {
+        // Tab 3: Summary & Method Comparison
+        contentHTML = renderFASiltComparisonTab(isEn);
+    }
+
+    canvasView.innerHTML = `
+        <div class="module-workspace-container">
+            ${bannerHTML}
+            ${tabsHTML}
+            ${contentHTML}
+        </div>
+    `;
+
+    // Trigger initial calculation based on tab
+    if (faSiltActiveTab === 'wash') {
+        calcFASiltWash();
+    } else if (faSiltActiveTab === 'shake') {
+        calcFASiltShake();
+    }
+}
+
+function calcFASiltWash() {
+    const isEn = (currentLang === 'EN');
+    const n = faSiltWashSamples.length;
+    if (n === 0) return;
+
+    const sampleResults = faSiltWashSamples.map(s => {
+        const aah = Number(s.aah) || 0;
+        const bah = Number(s.bah) || 0;
+        const lost = Math.max(0, aah - bah);
+        const pct = aah > 0 ? ((lost / aah) * 100) : 0;
+        return { aah, bah, lost, pct };
+    });
+
+    const avgAah = sampleResults.reduce((acc, c) => acc + c.aah, 0) / n;
+    const avgBah = sampleResults.reduce((acc, c) => acc + c.bah, 0) / n;
+    const avgLost = sampleResults.reduce((acc, c) => acc + c.lost, 0) / n;
+    const avgPct = sampleResults.reduce((acc, c) => acc + c.pct, 0) / n;
+
+    const isPass = (avgPct <= 5.00);
+
+    const tbody = document.getElementById('fa-silt-wash-output-tbody');
+    if (tbody) {
+        let r1Cells = '', r2Cells = '';
+        sampleResults.forEach(r => {
+            r1Cells += `<td class="fa-sample-cell fa-val-mono">${r.lost.toFixed(1)}</td>`;
+            const rPass = (r.pct <= 5.0);
+            r2Cells += `<td class="fa-sample-cell fa-val-mono ${rPass ? 'status-pass' : 'status-fail'}">${r.pct.toFixed(2)}%</td>`;
+        });
+
+        tbody.innerHTML = `
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">1</td>
+                <td style="font-weight:600;">${isEn ? 'Mass of Silt Washed Away' : 'Berat Lumpur / Debu Lolos Saringan #200 (AAH - BAH)'}</td>
+                <td><span class="formula-code">AAH - BAH</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">gram</td>
+                ${r1Cells}
+                <td class="fa-avg-col-cell">${avgLost.toFixed(1)}</td>
+                <td style="text-align:center; color:var(--text-secondary);">${isEn ? 'Loss on Washing' : 'Massa Lolos Saringan'}</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">2</td>
+                <td style="font-weight:600;">${isEn ? 'Silt Content (Wash Method)' : 'Kadar Lumpur Pasir (Metode Cucian)'}</td>
+                <td><span class="formula-code">((AAH - BAH) / AAH) &times; 100%</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">%</td>
+                ${r2Cells}
+                <td class="fa-avg-col-cell ${isPass ? 'status-pass' : 'status-fail'}">${avgPct.toFixed(2)}%</td>
+                <td style="text-align:center; font-weight:700; color:var(--accent-emerald);">&le; 5.00%</td>
+            </tr>
+        `;
+    }
+
+    const summaryContainer = document.getElementById('fa-silt-wash-summary-metrics');
+    if (summaryContainer) {
+        summaryContainer.innerHTML = `
+            <div class="fa-summary-metrics-grid">
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Initial Dry Mass (AAH)' : 'Berat Kering Semula (AAH)'}</span>
+                    <span class="metric-val">${avgAah.toFixed(1)} <span style="font-size:12px; font-weight:600; color:var(--text-muted);">g</span></span>
+                    <span class="metric-sub" style="color:var(--chapter-accent, #f59e0b);">
+                        ${isEn ? 'Before Sieve Washing' : 'Sebelum Pencucian #200'}
+                    </span>
+                </div>
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Dry Mass After Wash (BAH)' : 'Berat Setelah Dicuci (BAH)'}</span>
+                    <span class="metric-val">${avgBah.toFixed(1)} <span style="font-size:12px; font-weight:600; color:var(--text-muted);">g</span></span>
+                    <span class="metric-sub" style="color:var(--text-secondary);">
+                        ${isEn ? 'Retained on #200 (75 µm)' : 'Tertahan Saringan #200'}
+                    </span>
+                </div>
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Avg Washed Silt Mass' : 'Berat Lumpur Terbuang'}</span>
+                    <span class="metric-val" style="color:#38bdf8;">${avgLost.toFixed(1)} <span style="font-size:12px; font-weight:600; color:var(--text-muted);">g</span></span>
+                    <span class="metric-sub" style="color:var(--text-secondary);">
+                        ${isEn ? 'Particles Passing #200' : 'Partikel Lumpur & Lempung'}
+                    </span>
+                </div>
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Average Silt Content' : 'Kadar Lumpur Rata-rata'}</span>
+                    <span class="metric-val ${isPass ? 'status-pass' : 'status-fail'}">${avgPct.toFixed(2)}%</span>
+                    <span class="metric-sub ${isPass ? 'status-pass' : 'status-fail'}">
+                        ${isPass 
+                            ? (isEn ? '✓ Pass (Max. 5.00%)' : '✓ Memenuhi SNI (&le; 5.00%)') 
+                            : (isEn ? '✗ Exceeds Limit (> 5.00%)' : '✗ Melebihi Batas (> 5.00%)')}
+                    </span>
+                </div>
+            </div>
+
+            <!-- SNI 2816:2014 Compliance Banner -->
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:12px 16px; background:${isPass ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border:1px solid ${isPass ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}; border-radius:8px; margin-top:14px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:18px;">${isPass ? '✓' : '⚠️'}</span>
+                    <div>
+                        <div style="color:${isPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'}; font-weight:800; font-size:12.5px;">
+                            ${isPass 
+                                ? (isEn ? 'STATUS: MEETS SNI 2816:2014 / ASTM C117 SPECIFICATIONS (≤ 5.0%)' : 'STATUS: MEMENUHI SYARAT (SNI 2816:2014 <= 5%)') 
+                                : (isEn ? 'STATUS: EXCEEDS MAXIMUM PERMISSIBLE SILT CONTENT (> 5.0%)' : 'STATUS: TIDAK MEMENUHI SYARAT (> 5%)')}
+                        </div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+                            ${isPass 
+                                ? (isEn 
+                                    ? 'Aggregate is sufficiently clean and suitable for structural concrete mix design.' 
+                                    : 'Agregat cukup bersih dan layak digunakan sebagai bahan campuran beton.') 
+                                : (isEn 
+                                    ? 'Aggregate must be re-washed before use to avoid severe strength reduction and weak cement paste bonding.' 
+                                    : 'Agregat perlu pencucian ulang sebelum digunakan.')}
+                        </div>
+                    </div>
+                </div>
+                <div class="telemetry-chip ${isPass ? 'live-chip' : ''}" style="color:${isPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'};">
+                    ${isPass ? 'SNI 2816 COMPLIANT' : 'RE-WASH REQUIRED'}
+                </div>
+            </div>
+        `;
+    }
+
+    // Keep legacy fa-silt-result-box updated for backward compatibility
+    const resBox = document.getElementById('fa-silt-result-box');
     if (resBox) {
         resBox.innerHTML = `
             <div class="result-row">
-                <span class="result-label">Berat Lumpur Lolos #200 (W1 - W2):</span>
-                <span class="result-val">${siltWeight.toFixed(1)} gram</span>
+                <span class="result-label">Berat Lumpur Lolos #200 (AAH - BAH):</span>
+                <span class="result-val">${avgLost.toFixed(1)} gram</span>
             </div>
             <div class="result-row">
                 <span class="result-label">Kadar Lumpur Terukur:</span>
-                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}" style="font-size:14px; font-weight:800;">${siltPct}%</span>
+                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}" style="font-size:14px; font-weight:800;">${avgPct.toFixed(2)}%</span>
             </div>
             <div class="result-row">
-                <span class="result-label">Batas Maksimum SNI 03-4142:</span>
+                <span class="result-label">Batas Maksimum SNI 2816:2014:</span>
                 <span class="result-val">&le; 5.0%</span>
             </div>
             <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
                 <span class="result-label">Status Kelayakan Pasir:</span>
-                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}">${isPass ? '✓ MEMENUHI SYARAT BETON' : '✗ PERLU PENCUCIAN ULANG'}</span>
+                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}">${isPass ? '✓ MEMENUHI SYARAT (SNI 2816:2014 <= 5%)' : '✗ TIDAK MEMENUHI SYARAT (> 5%)'}</span>
             </div>
         `;
     }
 }
+
+function calcFASiltShake() {
+    const isEn = (currentLang === 'EN');
+    const n = faSiltShakeSamples.length;
+    if (n === 0) return;
+
+    const sampleResults = faSiltShakeSamples.map(s => {
+        const vl = Number(s.vl) || 0;
+        const vah = Number(s.vah) || 0;
+        const pct = vah > 0 ? ((vl / vah) * 100) : 0;
+        return { vl, vah, pct };
+    });
+
+    const avgVL = sampleResults.reduce((acc, c) => acc + c.vl, 0) / n;
+    const avgVAH = sampleResults.reduce((acc, c) => acc + c.vah, 0) / n;
+    const avgPct = sampleResults.reduce((acc, c) => acc + c.pct, 0) / n;
+
+    const isPass = (avgPct <= 5.00);
+
+    const tbody = document.getElementById('fa-silt-shake-output-tbody');
+    if (tbody) {
+        let r1Cells = '', r2Cells = '', r3Cells = '';
+        sampleResults.forEach(r => {
+            r1Cells += `<td class="fa-sample-cell fa-val-mono">${r.vl.toFixed(1)}</td>`;
+            r2Cells += `<td class="fa-sample-cell fa-val-mono">${r.vah.toFixed(1)}</td>`;
+            const rPass = (r.pct <= 5.0);
+            r3Cells += `<td class="fa-sample-cell fa-val-mono ${rPass ? 'status-pass' : 'status-fail'}">${r.pct.toFixed(2)}%</td>`;
+        });
+
+        tbody.innerHTML = `
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">1</td>
+                <td style="font-weight:600;">${isEn ? 'Volume of Settled Silt Layer (VL)' : 'Volume Endapan Lumpur Lapisan Atas (VL)'}</td>
+                <td><span class="formula-code">VL</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">mL</td>
+                ${r1Cells}
+                <td class="fa-avg-col-cell">${avgVL.toFixed(1)}</td>
+                <td style="text-align:center; color:var(--text-secondary);">${isEn ? 'Upper Layer' : 'Lapisan Atas'}</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">2</td>
+                <td style="font-weight:600;">${isEn ? 'Volume of Settled Sand (VAH)' : 'Volume Pasir Bersih Lapisan Bawah (VAH)'}</td>
+                <td><span class="formula-code">VAH</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">mL</td>
+                ${r2Cells}
+                <td class="fa-avg-col-cell">${avgVAH.toFixed(1)}</td>
+                <td style="text-align:center; color:var(--text-secondary);">${isEn ? 'Lower Layer' : 'Lapisan Bawah Pasir'}</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">3</td>
+                <td style="font-weight:600;">${isEn ? 'Volumetric Silt Content' : 'Kandungan Lumpur (Metode Kocokan)'}</td>
+                <td><span class="formula-code">(VL / VAH) &times; 100%</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">%</td>
+                ${r3Cells}
+                <td class="fa-avg-col-cell ${isPass ? 'status-pass' : 'status-fail'}">${avgPct.toFixed(2)}%</td>
+                <td style="text-align:center; font-weight:700; color:var(--accent-emerald);">&le; 5.00%</td>
+            </tr>
+        `;
+    }
+
+    const summaryContainer = document.getElementById('fa-silt-shake-summary-metrics');
+    if (summaryContainer) {
+        summaryContainer.innerHTML = `
+            <div class="fa-summary-metrics-grid">
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Avg Silt Volume (VL)' : 'Rata-rata Volume Lumpur (VL)'}</span>
+                    <span class="metric-val" style="color:#f59e0b;">${avgVL.toFixed(1)} <span style="font-size:12px; font-weight:600; color:var(--text-muted);">mL</span></span>
+                    <span class="metric-sub" style="color:var(--chapter-accent, #f59e0b);">
+                        ${isEn ? 'Top Colloidal Silt Layer' : 'Endapan Lumpur Mengapung'}
+                    </span>
+                </div>
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Avg Sand Volume (VAH)' : 'Rata-rata Volume Pasir (VAH)'}</span>
+                    <span class="metric-val">${avgVAH.toFixed(1)} <span style="font-size:12px; font-weight:600; color:var(--text-muted);">mL</span></span>
+                    <span class="metric-sub" style="color:var(--text-secondary);">
+                        ${isEn ? 'Settled Fine Aggregate Body' : 'Massa Pasir Terpadatkan'}
+                    </span>
+                </div>
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Volumetric Silt Ratio' : 'Kadar Lumpur Volumetrik'}</span>
+                    <span class="metric-val ${isPass ? 'status-pass' : 'status-fail'}">${avgPct.toFixed(2)}%</span>
+                    <span class="metric-sub ${isPass ? 'status-pass' : 'status-fail'}">
+                        ${isPass 
+                            ? (isEn ? '✓ Pass (Max. 5.00%)' : '✓ Memenuhi Batas (&le; 5.00%)') 
+                            : (isEn ? '✗ Exceeds Limit (> 5.00%)' : '✗ Melebihi Batas (> 5.00%)')}
+                    </span>
+                </div>
+            </div>
+
+            <!-- SNI Compliance Banner -->
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:12px 16px; background:${isPass ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border:1px solid ${isPass ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}; border-radius:8px; margin-top:14px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:18px;">${isPass ? '✓' : '⚠️'}</span>
+                    <div>
+                        <div style="color:${isPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'}; font-weight:800; font-size:12.5px;">
+                            ${isPass 
+                                ? (isEn ? 'STATUS: MEETS VOLUMETRIC SETTLEMENT SPECIFICATION (≤ 5.0%)' : 'STATUS: MEMENUHI SYARAT (SNI 2816:2014 <= 5%)') 
+                                : (isEn ? 'STATUS: EXCEEDS ALLOWABLE FIELD SILT LEVEL (> 5.0%)' : 'STATUS: TIDAK MEMENUHI SYARAT (> 5%)')}
+                        </div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+                            ${isPass 
+                                ? (isEn 
+                                    ? 'Aggregate is sufficiently clean and suitable for structural concrete mix design.' 
+                                    : 'Agregat cukup bersih dan layak digunakan sebagai bahan campuran beton.') 
+                                : (isEn 
+                                    ? 'Aggregate must be re-washed before use to avoid severe strength reduction and weak cement paste bonding.' 
+                                    : 'Agregat perlu pencucian ulang sebelum digunakan.')}
+                        </div>
+                    </div>
+                </div>
+                <div class="telemetry-chip ${isPass ? 'live-chip' : ''}" style="color:${isPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'};">
+                    ${isPass ? 'SETTLEMENT COMPLIANT' : 'RE-WASH REQUIRED'}
+                </div>
+            </div>
+        `;
+    }
+}
+
+function renderFASiltComparisonTab(isEn) {
+    // Calculate current averages for both methods
+    const washN = faSiltWashSamples.length;
+    const washAvg = washN > 0 
+        ? (faSiltWashSamples.reduce((acc, s) => acc + (s.aah > 0 ? ((Math.max(0, s.aah - s.bah) / s.aah) * 100) : 0), 0) / washN) 
+        : 0;
+    const washPass = (washAvg <= 5.0);
+
+    const shakeN = faSiltShakeSamples.length;
+    const shakeAvg = shakeN > 0 
+        ? (faSiltShakeSamples.reduce((acc, s) => acc + (s.vah > 0 ? ((s.vl / s.vah) * 100) : 0), 0) / shakeN) 
+        : 0;
+    const shakePass = (shakeAvg <= 5.0);
+
+    const allPass = (washPass && shakePass);
+
+    return `
+        <!-- Side-by-side Method Comparison Cards -->
+        <div class="fa-comparison-grid">
+            <div class="fa-comparison-card">
+                <div class="fa-comparison-header">
+                    <span class="fa-comparison-title">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                        ${isEn ? '1. Wash Method (Gravimetric)' : '1. METODE CUCIAN (GRAVIMETRI)'}
+                    </span>
+                    <span class="telemetry-chip ${washPass ? 'live-chip' : ''}" style="color:${washPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'};">
+                        ${washPass ? 'MEMENUHI' : 'TIDAK MEMENUHI'}
+                    </span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                    <span style="font-size:11px; color:var(--text-muted);">${isEn ? 'Average Silt Content:' : 'Rata-rata Kadar Lumpur:'}</span>
+                    <span style="font-size:22px; font-weight:800; font-family:var(--font-mono); color:${washPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'};">${washAvg.toFixed(2)}%</span>
+                </div>
+                <div style="font-size:11px; color:var(--text-secondary); line-height:1.5;">
+                    <strong>${isEn ? 'Standard Reference:' : 'Standar Acuan:'}</strong> ASTM C117 / SNI 2417:2008 / SNI 2816:2014<br>
+                    <strong>${isEn ? 'Principle:' : 'Prinsip:'}</strong> ${isEn ? 'Oven-dry mass loss after washing over sieve #200 (75 µm).' : 'Selisih berat kering oven sebelum & sesudah pencucian saringan No. 200.'}<br>
+                    <strong>${isEn ? 'Role:' : 'Peran:'}</strong> <em>${isEn ? 'Referee test standard with highest analytical precision.' : 'Standar pengujian utama / penentu (referee method) yang paling akurat.'}</em>
+                </div>
+            </div>
+
+            <div class="fa-comparison-card">
+                <div class="fa-comparison-header">
+                    <span class="fa-comparison-title">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                        ${isEn ? '2. Settlement Method (Volumetric)' : '2. METODE KOCOKAN (VOLUMETRIK)'}
+                    </span>
+                    <span class="telemetry-chip ${shakePass ? 'live-chip' : ''}" style="color:${shakePass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'};">
+                        ${shakePass ? 'MEMENUHI' : 'TIDAK MEMENUHI'}
+                    </span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                    <span style="font-size:11px; color:var(--text-muted);">${isEn ? 'Average Silt Content:' : 'Rata-rata Kadar Lumpur:'}</span>
+                    <span style="font-size:22px; font-weight:800; font-family:var(--font-mono); color:${shakePass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'};">${shakeAvg.toFixed(2)}%</span>
+                </div>
+                <div style="font-size:11px; color:var(--text-secondary); line-height:1.5;">
+                    <strong>${isEn ? 'Standard Reference:' : 'Standar Acuan:'}</strong> SNI 2816:2014 / Field Settlement Method<br>
+                    <strong>${isEn ? 'Principle:' : 'Prinsip:'}</strong> ${isEn ? 'Volumetric sedimentation height ratio in 250 mL graduated cylinder after 24 hrs.' : 'Rasio volume endapan lumpur terhadap volume pasir pada tabung silinder 24 jam.'}<br>
+                    <strong>${isEn ? 'Role:' : 'Peran:'}</strong> <em>${isEn ? 'Rapid field screening test without oven equipment.' : 'Uji cepat di lapangan (field screening) tanpa memerlukan oven laboratorium.'}</em>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparative Specification Table -->
+        <div class="testing-calc-card" style="width: 100%; margin-top: 16px;">
+            <div class="testing-calc-header">
+                <span>${isEn ? 'TABLE 3: TECHNICAL COMPARISON OF TESTING METHODS' : 'TABEL 3: KOMPARASI TEKNIS METODE PENGUJIAN LUMPUR'}</span>
+                <span class="telemetry-chip" style="color:var(--chapter-accent, #f59e0b);">SNI 2816:2014</span>
+            </div>
+            <div class="fa-table-scroll-wrap">
+                <table class="fa-report-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px; text-align: center;">No</th>
+                            <th>${isEn ? 'Comparison Aspect' : 'Aspek Komparasi'}</th>
+                            <th>${isEn ? 'Method 1: Wash (Cucian)' : 'Metode 1: Pencucian Saringan (Cucian)'}</th>
+                            <th>${isEn ? 'Method 2: Settlement (Kocokan)' : 'Metode 2: Pengendapan Tabung (Kocokan)'}</th>
+                            <th style="text-align: center;">${isEn ? 'SNI 2816 Requirement' : 'Syarat SNI 2816:2014'}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="text-align:center; font-weight:700; color:var(--text-muted);">1</td>
+                            <td style="font-weight:600;">${isEn ? 'Standard Reference' : 'Standar Acuan'}</td>
+                            <td>SNI 2417:2008 / ASTM C117</td>
+                            <td>SNI 2816:2014 (Uji Cepat)</td>
+                            <td style="text-align:center; color:var(--text-secondary);">&le; 5.0%</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center; font-weight:700; color:var(--text-muted);">2</td>
+                            <td style="font-weight:600;">${isEn ? 'Measurement Unit & Metric' : 'Parameter & Satuan'}</td>
+                            <td>Massa Kering (gram)</td>
+                            <td>Volume Endapan (mL / cc)</td>
+                            <td style="text-align:center; color:var(--text-secondary);">-</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center; font-weight:700; color:var(--text-muted);">3</td>
+                            <td style="font-weight:600;">${isEn ? 'Testing Duration' : 'Waktu Pengujian'}</td>
+                            <td>± 24 Jam (Oven-Drying 110±5°C)</td>
+                            <td>24 Jam Pengendapan di Tabung</td>
+                            <td style="text-align:center; color:var(--text-secondary);">-</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center; font-weight:700; color:var(--text-muted);">4</td>
+                            <td style="font-weight:600;">${isEn ? 'Average Test Result' : 'Nilai Rata-rata Terukur'}</td>
+                            <td class="fa-val-mono ${washPass ? 'status-pass' : 'status-fail'}">${washAvg.toFixed(2)}%</td>
+                            <td class="fa-val-mono ${shakePass ? 'status-pass' : 'status-fail'}">${shakeAvg.toFixed(2)}%</td>
+                            <td style="text-align:center; font-weight:700; color:var(--accent-emerald);">&le; 5.00%</td>
+                        </tr>
+                        <tr>
+                            <td style="text-align:center; font-weight:700; color:var(--text-muted);">5</td>
+                            <td style="font-weight:600;">${isEn ? 'Evaluation Status' : 'Status Evaluasi'}</td>
+                            <td class="${washPass ? 'status-pass' : 'status-fail'}" style="font-weight:800;">${washPass ? '✓ MEMENUHI' : '✗ TIDAK MEMENUHI'}</td>
+                            <td class="${shakePass ? 'status-pass' : 'status-fail'}" style="font-weight:800;">${shakePass ? '✓ MEMENUHI' : '✗ TIDAK MEMENUHI'}</td>
+                            <td style="text-align:center; font-weight:700; color:var(--accent-emerald);">${allPass ? 'LAYAK' : 'PERLU CUCI'}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Integrated Recommendation Banner -->
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:12px 16px; background:${allPass ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border:1px solid ${allPass ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}; border-radius:8px; margin-top:14px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:18px;">${allPass ? '✓' : '⚠️'}</span>
+                    <div>
+                        <div style="color:${allPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'}; font-weight:800; font-size:12.5px;">
+                            ${allPass 
+                                ? (isEn ? 'INTEGRATED CONCLUSION: AGGREGATE MEETS SPECIFICATIONS (SUITABLE FOR CONCRETE)' : 'KESIMPULAN TERPADU: MEMENUHI SYARAT (SNI 2816:2014 <= 5%)') 
+                                : (isEn ? 'INTEGRATED CONCLUSION: EXCESSIVE SILT DETECTED (RE-WASHING REQUIRED)' : 'KESIMPULAN TERPADU: TIDAK MEMENUHI SYARAT (> 5%)')}
+                        </div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+                            ${allPass 
+                                ? (isEn 
+                                    ? 'Both methods confirm aggregate cleanliness (<= 5.0%). Suitable for structural concrete without washing.' 
+                                    : 'Agregat cukup bersih dan layak digunakan sebagai bahan campuran beton.') 
+                                : (isEn 
+                                    ? 'One or more methods indicate silt content > 5.0%. Aggregate must be thoroughly re-washed to avoid bond failure.' 
+                                    : 'Agregat perlu pencucian ulang sebelum digunakan.')}
+                        </div>
+                    </div>
+                </div>
+                <div class="telemetry-chip ${allPass ? 'live-chip' : ''}" style="color:${allPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'};">
+                    ${allPass ? 'SNI 2816:2014 PASSED' : 'RE-WASHING REQUIRED'}
+                </div>
+            </div>
+        </div>
+    `;
+}
+function renderFAGenericView(subViewId) {
+    let title = "Pengujian Agregat Halus";
+    let code = "SNI 1970";
+    let desc = "";
+
+    if (subViewId === 'fa-unit-weight') {
+        title = "BOBOT ISI DAN RONGGA UDARA DALAM AGREGAT HALUS";
+        code = "SNI 03-4804-1998 / ASTM C29";
+        desc = "Penentuan berat volume gembur dan padat (rodding) serta persentase rongga udara antar-butir pasir.";
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg></span>
+                            ${title}
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
+                    </div>
+                    <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> ${code}</span>
+                </div>
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>PARAMETER BEJANA UKUR KALIBRASI</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Volume Bejana Ukur (V)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-uw-vol" value="5.0" step="0.1" oninput="calcFAUnitWeight()">
+                                <span class="testing-input-unit">Liter</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Bejana Kosong (Wb)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-uw-wempty" value="2.5" step="0.1" oninput="calcFAUnitWeight()">
+                                <span class="testing-input-unit">kg</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Bejana + Pasir Padat / Rodding (Wp)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-uw-wfull" value="10.8" step="0.1" oninput="calcFAUnitWeight()">
+                                <span class="testing-input-unit">kg</span>
+                            </div>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Berat Jenis SSD Pasir (Gssd)</label>
+                            <div class="testing-input-row">
+                                <input type="number" id="fa-uw-gssd" value="2.60" step="0.01" oninput="calcFAUnitWeight()">
+                                <span class="testing-input-unit">gr/cm&sup3;</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>HASIL BOBOT ISI &amp; RONGGA UDARA</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
+                        </div>
+                        <div class="testing-result-box" id="fa-uw-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Standar SNI 03-4804: Bobot isi padat pasir umumnya berkisar antara 1400 - 1750 kg/m&sup3;.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcFAUnitWeight();
+    } else if (subViewId === 'fa-organic') {
+        title = "UJI KANDUNGAN ZAT ORGANIK (METODE NaOH 3%)";
+        code = "SNI 03-2816-1992 / ASTM C40";
+        desc = "Identifikasi kandungan senyawa organik asam berbahaya menggunakan larutan NaOH dan pembanding warna standar Gardner.";
+        canvasView.innerHTML = `
+            <div class="module-workspace-container">
+                <div class="module-header-banner">
+                    <div>
+                        <div class="module-header-title">
+                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 2v7.31L4.35 19.46A2 2 0 0 0 6.09 22h11.82a2 2 0 0 0 1.74-2.54L14 9.31V2"></path></svg></span>
+                            ${title}
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
+                    </div>
+                    <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> ${code}</span>
+                </div>
+                <div class="testing-calc-grid">
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>HASIL REAKSI CAIRAN REAGEN SETELAH 24 JAM</span>
+                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>COLOR COMPARATOR</span>
+                        </div>
+                        <div class="testing-input-group">
+                            <label>Warna Cairan di Atas Pasir (Standar Gardner)</label>
+                            <select class="custom-select" id="fa-org-plate" onchange="calcFAOrganic()">
+                                <option value="1">Plat No. 1: Kuning Sangat Muda (Sangat Bersih)</option>
+                                <option value="2" selected>Plat No. 2: Kuning Muda (Bersih / Layak)</option>
+                                <option value="3">Plat No. 3: Kuning Kemerahan (Batas Ambang SNI)</option>
+                                <option value="4">Plat No. 4: Coklat Muda (Melebihi Ambang Batas)</option>
+                                <option value="5">Plat No. 5: Coklat Tua / Gelap (Ditolak / Bahaya)</option>
+                            </select>
+                        </div>
+                        <div style="background: rgba(8, 16, 36, 0.85); border: 1px solid var(--border-dim); border-radius: 8px; padding: 12px; margin-top: 12px;">
+                            <div style="font-size: 11px; font-weight: 800; color: #f59e0b; margin-bottom: 6px;">PROSEDUR PENGUJIAN:</div>
+                            <ol style="font-size: 11px; color: var(--text-muted); margin: 0; padding-left: 18px; line-height: 1.5;">
+                                <li>Isi botol kaca dengan 130 ml contoh pasir.</li>
+                                <li>Tambahkan larutan NaOH 3% hingga volume 200 ml.</li>
+                                <li>Kocok kuat-kuat selama 10 menit lalu diamkan 24 jam.</li>
+                                <li>Bandingkan warna larutan jernih di atas pasir dengan pelat standar warna Gardner.</li>
+                            </ol>
+                        </div>
+                    </div>
+                    <div class="testing-calc-card">
+                        <div class="testing-calc-header">
+                            <span>VERIFIKASI PERSYARATAN BETON STRUKTURAL</span>
+                            <span class="telemetry-chip" style="color:var(--accent-emerald);">SNI COMPLIANCE</span>
+                        </div>
+                        <div class="testing-result-box" id="fa-org-result-box"></div>
+                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
+                            *Pasal SNI 03-2816: Pasir yang menghasilkan warna lebih tua dari Plat No. 3 tidak boleh digunakan untuk beton struktural kecuali pengujian kuat tekan mortar 7 &amp; 28 hari mencapai &ge; 95% dari pasir pembanding.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        calcFAOrganic();
+    }
+}
+
 
 function calcFAUnitWeight() {
     let volL = parseFloat(document.getElementById('fa-uw-vol')?.value) || 5.0;
@@ -7899,6 +8702,7 @@ function calcFAOrganic() {
         `;
     }
 }
+
 
 function renderFineAggregateReferenceGuide(subViewId) {
     if (!panelView) return;
