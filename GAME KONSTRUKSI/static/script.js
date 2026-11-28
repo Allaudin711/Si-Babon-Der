@@ -6620,6 +6620,8 @@ function renderFineAggregateWorkspace(subViewId) {
     // Sub-view definitions
     if (subViewId === 'fa-spec-grav') {
         renderFASpecGravWorkspace();
+    } else if (subViewId === 'fa-moisture') {
+        renderFAMoistureWorkspace();
     } else if (subViewId === 'fa-sieve') {
         canvasView.innerHTML = `
             <div class="module-workspace-container">
@@ -7197,65 +7199,7 @@ function renderFAGenericView(subViewId) {
     let code = "SNI 1970";
     let desc = "";
 
-    if (subViewId === 'fa-moisture') {
-        title = "KADAR AIR ASLI AGREGAT HALUS (PASIR)";
-        code = "SNI 03-1971-1990 / ASTM C566";
-        desc = "Pengukuran kadar air bebas pasir untuk koreksi takaran air pencampur beton di batching plant.";
-        canvasView.innerHTML = `
-            <div class="module-workspace-container">
-                <div class="module-header-banner">
-                    <div>
-                        <div class="module-header-title">
-                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span>
-                            ${title}
-                        </div>
-                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
-                    </div>
-                    <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> ${code}</span>
-                </div>
-                <div class="testing-calc-grid">
-                    <div class="testing-calc-card">
-                        <div class="testing-calc-header">
-                            <span>PARAMETER PENIMBANGAN OVEN (110 &plusmn; 5)&deg;C</span>
-                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Cawan / Wadah Kosong (W1)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-m-w1" value="150.0" step="0.1" oninput="calcFAMoisture()">
-                                <span class="testing-input-unit">gram</span>
-                            </div>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Cawan + Contoh Pasir Basah (W2)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-m-w2" value="650.0" step="0.1" oninput="calcFAMoisture()">
-                                <span class="testing-input-unit">gram</span>
-                            </div>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Cawan + Contoh Kering Oven (W3)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-m-w3" value="625.0" step="0.1" oninput="calcFAMoisture()">
-                                <span class="testing-input-unit">gram</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="testing-calc-card">
-                        <div class="testing-calc-header">
-                            <span>HASIL KALKULASI KADAR AIR</span>
-                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
-                        </div>
-                        <div class="testing-result-box" id="fa-m-result-box"></div>
-                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
-                            *Rumus SNI: w = [(W2 - W3) / (W3 - W1)] &times; 100%. Digunakan untuk mengoreksi penambahan air pada mix design.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        calcFAMoisture();
-    } else if (subViewId === 'fa-silt') {
+    if (subViewId === 'fa-silt') {
         title = "UJI KANDUNGAN LUMPUR / LOLOS SARINGAN NO. 200 (75 &mu;m)";
         code = "SNI 03-4142-1996 / ASTM C117";
         desc = "Pengukuran kadar lumpur dan partikel lempung halus pada pasir beton dengan metode pencucian saringan.";
@@ -7430,33 +7374,433 @@ function renderFAGenericView(subViewId) {
     }
 }
 
+/* ==========================================================================
+   DYNAMIC MULTI-SAMPLE MOISTURE CONTENT TEST (ASTM C566 / SNI 03-1971-1990)
+   ========================================================================== */
+const DEFAULT_FA_MOISTURE_SAMPLES = [
+    { name: 'Sampel I', w1: 105.4, w2: 605.4, w4: 584.2 },
+    { name: 'Sampel II', w1: 108.2, w2: 608.2, w4: 586.4 }
+];
+
+let faMoistureSamples = JSON.parse(JSON.stringify(DEFAULT_FA_MOISTURE_SAMPLES));
+
+function addFAMoistureSample() {
+    if (faMoistureSamples.length >= 6) {
+        if (typeof showToast === 'function') {
+            showToast(currentLang === 'EN' ? 'Maximum 6 samples allowed' : 'Jumlah sampel maksimum adalah 6', 'warning');
+        }
+        return;
+    }
+    const idx = faMoistureSamples.length + 1;
+    const lastSample = faMoistureSamples[faMoistureSamples.length - 1];
+    faMoistureSamples.push({
+        name: currentLang === 'EN' ? `Sample ${getRomanNumeral(idx)}` : `Sampel ${getRomanNumeral(idx)}`,
+        w1: lastSample ? Number((lastSample.w1 + 2.5).toFixed(1)) : 105.0,
+        w2: lastSample ? Number((lastSample.w2 + 2.5).toFixed(1)) : 605.0,
+        w4: lastSample ? Number((lastSample.w4 + 2.2).toFixed(1)) : 584.0
+    });
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFAMoistureWorkspace();
+    if (typeof showToast === 'function') {
+        showToast(currentLang === 'EN' ? `Sample ${getRomanNumeral(idx)} added` : `Sampel ${getRomanNumeral(idx)} berhasil ditambahkan`, 'success');
+    }
+}
+
+function removeFAMoistureSample() {
+    if (faMoistureSamples.length <= 1) {
+        if (typeof showToast === 'function') {
+            showToast(currentLang === 'EN' ? 'Minimum 1 sample required' : 'Minimal harus ada 1 sampel pengujian', 'warning');
+        }
+        return;
+    }
+    const removed = faMoistureSamples.pop();
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFAMoistureWorkspace();
+    if (typeof showToast === 'function') {
+        showToast(currentLang === 'EN' ? `${removed.name} removed` : `${removed.name} dihapus`, 'info');
+    }
+}
+
+function resetFAMoistureDefaults() {
+    faMoistureSamples = JSON.parse(JSON.stringify(DEFAULT_FA_MOISTURE_SAMPLES));
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFAMoistureWorkspace();
+    if (typeof showToast === 'function') {
+        showToast(currentLang === 'EN' ? 'Reset to default Duplo samples (ASTM C566)' : 'Parameter sampel di-reset ke standar Duplo (ASTM C566)', 'info');
+    }
+}
+
+function updateFAMoistureSampleValue(sampleIdx, paramKey, val) {
+    const parsed = parseFloat(val);
+    if (!isNaN(parsed) && faMoistureSamples[sampleIdx]) {
+        faMoistureSamples[sampleIdx][paramKey] = parsed;
+        const rowMap = { w1: 0, w2: 1, w4: 2 };
+        const rowIdx = rowMap[paramKey];
+        if (rowIdx !== undefined) {
+            const rowInputs = document.querySelectorAll('#fa-m-input-tbody tr');
+            if (rowInputs[rowIdx]) {
+                const inp = rowInputs[rowIdx].querySelectorAll('input')[sampleIdx];
+                if (inp && parseFloat(inp.value) !== parsed) {
+                    inp.value = parsed;
+                }
+            }
+        }
+    }
+    calcFAMoisture();
+}
+
+function renderFAMoistureWorkspace() {
+    if (!canvasView) return;
+    canvasView.classList.add('scroll-mode');
+
+    const isEn = (currentLang === 'EN');
+    const n = faMoistureSamples.length;
+    const isDuplo = (n === 2);
+
+    let sampleHeadersHTML = '';
+    faMoistureSamples.forEach((s, idx) => {
+        const sName = isEn ? `Sample ${getRomanNumeral(idx + 1)}` : (s.name || `Sampel ${getRomanNumeral(idx + 1)}`);
+        sampleHeadersHTML += `<th class="fa-sample-col-header">${sName}</th>`;
+    });
+
+    const inputRowsDef = [
+        {
+            no: 1,
+            label: isEn ? 'Tare Mass of Pan / Container' : 'Berat Talam (Wadah Benda Uji)',
+            symbol: 'W1_AH',
+            unit: 'gram',
+            key: 'w1',
+            step: '0.1'
+        },
+        {
+            no: 2,
+            label: isEn ? 'Mass of Pan + Wet Specimen' : 'Berat Talam + Benda Uji Basah',
+            symbol: 'W2_AH',
+            unit: 'gram',
+            key: 'w2',
+            step: '0.1'
+        },
+        {
+            no: 3,
+            label: isEn ? 'Mass of Pan + Oven-Dry Specimen' : 'Berat Talam + Benda Uji Kering Oven',
+            symbol: 'W4_AH',
+            unit: 'gram',
+            key: 'w4',
+            step: '0.1'
+        }
+    ];
+
+    let inputRowsHTML = '';
+    inputRowsDef.forEach(r => {
+        let cellsHTML = '';
+        faMoistureSamples.forEach((s, sIdx) => {
+            const val = s[r.key] !== undefined ? s[r.key] : 0;
+            let legacyId = '';
+            if (sIdx === 0) {
+                if (r.key === 'w1') legacyId = 'id="fa-m-w1"';
+                else if (r.key === 'w2') legacyId = 'id="fa-m-w2"';
+                else if (r.key === 'w4') legacyId = 'id="fa-m-w3"';
+            }
+            cellsHTML += `
+                <td class="fa-sample-cell">
+                    <input type="number" class="fa-sample-input" ${legacyId} value="${val}" step="${r.step}" oninput="updateFAMoistureSampleValue(${sIdx}, '${r.key}', this.value)">
+                </td>
+            `;
+        });
+
+        inputRowsHTML += `
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">${r.no}</td>
+                <td style="font-weight:600;">${r.label}</td>
+                <td style="text-align:center;"><span class="formula-code">${r.symbol}</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">${r.unit}</td>
+                ${cellsHTML}
+            </tr>
+        `;
+    });
+
+    canvasView.innerHTML = `
+        <div class="module-workspace-container">
+            <div class="module-header-banner">
+                <div>
+                    <div class="module-header-title">
+                        <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span>
+                        ${isEn ? 'FINE AGGREGATE MOISTURE CONTENT TEST' : 'UJI KADAR AIR ASLI AGREGAT HALUS (PASIR)'}
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                        ${isEn 
+                            ? 'Oven-drying method (110 ± 5)°C to determine surface moisture for batching plant water correction.' 
+                            : 'Pengukuran kadar air bebas pasir dengan pengeringan oven (110 ± 5)°C untuk koreksi air pencampur beton.'}
+                    </div>
+                </div>
+                <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> ASTM C566 / SNI 03-1971-1990</span>
+            </div>
+
+            <!-- Dynamic Sample Controller Toolbar -->
+            <div class="sample-controller-toolbar">
+                <div class="sample-count-badge">
+                    <span>${isEn ? 'TEST SAMPLES:' : 'JUMLAH SAMPEL PENGUJIAN:'}</span>
+                    <span class="sample-count-pill" id="fa-m-sample-count-pill">
+                        ${n} ${isEn ? 'SAMPLES' : 'SAMPEL'} ${isDuplo ? '(DUPLO)' : ''}
+                    </span>
+                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
+                        ${isDuplo ? (isEn ? '• Standard Duplo ASTM C566' : '• Standar Uji Duplo ASTM C566 / SNI') : ''}
+                    </span>
+                </div>
+                <div class="sample-actions-group">
+                    <button class="btn-sample-action btn-add-sample" onclick="addFAMoistureSample()" ${n >= 6 ? 'disabled' : ''} title="Tambah Kolom Sampel">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        ${isEn ? 'Add Sample' : 'Tambah Sampel'}
+                    </button>
+                    <button class="btn-sample-action btn-remove-sample" onclick="removeFAMoistureSample()" ${n <= 1 ? 'disabled' : ''} title="Kurangi Kolom Sampel">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        ${isEn ? 'Remove Sample' : 'Kurangi Sampel'}
+                    </button>
+                    <button class="btn-sample-action btn-reset-sample" onclick="resetFAMoistureDefaults()" title="Kembali ke Standar Duplo">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                        ${isEn ? 'Reset Default' : 'Reset Standar'}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table 1: Lab Data Input Grid -->
+            <div class="testing-calc-card" style="width: 100%;">
+                <div class="testing-calc-header">
+                    <span>${isEn ? 'TABLE 1: LABORATORY RAW MEASUREMENT DATA' : 'TABEL 1: DATA PENGUKURAN LABORATORIUM (RAW LAB MEASUREMENTS)'}</span>
+                    <span class="telemetry-chip live-chip"><span class="dot-live"></span>OVEN DRYING GRID</span>
+                </div>
+                <div class="fa-table-scroll-wrap">
+                    <table class="fa-report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">No</th>
+                                <th>${isEn ? 'Measurement Parameter' : 'Parameter Pengukuran Benda Uji'}</th>
+                                <th style="text-align: center;">${isEn ? 'Lab Symbol' : 'Notasi Lab'}</th>
+                                <th style="text-align: center;">${isEn ? 'Unit' : 'Satuan'}</th>
+                                ${sampleHeadersHTML}
+                            </tr>
+                        </thead>
+                        <tbody id="fa-m-input-tbody">
+                            ${inputRowsHTML}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                    ${isEn 
+                        ? '*Specimen dried in oven at (110 ± 5)°C until reaching constant weight per ASTM C566.' 
+                        : '*Benda uji dikeringkan pada oven (110 ± 5)°C hingga mencapai berat konstan sesuai ASTM C566.'}
+                </div>
+            </div>
+
+            <!-- Table 2: Intermediate & Output Calculation Grid -->
+            <div class="testing-calc-card" style="width: 100%; margin-top: 14px;">
+                <div class="testing-calc-header">
+                    <span>${isEn ? 'TABLE 2: INTERMEDIATE & FINAL MOISTURE CONTENT RESULTS' : 'TABEL 2: HASIL PERHITUNGAN KADAR AIR (INTERMEDIATE & OUTPUT)'}</span>
+                    <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED REAL-TIME</span>
+                </div>
+                <div class="fa-table-scroll-wrap">
+                    <table class="fa-report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">No</th>
+                                <th>${isEn ? 'Calculation Parameter' : 'Parameter Hasil Perhitungan'}</th>
+                                <th>${isEn ? 'Formula / Calculation Notation' : 'Notasi &amp; Rumus Perhitungan'}</th>
+                                <th style="text-align: center;">${isEn ? 'Unit' : 'Satuan'}</th>
+                                ${sampleHeadersHTML}
+                                <th class="fa-avg-col-header">${isEn ? 'AVERAGE' : 'RATA-RATA'}</th>
+                                <th style="text-align: center;">${isEn ? 'Standard Reference' : 'Acuan Standar'}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fa-m-output-tbody">
+                            <!-- Populated dynamically via calcFAMoisture -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Summary Metrics & Compliance Verification -->
+                <div id="fa-m-summary-metrics">
+                    <!-- Populated dynamically via calcFAMoisture -->
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Trigger initial calculations
+    calcFAMoisture();
+}
+
 function calcFAMoisture() {
-    let w1 = parseFloat(document.getElementById('fa-m-w1')?.value) || 150.0;
-    let w2 = parseFloat(document.getElementById('fa-m-w2')?.value) || 650.0;
-    let w3 = parseFloat(document.getElementById('fa-m-w3')?.value) || 625.0;
+    const isEn = (currentLang === 'EN');
+    const n = faMoistureSamples.length;
 
-    let waterWeight = w2 - w3;
-    let dryWeight = w3 - w1;
-    let moisturePct = dryWeight > 0 ? ((waterWeight / dryWeight) * 100).toFixed(2) : '0.00';
+    if (n === 0) return;
 
-    let resBox = document.getElementById('fa-m-result-box');
+    // Calculate each sample
+    const sampleResults = faMoistureSamples.map(s => {
+        const w1 = Number(s.w1) || 0;
+        const w2 = Number(s.w2) || 0;
+        const w4 = Number(s.w4) || 0;
+
+        const w3 = Math.max(0, w2 - w1); // Berat benda uji basah
+        const w5 = Math.max(0, w4 - w1); // Berat benda uji kering oven
+        const water = Math.max(0, w3 - w5); // Air menguap (W3 - W5)
+        const moisture = w5 > 0 ? ((water / w5) * 100) : 0; // ((W3 - W5) / W5) * 100%
+
+        return { w1, w2, w4, w3, w5, water, moisture };
+    });
+
+    const avgW3 = sampleResults.reduce((acc, c) => acc + c.w3, 0) / n;
+    const avgW5 = sampleResults.reduce((acc, c) => acc + c.w5, 0) / n;
+    const avgWater = sampleResults.reduce((acc, c) => acc + c.water, 0) / n;
+    const avgMoisture = sampleResults.reduce((acc, c) => acc + c.moisture, 0) / n;
+
+    // ASTM C566 Specification: Normal working range is 2.0% - 7.0%
+    const isNormalRange = (avgMoisture >= 2.00 && avgMoisture <= 7.00);
+    const isTooDry = (avgMoisture < 2.00);
+    const isTooWet = (avgMoisture > 7.00);
+
+    const tbody = document.getElementById('fa-m-output-tbody');
+    if (tbody) {
+        let r1Cells = '', r2Cells = '', r3Cells = '', r4Cells = '';
+        sampleResults.forEach(r => {
+            r1Cells += `<td class="fa-sample-cell fa-val-mono">${r.w3.toFixed(2)}</td>`;
+            r2Cells += `<td class="fa-sample-cell fa-val-mono">${r.w5.toFixed(2)}</td>`;
+            r3Cells += `<td class="fa-sample-cell fa-val-mono">${r.water.toFixed(2)}</td>`;
+            const rPass = (r.moisture >= 2.0 && r.moisture <= 7.0);
+            r4Cells += `<td class="fa-sample-cell fa-val-mono ${rPass ? 'status-pass' : 'status-fail'}">${r.moisture.toFixed(2)}%</td>`;
+        });
+
+        tbody.innerHTML = `
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">1</td>
+                <td style="font-weight:600;">${isEn ? 'Mass of Wet Specimen (W3_AH)' : 'Berat Benda Uji Basah (W3_AH)'}</td>
+                <td><span class="formula-code">W2_AH - W1_AH</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">gram</td>
+                ${r1Cells}
+                <td class="fa-avg-col-cell">${avgW3.toFixed(2)}</td>
+                <td style="text-align:center; color:var(--text-secondary);">&ge; 500 gr (ASTM C566)</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">2</td>
+                <td style="font-weight:600;">${isEn ? 'Mass of Oven-Dry Specimen (W5_AH)' : 'Berat Benda Uji Kering Oven (W5_AH)'}</td>
+                <td><span class="formula-code">W4_AH - W1_AH</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">gram</td>
+                ${r2Cells}
+                <td class="fa-avg-col-cell">${avgW5.toFixed(2)}</td>
+                <td style="text-align:center; color:var(--text-secondary);">${isEn ? 'Constant Weight' : 'Berat Kering Konstan'}</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">3</td>
+                <td style="font-weight:600;">${isEn ? 'Mass of Evaporated Water' : 'Berat Air Menguap (Massa Air Bebas)'}</td>
+                <td><span class="formula-code">W3_AH - W5_AH</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">gram</td>
+                ${r3Cells}
+                <td class="fa-avg-col-cell">${avgWater.toFixed(2)}</td>
+                <td style="text-align:center; color:var(--text-secondary);">${isEn ? 'Free Water Loss' : 'Massa Air Menguap'}</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">4</td>
+                <td style="font-weight:600;">${isEn ? 'Moisture Content (w %)' : 'Kadar Air Agregat Halus (w %)'}</td>
+                <td><span class="formula-code">((W3_AH - W5_AH) / W5_AH) &times; 100%</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">%</td>
+                ${r4Cells}
+                <td class="fa-avg-col-cell ${isNormalRange ? 'status-pass' : 'status-fail'}">${avgMoisture.toFixed(2)}%</td>
+                <td style="text-align:center; font-weight:700; color:var(--accent-emerald);">2.00% - 7.00%</td>
+            </tr>
+        `;
+    }
+
+    const summaryContainer = document.getElementById('fa-m-summary-metrics');
+    if (summaryContainer) {
+        summaryContainer.innerHTML = `
+            <div class="fa-summary-metrics-grid">
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Avg Wet Specimen (W3_AH)' : 'Rata-rata Benda Uji Basah (W3)'}</span>
+                    <span class="metric-val">${avgW3.toFixed(2)} <span style="font-size:12px; font-weight:600; color:var(--text-muted);">g</span></span>
+                    <span class="metric-sub" style="color:var(--chapter-accent, #f59e0b);">
+                        ${isEn ? 'Initial Lab Sample Mass' : 'Berat Contoh Awal Uji'}
+                    </span>
+                </div>
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Avg Oven-Dry (W5_AH)' : 'Rata-rata Kering Oven (W5)'}</span>
+                    <span class="metric-val">${avgW5.toFixed(2)} <span style="font-size:12px; font-weight:600; color:var(--text-muted);">g</span></span>
+                    <span class="metric-sub" style="color:var(--text-secondary);">
+                        ${isEn ? 'Dried at (110 ± 5)°C' : 'Suhu Oven (110 ± 5)°C'}
+                    </span>
+                </div>
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Avg Evaporated Water' : 'Air Menguap (W3 - W5)'}</span>
+                    <span class="metric-val" style="color:#38bdf8;">${avgWater.toFixed(2)} <span style="font-size:12px; font-weight:600; color:var(--text-muted);">g</span></span>
+                    <span class="metric-sub" style="color:var(--text-secondary);">
+                        ${isEn ? 'Free Pore & Surface Water' : 'Kandungan Air Bebas'}
+                    </span>
+                </div>
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Average Moisture Content (w)' : 'Kadar Air Rata-rata (w)'}</span>
+                    <span class="metric-val ${isNormalRange ? 'status-pass' : 'status-fail'}">${avgMoisture.toFixed(2)}%</span>
+                    <span class="metric-sub ${isNormalRange ? 'status-pass' : 'status-fail'}">
+                        ${isNormalRange 
+                            ? (isEn ? '✓ Normal Range (2.0% - 7.0%)' : '✓ Rentang Normal (2.0% - 7.0%)') 
+                            : (isTooDry 
+                                ? (isEn ? '⚠️ Dry Aggregate (< 2.0%)' : '⚠️ Pasir Terlalu Kering (< 2.0%)') 
+                                : (isEn ? '⚠️ High Moisture (> 7.0%)' : '⚠️ Kelembapan Tinggi (> 7.0%)'))}
+                    </span>
+                </div>
+            </div>
+
+            <!-- ASTM C566 Compliance & Mix Adjustment Banner -->
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:12px 16px; background:${isNormalRange ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.12)'}; border:1px solid ${isNormalRange ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.4)'}; border-radius:8px; margin-top:14px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:18px;">${isNormalRange ? '✓' : '⚠️'}</span>
+                    <div>
+                        <div style="color:${isNormalRange ? 'var(--accent-emerald)' : '#f59e0b'}; font-weight:800; font-size:12.5px;">
+                            ${isNormalRange 
+                                ? (isEn ? 'STATUS: MEETS ASTM C566 / SNI 03-1971 SPECIFICATION (NORMAL MOISTURE RANGE)' : 'STATUS: MEMENUHI SYARAT (ASTM C566 / SNI 03-1971-1990)') 
+                                : (isTooDry 
+                                    ? (isEn ? 'WARNING: LOW MOISTURE CONTENT (< 2.00%)' : 'PERINGATAN: KADAR AIR DI BAWAH RENTANG NORMAL (< 2.00%)') 
+                                    : (isEn ? 'WARNING: EXCESSIVE MOISTURE CONTENT (> 7.00%)' : 'PERINGATAN: KADAR AIR MELEBIHI RENTANG NORMAL (> 7.00%)'))}
+                        </div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+                            ${isNormalRange 
+                                ? (isEn 
+                                    ? `Fine aggregate is in stable working condition. Batching plant mix water correction: subtract ${(avgWater * 2).toFixed(1)} L water per m³ concrete (adjusted for sand proportion).` 
+                                    : `Kondisi kelembapan pasir stabil untuk beton struktural. Koreksi air batching plant: kurangi ${(avgWater * 2).toFixed(1)} liter air per m³ beton berdasarkan kadar air bebas terukur.`)
+                                : (isTooDry 
+                                    ? (isEn 
+                                        ? 'Aggregate is very dry; add additional water or wetting agent to prevent rapid slump loss during mixing.' 
+                                        : 'Pasir relatif sangat kering; tambahkan air pencampur atau lakukan pembasahan awal untuk mencegah penurunan nilai slump beton.') 
+                                    : (isEn 
+                                        ? 'High water content detected; significantly reduce batching mixing water to avoid segregation and bleeding.' 
+                                        : 'Pasir mengandung kadar air tinggi; kurangi takaran air pencampur beton di batching plant secara proporsional untuk mencegah bleeding dan segregasi.'))}
+                        </div>
+                    </div>
+                </div>
+                <div class="telemetry-chip ${isNormalRange ? 'live-chip' : ''}" style="color:${isNormalRange ? 'var(--accent-emerald)' : '#f59e0b'};">
+                    ${isNormalRange ? 'ASTM C566 COMPLIANT' : (isTooDry ? 'LOW MOISTURE' : 'HIGH MOISTURE')}
+                </div>
+            </div>
+        `;
+    }
+
+    // Keep legacy result box populated for compatibility
+    const resBox = document.getElementById('fa-m-result-box');
     if (resBox) {
         resBox.innerHTML = `
             <div class="result-row">
-                <span class="result-label">Berat Air Menguap (W2 - W3):</span>
-                <span class="result-val">${waterWeight.toFixed(1)} gram</span>
+                <span class="result-label">Berat Air Menguap (W3 - W5):</span>
+                <span class="result-val">${avgWater.toFixed(1)} gram</span>
             </div>
             <div class="result-row">
-                <span class="result-label">Berat Pasir Kering Oven (W3 - W1):</span>
-                <span class="result-val">${dryWeight.toFixed(1)} gram</span>
+                <span class="result-label">Berat Pasir Kering Oven (W5):</span>
+                <span class="result-val">${avgW5.toFixed(1)} gram</span>
             </div>
             <div class="result-row">
                 <span class="result-label">Kadar Air Bebas (w):</span>
-                <span class="result-val status-pass" style="font-size:14px; font-weight:800;">${moisturePct}%</span>
+                <span class="result-val ${isNormalRange ? 'status-pass' : 'status-fail'}" style="font-size:14px; font-weight:800;">${avgMoisture.toFixed(2)}%</span>
             </div>
             <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
-                <span class="result-label">Evaluasi Mix Design:</span>
-                <span class="result-val status-pass">Koreksi air campuran = ${waterWeight.toFixed(1)} gr/kg agregat</span>
+                <span class="result-label">Evaluasi Mix Design (ASTM C566):</span>
+                <span class="result-val ${isNormalRange ? 'status-pass' : 'status-fail'}">${isNormalRange ? 'MEMENUHI SYARAT (2.0% - 7.0%)' : 'DILUAR RENTANG NORMAL'}</span>
             </div>
         `;
     }
