@@ -6627,57 +6627,7 @@ function renderFineAggregateWorkspace(subViewId) {
     } else if (subViewId === 'fa-unit-weight') {
         renderFAUnitWeightWorkspace();
     } else if (subViewId === 'fa-sieve') {
-        canvasView.innerHTML = `
-            <div class="module-workspace-container">
-                <div class="module-header-banner">
-                    <div>
-                        <div class="module-header-title">
-                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span>
-                            ANALISIS SARINGAN &amp; MODULUS KEHALUSAN (FINENESS MODULUS)
-                        </div>
-                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
-                            Distribusi ukuran butir agregat halus berdasarkan susunan ayakan standar ASTM / SNI.
-                        </div>
-                    </div>
-                    <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> SNI 03-1968-1990 / ASTM C136</span>
-                </div>
-
-                <div class="testing-calc-card" style="width: 100%;">
-                    <div class="testing-calc-header">
-                        <span>DATA TIMBANGAN TERTARIK AYAKAN (BERAT SAMPEL: 1000 GRAM)</span>
-                        <span class="telemetry-chip live-chip"><span class="dot-live"></span>SIEVE TOWER</span>
-                    </div>
-                    <div class="sieve-table-container">
-                        <table class="sieve-table">
-                            <thead>
-                                <tr>
-                                    <th>Nomor Ayakan</th>
-                                    <th>Ukuran Lubang (mm)</th>
-                                    <th>Berat Tertahan (gr)</th>
-                                    <th>% Tertahan</th>
-                                    <th>% Tertahan Kumulatif</th>
-                                    <th>% Lolos Kumulatif</th>
-                                    <th>Batas Zona II SNI (%)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="fa-sieve-tbody">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:10px;">
-                        <div id="fa-fm-summary" style="font-size: 13px; font-weight: 800; color: var(--cyan-neon);">
-                            Fineness Modulus (FM): <span id="fa-fm-val" style="color:#f59e0b;">2.76</span> (Zona II Pasir Agak Kasar)
-                        </div>
-                        <button class="btn-action" style="max-width:200px; padding:8px 16px; font-size:11px;" onclick="resetFASieveDefault()">
-                            Reset ke Standar SNI
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        renderFASieveTable();
-    
+        renderFASieveWorkspace();
     } else {
         // Generic fallback for other sub-views (Unit Weight, Organic)
         renderFAGenericView(subViewId);
@@ -7131,67 +7081,772 @@ function calcFASpecGrav() {
 }
 
 
-const DEFAULT_FA_SIEVE_WEIGHTS = [0, 42, 168, 245, 230, 185, 95, 35];
-const FA_SIEVE_SPECS = [
-    { name: '3/8" (9.5 mm)', size: 9.5, minZ2: 100, maxZ2: 100 },
-    { name: 'No. 4 (4.75 mm)', size: 4.75, minZ2: 90, maxZ2: 100 },
-    { name: 'No. 8 (2.36 mm)', size: 2.36, minZ2: 75, maxZ2: 100 },
-    { name: 'No. 16 (1.18 mm)', size: 1.18, minZ2: 55, maxZ2: 90 },
-    { name: 'No. 30 (0.60 mm)', size: 0.60, minZ2: 35, maxZ2: 59 },
-    { name: 'No. 50 (0.30 mm)', size: 0.30, minZ2: 8, maxZ2: 30 },
-    { name: 'No. 100 (0.15 mm)', size: 0.15, minZ2: 0, maxZ2: 10 },
-    { name: 'Pan Dasar', size: 0, minZ2: 0, maxZ2: 0 }
+/* ==========================================================================
+   DYNAMIC SIEVE ANALYSIS & FINENESS MODULUS (SNI 03-1968-1990 / ASTM C136)
+   ========================================================================== */
+const FA_SIEVE_ITEMS = [
+    { no: '3/8"', size: 9.5, sizeStr: '9,5', name: '3/8" (9,5 mm)' },
+    { no: 'No. 4', size: 4.75, sizeStr: '4,75', name: 'No. 4 (4,75 mm)' },
+    { no: 'No. 8', size: 2.36, sizeStr: '2,36', name: 'No. 8 (2,36 mm)' },
+    { no: 'No. 16', size: 1.18, sizeStr: '1,18', name: 'No. 16 (1,18 mm)' },
+    { no: 'No. 30', size: 0.60, sizeStr: '0,6', name: 'No. 30 (0,60 mm)' },
+    { no: 'No. 50', size: 0.30, sizeStr: '0,3', name: 'No. 50 (0,30 mm)' },
+    { no: 'No. 100', size: 0.15, sizeStr: '0,15', name: 'No. 100 (0,15 mm)' },
+    { no: 'Pan', size: 0, sizeStr: '< 0,15', name: 'Pan Dasar' }
 ];
 
-function renderFASieveTable(weights) {
+const SNI_ZONE_SPECS = {
+    1: {
+        id: 1,
+        name: 'Zona 1 (Pasir Sangat Kasar)',
+        shortName: 'Zona 1',
+        limits: [
+            { min: 100, max: 100, str: '100' },
+            { min: 90, max: 100, str: '90 - 100' },
+            { min: 60, max: 95, str: '60 - 95' },
+            { min: 30, max: 70, str: '30 - 70' },
+            { min: 15, max: 34, str: '15 - 34' },
+            { min: 5, max: 20, str: '5 - 20' },
+            { min: 0, max: 10, str: '0 - 10' }
+        ]
+    },
+    2: {
+        id: 2,
+        name: 'Zona 2 (Pasir Kasar / Agak Kasar)',
+        shortName: 'Zona 2',
+        limits: [
+            { min: 100, max: 100, str: '100' },
+            { min: 90, max: 100, str: '90 - 100' },
+            { min: 75, max: 100, str: '75 - 100' },
+            { min: 55, max: 90, str: '55 - 90' },
+            { min: 35, max: 59, str: '35 - 59' },
+            { min: 8, max: 30, str: '8 - 30' },
+            { min: 0, max: 10, str: '0 - 10' }
+        ]
+    },
+    3: {
+        id: 3,
+        name: 'Zona 3 (Pasir Sedang)',
+        shortName: 'Zona 3',
+        limits: [
+            { min: 100, max: 100, str: '100' },
+            { min: 90, max: 100, str: '90 - 100' },
+            { min: 85, max: 100, str: '85 - 100' },
+            { min: 75, max: 100, str: '75 - 100' },
+            { min: 60, max: 79, str: '60 - 79' },
+            { min: 12, max: 40, str: '12 - 40' },
+            { min: 0, max: 10, str: '0 - 10' }
+        ]
+    },
+    4: {
+        id: 4,
+        name: 'Zona 4 (Pasir Halus)',
+        shortName: 'Zona 4',
+        limits: [
+            { min: 100, max: 100, str: '100' },
+            { min: 95, max: 100, str: '95 - 100' },
+            { min: 95, max: 100, str: '95 - 100' },
+            { min: 90, max: 100, str: '90 - 100' },
+            { min: 80, max: 100, str: '80 - 100' },
+            { min: 15, max: 50, str: '15 - 50' },
+            { min: 0, max: 15, str: '0 - 15' }
+        ]
+    }
+};
+
+const DEFAULT_FA_SIEVE_WEIGHTS = [0.0, 27.5, 62.7, 86.1, 253.4, 276.6, 182.4, 111.3];
+let faSieveWeights = [...DEFAULT_FA_SIEVE_WEIGHTS];
+let faSieveSelectedZone = 0; // 0 = Auto detect, 1..4 = Manual override
+
+const FA_SIEVE_PRESETS = {
+    'default': [0.0, 27.5, 62.7, 86.1, 253.4, 276.6, 182.4, 111.3],
+    'zone1': [0.0, 50.0, 200.0, 300.0, 250.0, 120.0, 50.0, 30.0],
+    'zone2': [0.0, 27.5, 62.7, 86.1, 253.4, 276.6, 182.4, 111.3],
+    'zone3': [0.0, 15.0, 60.0, 120.0, 240.0, 340.0, 160.0, 65.0],
+    'zone4': [0.0, 0.0, 25.0, 50.0, 150.0, 350.0, 320.0, 105.0]
+};
+
+function detectBestFASieveZone(passings) {
+    let bestZone = 2;
+    let maxScore = -999999;
+    for (let z = 1; z <= 4; z++) {
+        let spec = SNI_ZONE_SPECS[z];
+        let insideCount = 0;
+        let totalDev = 0;
+        for (let i = 0; i < 7; i++) {
+            let p = passings[i];
+            let lim = spec.limits[i];
+            if (p >= lim.min && p <= lim.max) {
+                insideCount++;
+            } else {
+                totalDev += Math.min(Math.abs(p - lim.min), Math.abs(p - lim.max));
+            }
+        }
+        let score = (insideCount * 100) - totalDev;
+        if (score > maxScore) {
+            maxScore = score;
+            bestZone = z;
+        }
+    }
+    return bestZone;
+}
+
+function renderFASieveWorkspace() {
+    if (!canvasView) return;
+
+    canvasView.innerHTML = `
+        <div class="module-workspace-container">
+            <!-- Header Banner -->
+            <div class="module-header-banner">
+                <div>
+                    <div class="module-header-title">
+                        <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></span>
+                        ${currentLang === 'EN' ? 'SIEVE ANALYSIS & FINENESS MODULUS' : 'ANALISIS SARINGAN & MODULUS KEHALUSAN (FINENESS MODULUS)'}
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                        ${currentLang === 'EN' 
+                            ? 'Fine aggregate particle size distribution & grading zone classification per SNI 03-1968-1990 / ASTM C136.' 
+                            : 'Distribusi ukuran butir agregat halus & penentuan zona gradasi berdasarkan SNI 03-1968-1990 / ASTM C136.'}
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                        <span style="font-size:11px; color:var(--text-muted); font-weight:700;">Preset:</span>
+                        <button class="btn-zone-pill" onclick="loadFASievePreset('default')">Data SNI Lab (1000g)</button>
+                        <button class="btn-zone-pill" onclick="loadFASievePreset('zone1')">Preset Zona 1</button>
+                        <button class="btn-zone-pill" onclick="loadFASievePreset('zone2')">Preset Zona 2</button>
+                        <button class="btn-zone-pill" onclick="loadFASievePreset('zone3')">Preset Zona 3</button>
+                        <button class="btn-zone-pill" onclick="loadFASievePreset('zone4')">Preset Zona 4</button>
+                        <button class="btn-action" style="padding:4px 12px; font-size:11px; margin-left:auto;" onclick="resetFASieveDefault()">
+                            Reset Standar
+                        </button>
+                    </div>
+                </div>
+                <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> SNI 03-1968-1990 / ASTM C136</span>
+            </div>
+
+            <!-- Card 1: Interactive Data Input & Calculation Grid -->
+            <div class="testing-calc-card" style="width: 100%;">
+                <div class="testing-calc-header" style="flex-wrap: wrap; gap: 10px;">
+                    <span>TABEL HASIL PENGUJIAN GRADASI BUTIRAN AGREGAT HALUS</span>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span class="telemetry-chip live-chip"><span class="dot-live"></span>BERAT TOTAL: <strong id="fa-sieve-total-wt" style="color:#f59e0b;">1000.0</strong> g</span>
+                        <span class="telemetry-chip" style="color:var(--cyan-neon); font-weight:800;">MHB / FM: <span id="fa-sieve-fm-badge">2.32</span></span>
+                    </div>
+                </div>
+                <div class="sieve-table-container">
+                    <table class="sieve-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">No.</th>
+                                <th>Nomor Ayakan</th>
+                                <th>Ukuran Lubang (mm)</th>
+                                <th style="color:#f59e0b; width:190px;">Berat Tertahan (gram) <span style="font-size:10px; font-weight:400; opacity:0.85;">[Input Lab]</span></th>
+                                <th>% Tertahan</th>
+                                <th>% Tertahan Kumulatif</th>
+                                <th>% Lolos Kumulatif</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fa-sieve-tbody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: rgba(14, 25, 52, 0.9); font-weight: 800; border-top: 2px solid var(--border-medium);">
+                                <td colspan="3" style="text-align: right; color: var(--text-pure);">JUMLAH TOTAL:</td>
+                                <td style="color:#f59e0b; font-family: var(--font-mono); font-size: 13px;"><span id="fa-sieve-footer-total">1000.0</span> g</td>
+                                <td style="color:var(--text-pure); font-family: var(--font-mono); font-size: 13px;"><span id="fa-sieve-footer-pct">100.00</span>%</td>
+                                <td style="color:var(--cyan-neon); font-family: var(--font-mono); font-size: 13px;"><span id="fa-sieve-footer-cum">231.87</span>%</td>
+                                <td style="color:var(--text-muted); font-size: 11px;">-</td>
+                            </tr>
+                            <tr style="background: rgba(10, 18, 38, 0.95); font-size: 12px;">
+                                <td colspan="7" style="padding: 10px 14px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                                        <div style="font-family:var(--font-mono); color:var(--text-secondary);">
+                                            Rumus MHB: <span style="color:var(--cyan-neon);">&Sigma; % Tertahan Kumulatif (tanpa Pan) / 100</span> = <span id="fa-sieve-fm-calc-detail" style="color:#f59e0b; font-weight:700;">231.87 / 100 = 2.32</span>
+                                        </div>
+                                        <div id="fa-sieve-fm-eval" style="font-size: 12px; font-weight: 800; color: var(--accent-emerald);">
+                                            ✓ Memenuhi Syarat Pasir Beton (2.20 &ndash; 3.10)
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Card 2: Sieve Analysis Curve (Grafik Gradasi) matching Image 1 -->
+            <div class="testing-calc-card" style="width: 100%; margin-top: 18px;">
+                <div class="testing-calc-header" style="flex-wrap: wrap; gap: 12px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="color:#f59e0b;">GRAFIK DISTRIBUSI BUTIRAN &amp; BATAS ZONA GRADASI (SNI 03-1968-1990)</span>
+                    </div>
+                    <div class="zone-selector-group">
+                        <span style="font-size:11px; color:var(--text-muted); margin-right:4px;">Filter Zona:</span>
+                        <button class="btn-zone-pill active" id="btn-zone-0" onclick="selectFASieveZone(0)">⚡ Auto (<span id="auto-zone-label">Zona 2</span>)</button>
+                        <button class="btn-zone-pill" id="btn-zone-1" onclick="selectFASieveZone(1)">Zona 1</button>
+                        <button class="btn-zone-pill" id="btn-zone-2" onclick="selectFASieveZone(2)">Zona 2</button>
+                        <button class="btn-zone-pill" id="btn-zone-3" onclick="selectFASieveZone(3)">Zona 3</button>
+                        <button class="btn-zone-pill" id="btn-zone-4" onclick="selectFASieveZone(4)">Zona 4</button>
+                    </div>
+                </div>
+                <div class="sieve-chart-wrapper">
+                    <div class="sieve-chart-legend">
+                        <div class="legend-item">
+                            <span class="legend-symbol" style="color: #3b82f6;">&#9830;</span>
+                            <span>Batas Atas (<span id="legend-zone-upper-label">Zona 2 Min</span>)</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-symbol" style="color: #f97316;">&#9632;</span>
+                            <span>Batas Bawah (<span id="legend-zone-lower-label">Zona 2 Maks</span>)</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-symbol" style="color: #00f0ff;">&#9650;</span>
+                            <span style="font-weight:700; color:var(--cyan-neon);">Persentase Lolos Kumulatif (Sampel Uji)</span>
+                        </div>
+                    </div>
+                    <div id="fa-sieve-svg-container" style="width: 100%; overflow-x: auto;">
+                        <!-- SVG chart rendered dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Dual Specification & Comparison Tables matching Image 2 -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 18px; margin-top: 18px;">
+                <!-- Table 1.14: Comparison Table -->
+                <div class="testing-calc-card">
+                    <div class="testing-calc-header">
+                        <span id="fa-table-114-title">TABEL 1.14 PERBANDINGAN ZONA GRADASI AGREGAT (ZONA 2)</span>
+                        <span class="telemetry-chip live-chip">KOMPARASI SNI</span>
+                    </div>
+                    <div class="sieve-table-container">
+                        <table class="sieve-table">
+                            <thead>
+                                <tr>
+                                    <th>Ukuran Lubang Saringan (mm)</th>
+                                    <th style="color:#3b82f6;">Batas Atas (%)</th>
+                                    <th style="color:#f97316;">Batas Bawah (%)</th>
+                                    <th style="color:var(--cyan-neon);">Persentase Lolos (%) Kumulatif</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fa-sieve-comparison-tbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Table 1: Standard SNI 4-Zones Table -->
+                <div class="testing-calc-card">
+                    <div class="testing-calc-header">
+                        <span>TABEL 1. BATAS PERSEN BUTIR LEWAT AYAKAN</span>
+                        <span class="telemetry-chip">STANDAR SNI 03-1968</span>
+                    </div>
+                    <div class="sieve-table-container">
+                        <table class="sieve-table">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" style="vertical-align:middle; text-align:center;">Lubang Ayakan (mm)</th>
+                                    <th colspan="4" style="text-align:center;">Persen Berat Butir yang Lewat Ayakan</th>
+                                </tr>
+                                <tr>
+                                    <th id="th-zone-1" class="th-zone" style="text-align:center;">Zona 1<br><span style="font-size:9px; font-weight:400;">Sangat Kasar</span></th>
+                                    <th id="th-zone-2" class="th-zone zone-active-header" style="text-align:center;">Zona 2<br><span style="font-size:9px; font-weight:400;">Kasar</span></th>
+                                    <th id="th-zone-3" class="th-zone" style="text-align:center;">Zona 3<br><span style="font-size:9px; font-weight:400;">Sedang</span></th>
+                                    <th id="th-zone-4" class="th-zone" style="text-align:center;">Zona 4<br><span style="font-size:9px; font-weight:400;">Halus</span></th>
+                                </tr>
+                            </thead>
+                            <tbody id="fa-sieve-sni-zones-tbody">
+                                <!-- Static SNI rows with dynamic column highlighting -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: right;">
+                        (Sumber: SNI 03-1968, 1990)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4: Conclusion & Specification Check matching Image 2 -->
+            <div class="testing-calc-card" style="width: 100%; margin-top: 18px;">
+                <div class="testing-calc-header">
+                    <span>KESIMPULAN PENGUJIAN &amp; EVALUASI KELAYAKAN MUTU AGREGAT HALUS</span>
+                    <span id="fa-sieve-eval-status-badge" class="telemetry-chip live-chip">MEMENUHI SYARAT (SNI 03-1968-1990)</span>
+                </div>
+                <div style="padding: 16px 20px;">
+                    <div id="fa-sieve-conclusion-text" style="font-size: 13px; line-height: 1.7; color: var(--text-pure); margin-bottom: 16px;">
+                        <!-- Populated dynamically matching Image 2 -->
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
+                        <div style="background: rgba(10, 20, 42, 0.7); border: 1px solid var(--border-dim); border-radius: 8px; padding: 12px 16px;">
+                            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Modulus Halus Butir (MHB / FM)</div>
+                            <div style="font-size: 18px; font-weight: 800; color: #f59e0b; margin: 4px 0;" id="fa-sieve-card-fm">2.32</div>
+                            <div style="font-size: 11.5px; color: var(--accent-emerald);" id="fa-sieve-card-fm-status">✓ Standar SNI 03-1968: 2.20 &ndash; 3.10</div>
+                        </div>
+                        <div style="background: rgba(10, 20, 42, 0.7); border: 1px solid var(--border-dim); border-radius: 8px; padding: 12px 16px;">
+                            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Klasifikasi Zona Terpilih</div>
+                            <div style="font-size: 18px; font-weight: 800; color: var(--cyan-neon); margin: 4px 0;" id="fa-sieve-card-zone">Zona 2 (Pasir Kasar)</div>
+                            <div style="font-size: 11.5px; color: var(--text-secondary);" id="fa-sieve-card-zone-status">6 dari 7 saringan masuk batas zona</div>
+                        </div>
+                        <div style="background: rgba(10, 20, 42, 0.7); border: 1px solid var(--border-dim); border-radius: 8px; padding: 12px 16px;">
+                            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Rekomendasi Pemakaian</div>
+                            <div style="font-size: 14px; font-weight: 800; color: var(--accent-emerald); margin: 4px 0;" id="fa-sieve-card-recom">Layak untuk Campuran Beton Struktural</div>
+                            <div style="font-size: 11.5px; color: var(--text-muted);">Sesuai SNI 2847:2019 &amp; PBI 1971</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    renderFASieveTableRows();
+    renderFASieveSNIZonesBase();
+    recalcFASieve();
+}
+
+function renderFASieveTableRows() {
     const tbody = document.getElementById('fa-sieve-tbody');
     if (!tbody) return;
 
-    let wtList = weights || DEFAULT_FA_SIEVE_WEIGHTS;
-    let totalSample = wtList.reduce((a, b) => a + b, 0) || 1000;
+    let totalSample = faSieveWeights.reduce((a, b) => a + b, 0) || 1000;
+    let kumulatif = 0;
+    let html = '';
 
-    let kumulatifTertahan = 0;
-    let sumKumulatifExceptPan = 0;
-    let rowsHtml = '';
+    FA_SIEVE_ITEMS.forEach((item, idx) => {
+        let w = faSieveWeights[idx] || 0;
+        let pct = totalSample > 0 ? (w / totalSample) * 100 : 0;
+        kumulatif += pct;
+        let pctLolos = Math.max(0, 100 - kumulatif);
+        let isPan = idx === 7;
 
-    FA_SIEVE_SPECS.forEach((spec, idx) => {
-        let w = wtList[idx] || 0;
-        let pct = (w / totalSample) * 100;
-        kumulatifTertahan += pct;
-        if (idx < 7) {
-            sumKumulatifExceptPan += kumulatifTertahan;
-        }
-        let pctLolos = Math.max(0, 100 - kumulatifTertahan);
-
-        rowsHtml += `
-            <tr>
-                <td style="font-weight:700; color:var(--text-pure);">${spec.name}</td>
-                <td>${spec.size > 0 ? spec.size : '-'}</td>
-                <td><input type="number" class="fa-sieve-input" data-index="${idx}" value="${w}" oninput="recalcFASieve()"></td>
-                <td>${pct.toFixed(1)}%</td>
-                <td style="color:var(--cyan-neon); font-weight:700;">${kumulatifTertahan.toFixed(1)}%</td>
-                <td style="color:var(--accent-emerald); font-weight:700;">${pctLolos.toFixed(1)}%</td>
-                <td style="color:var(--text-muted);">${spec.minZ2}% - ${spec.maxZ2}%</td>
+        html += `
+            <tr id="fa-sieve-row-${idx}">
+                <td style="color:var(--text-muted); font-size:11px; text-align:center;">${idx + 1}</td>
+                <td style="font-weight:700; color:var(--text-pure);">${item.name}</td>
+                <td style="font-family:var(--font-mono); color:var(--text-secondary); text-align:center;">${item.sizeStr}</td>
+                <td>
+                    <div style="display:inline-flex; align-items:center; gap:6px;">
+                        <input type="number" step="0.1" min="0" class="fa-sieve-input" id="fa-sieve-input-${idx}" 
+                               value="${w}" oninput="updateFASieveWeight(${idx}, this.value)"
+                               style="width:110px; background:rgba(14,25,52,0.9); border:1px solid rgba(245,158,11,0.35); border-radius:4px; padding:4px 8px; color:#f59e0b; font-weight:700; font-family:var(--font-mono);">
+                        <span style="font-size:10px; color:var(--text-muted);">gr</span>
+                    </div>
+                </td>
+                <td style="font-family:var(--font-mono); font-weight:600;"><span id="fa-sieve-pct-${idx}">${pct.toFixed(2)}%</span></td>
+                <td style="font-family:var(--font-mono); font-weight:700; color:var(--cyan-neon);"><span id="fa-sieve-cum-${idx}">${kumulatif.toFixed(2)}%</span></td>
+                <td style="font-family:var(--font-mono); font-weight:700; color:${isPan ? 'var(--text-muted)' : 'var(--accent-emerald)'};">
+                    <span id="fa-sieve-pass-${idx}">${isPan ? '-' : pctLolos.toFixed(2) + '%'}</span>
+                </td>
             </tr>
         `;
     });
 
-    tbody.innerHTML = rowsHtml;
-
-    let fm = (sumKumulatifExceptPan / 100).toFixed(2);
-    let fmEl = document.getElementById('fa-fm-val');
-    if (fmEl) fmEl.textContent = fm;
+    tbody.innerHTML = html;
 }
 
-function recalcFASieve() {
-    let inputs = document.querySelectorAll('.fa-sieve-input');
-    let weights = [];
-    inputs.forEach(inp => weights.push(parseFloat(inp.value) || 0));
-    renderFASieveTable(weights);
+function renderFASieveSNIZonesBase() {
+    const tbody = document.getElementById('fa-sieve-sni-zones-tbody');
+    if (!tbody) return;
+
+    let html = '';
+    for (let i = 0; i < 7; i++) {
+        let item = FA_SIEVE_ITEMS[i];
+        let z1 = SNI_ZONE_SPECS[1].limits[i].str;
+        let z2 = SNI_ZONE_SPECS[2].limits[i].str;
+        let z3 = SNI_ZONE_SPECS[3].limits[i].str;
+        let z4 = SNI_ZONE_SPECS[4].limits[i].str;
+
+        html += `
+            <tr>
+                <td style="font-family:var(--font-mono); font-weight:700; color:var(--text-pure); text-align:center;">${item.sizeStr} (${item.no})</td>
+                <td class="col-zone-1" style="text-align:center; font-family:var(--font-mono);">${z1}</td>
+                <td class="col-zone-2 zone-active-col" style="text-align:center; font-family:var(--font-mono);">${z2}</td>
+                <td class="col-zone-3" style="text-align:center; font-family:var(--font-mono);">${z3}</td>
+                <td class="col-zone-4" style="text-align:center; font-family:var(--font-mono);">${z4}</td>
+            </tr>
+        `;
+    }
+    tbody.innerHTML = html;
+}
+
+function updateFASieveWeight(idx, val) {
+    faSieveWeights[idx] = parseFloat(val) || 0;
+    recalcFASieve();
+}
+
+function selectFASieveZone(z) {
+    faSieveSelectedZone = z;
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    recalcFASieve();
 }
 
 function resetFASieveDefault() {
-    renderFASieveTable(DEFAULT_FA_SIEVE_WEIGHTS);
+    faSieveWeights = [...DEFAULT_FA_SIEVE_WEIGHTS];
+    faSieveSelectedZone = 0;
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFASieveTableRows();
+    recalcFASieve();
+    if (typeof showToast === 'function') {
+        showToast(currentLang === 'EN' ? 'Reset to SNI standard lab data' : 'Data direset ke standar lab SNI (Duplo 1000g)', 'info');
+    }
+}
+
+function loadFASievePreset(key) {
+    if (FA_SIEVE_PRESETS[key]) {
+        faSieveWeights = [...FA_SIEVE_PRESETS[key]];
+        if (key === 'zone1') faSieveSelectedZone = 1;
+        else if (key === 'zone2') faSieveSelectedZone = 2;
+        else if (key === 'zone3') faSieveSelectedZone = 3;
+        else if (key === 'zone4') faSieveSelectedZone = 4;
+        else faSieveSelectedZone = 0;
+
+        if (typeof playSynthSound === 'function') playSynthSound('click');
+        renderFASieveTableRows();
+        recalcFASieve();
+        if (typeof showToast === 'function') {
+            showToast(currentLang === 'EN' ? `Loaded ${key} preset` : `Preset ${key.toUpperCase()} dimuat`, 'success');
+        }
+    }
+}
+
+function recalcFASieve() {
+    let totalSample = faSieveWeights.reduce((a, b) => a + b, 0);
+    let totalEl = document.getElementById('fa-sieve-total-wt');
+    let footerTotal = document.getElementById('fa-sieve-footer-total');
+    let footerPct = document.getElementById('fa-sieve-footer-pct');
+    let footerCum = document.getElementById('fa-sieve-footer-cum');
+    let fmBadge = document.getElementById('fa-sieve-fm-badge');
+    let fmCalcDetail = document.getElementById('fa-sieve-fm-calc-detail');
+    let fmEvalEl = document.getElementById('fa-sieve-fm-eval');
+
+    if (totalEl) totalEl.textContent = totalSample.toFixed(1);
+    if (footerTotal) footerTotal.textContent = totalSample.toFixed(1);
+    if (footerPct) footerPct.textContent = totalSample > 0 ? '100.00' : '0.00';
+
+    let kumulatif = 0;
+    let sumCumExceptPan = 0;
+    let passings = [];
+
+    FA_SIEVE_ITEMS.forEach((item, idx) => {
+        let w = faSieveWeights[idx] || 0;
+        let pct = totalSample > 0 ? (w / totalSample) * 100 : 0;
+        kumulatif += pct;
+        let isPan = idx === 7;
+        if (!isPan) {
+            sumCumExceptPan += kumulatif;
+            passings.push(Math.max(0, 100 - kumulatif));
+        }
+
+        let pctEl = document.getElementById(`fa-sieve-pct-${idx}`);
+        let cumEl = document.getElementById(`fa-sieve-cum-${idx}`);
+        let passEl = document.getElementById(`fa-sieve-pass-${idx}`);
+
+        if (pctEl) pctEl.textContent = pct.toFixed(2) + '%';
+        if (cumEl) cumEl.textContent = kumulatif.toFixed(2) + '%';
+        if (passEl && !isPan) passEl.textContent = Math.max(0, 100 - kumulatif).toFixed(2) + '%';
+    });
+
+    if (footerCum) footerCum.textContent = kumulatif.toFixed(2);
+    let fm = (sumCumExceptPan / 100);
+    let fmStr = fm.toFixed(2);
+
+    if (fmBadge) fmBadge.textContent = fmStr;
+    if (fmCalcDetail) fmCalcDetail.textContent = `${sumCumExceptPan.toFixed(2)} / 100 = ${fmStr}`;
+
+    let isFMPass = fm >= 2.20 && fm <= 3.10;
+    if (fmEvalEl) {
+        if (isFMPass) {
+            fmEvalEl.innerHTML = `<span style="color:var(--accent-emerald);">✓ Memenuhi Syarat Pasir Beton SNI 03-1968 (2.20 &ndash; 3.10)</span>`;
+        } else if (fm < 2.20) {
+            fmEvalEl.innerHTML = `<span style="color:#f59e0b;">! Pasir Terlalu Halus (FM ${fmStr} &lt; 2.20)</span>`;
+        } else {
+            fmEvalEl.innerHTML = `<span style="color:#ef4444;">! Pasir Terlalu Kasar (FM ${fmStr} &gt; 3.10)</span>`;
+        }
+    }
+
+    // Auto-detect best zone
+    let detectedZone = detectBestFASieveZone(passings);
+    let autoLabel = document.getElementById('auto-zone-label');
+    if (autoLabel) autoLabel.textContent = `Zona ${detectedZone}`;
+
+    let activeZone = faSieveSelectedZone > 0 ? faSieveSelectedZone : detectedZone;
+
+    // Update zone pill buttons active state
+    for (let z = 0; z <= 4; z++) {
+        let btn = document.getElementById(`btn-zone-${z}`);
+        if (btn) {
+            if (z === faSieveSelectedZone) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        }
+    }
+
+    // Update SVG Chart
+    updateFASieveSVGChart(activeZone, passings);
+
+    // Update Table 1.14 comparison
+    updateFASieveComparisonTable(activeZone, passings);
+
+    // Update SNI 4-Zones table column highlighting
+    updateFASieveSNIZonesTable(activeZone);
+
+    // Update Conclusion Card
+    updateFASieveConclusionCard(activeZone, detectedZone, passings, fmStr, isFMPass);
+}
+
+function updateFASieveSVGChart(activeZone, passings) {
+    const container = document.getElementById('fa-sieve-svg-container');
+    if (!container) return;
+
+    const spec = SNI_ZONE_SPECS[activeZone];
+    const upperLabel = document.getElementById('legend-zone-upper-label');
+    const lowerLabel = document.getElementById('legend-zone-lower-label');
+    if (upperLabel) upperLabel.textContent = `${spec.shortName} Min`;
+    if (lowerLabel) lowerLabel.textContent = `${spec.shortName} Maks`;
+
+    const plotX = 70;
+    const plotY = 25;
+    const plotW = 640;
+    const plotH = 260;
+    const yMax = 120.0;
+
+    const getX = (idx) => plotX + (idx / 6.0) * plotW;
+    const getY = (val) => (plotY + plotH) - (val / yMax) * plotH;
+
+    // Coordinates for the 3 curves
+    let minPts = spec.limits.map((l, i) => ({ x: getX(i), y: getY(l.min), v: l.min }));
+    let maxPts = spec.limits.map((l, i) => ({ x: getX(i), y: getY(l.max), v: l.max }));
+    let samplePts = passings.map((p, i) => ({ x: getX(i), y: getY(p), v: p }));
+
+    // SVG Path Strings
+    const toPathD = (pts) => pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+    let pathDMin = toPathD(minPts);
+    let pathDMax = toPathD(maxPts);
+    let pathDSample = toPathD(samplePts);
+
+    // Grid lines for Y-axis (0, 20, 40, 60, 80, 100, 120)
+    let gridLinesHtml = '';
+    [0, 20, 40, 60, 80, 100, 120].forEach(v => {
+        let y = getY(v);
+        gridLinesHtml += `
+            <line x1="${plotX}" y1="${y}" x2="${plotX + plotW}" y2="${y}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3" />
+            <text x="${plotX - 10}" y="${y + 4}" text-anchor="end" fill="var(--text-muted)" font-size="11" font-family="var(--font-mono)">${v}</text>
+        `;
+    });
+
+    // Vertical grid & X-axis labels
+    let xTicksHtml = '';
+    FA_SIEVE_ITEMS.slice(0, 7).forEach((item, i) => {
+        let x = getX(i);
+        xTicksHtml += `
+            <line x1="${x}" y1="${plotY}" x2="${x}" y2="${plotY + plotH}" stroke="rgba(255,255,255,0.05)" />
+            <text x="${x}" y="${plotY + plotH + 20}" text-anchor="middle" fill="var(--text-pure)" font-size="11" font-weight="700" font-family="var(--font-mono)">${item.sizeStr}</text>
+        `;
+    });
+
+    // Markers
+    let minMarkersHtml = minPts.map((p, i) => `
+        <polygon points="${p.x},${p.y - 5.5} ${p.x + 5.5},${p.y} ${p.x},${p.y + 5.5} ${p.x - 5.5},${p.y}" 
+                 fill="#3b82f6" stroke="#ffffff" stroke-width="1.5">
+            <title>Batas Atas (${FA_SIEVE_ITEMS[i].sizeStr} mm): ${p.v}%</title>
+        </polygon>
+    `).join('');
+
+    let maxMarkersHtml = maxPts.map((p, i) => `
+        <rect x="${p.x - 4.5}" y="${p.y - 4.5}" width="9" height="9" 
+              fill="#f97316" stroke="#ffffff" stroke-width="1.5">
+            <title>Batas Bawah (${FA_SIEVE_ITEMS[i].sizeStr} mm): ${p.v}%</title>
+        </rect>
+    `).join('');
+
+    let sampleMarkersHtml = samplePts.map((p, i) => `
+        <polygon points="${p.x},${p.y - 6} ${p.x + 5.5},${p.y + 4} ${p.x - 5.5},${p.y + 4}" 
+                 fill="#94a3b8" stroke="#00f0ff" stroke-width="1.8">
+            <title>Hasil Uji Sampel (${FA_SIEVE_ITEMS[i].sizeStr} mm): ${p.v.toFixed(2)}%</title>
+        </polygon>
+        <text x="${p.x}" y="${p.y - 9}" text-anchor="middle" fill="#00f0ff" font-size="10" font-weight="800" font-family="var(--font-mono)">${p.v.toFixed(1)}%</text>
+    `).join('');
+
+    container.innerHTML = `
+        <svg viewBox="0 0 760 360" class="sieve-chart-svg" style="background: rgba(8, 14, 28, 0.7); border-radius: 8px;">
+            <defs>
+                <filter id="neon-glow-sieve" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
+
+            <!-- Plot Outline -->
+            <rect x="${plotX}" y="${plotY}" width="${plotW}" height="${plotH}" fill="rgba(10, 18, 36, 0.6)" stroke="rgba(255,255,255,0.15)" />
+
+            <!-- Grid lines & ticks -->
+            ${gridLinesHtml}
+            ${xTicksHtml}
+
+            <!-- Axis Titles -->
+            <text x="-155" y="24" transform="rotate(-90)" fill="var(--text-muted)" font-size="11" font-weight="700" font-family="var(--font-heading)" letter-spacing="1">PERSENTASE</text>
+            <text x="${plotX + plotW / 2}" y="345" text-anchor="middle" fill="var(--text-muted)" font-size="11" font-weight="700" font-family="var(--font-heading)" letter-spacing="1">UKURAN LUBANG SARINGAN (mm)</text>
+
+            <!-- Curve 1: Batas Atas (Blue Diamond ♦) -->
+            <path d="${pathDMin}" fill="none" stroke="#3b82f6" stroke-width="2.5" />
+
+            <!-- Curve 2: Batas Bawah (Orange Square ■) -->
+            <path d="${pathDMax}" fill="none" stroke="#f97316" stroke-width="2.5" />
+
+            <!-- Curve 3: Tested Sample % Lolos Kumulatif (Cyan Triangle ▲) -->
+            <path d="${pathDSample}" fill="none" stroke="#00f0ff" stroke-width="2.8" filter="url(#neon-glow-sieve)" />
+
+            <!-- Markers -->
+            ${minMarkersHtml}
+            ${maxMarkersHtml}
+            ${sampleMarkersHtml}
+        </svg>
+    `;
+}
+
+function updateFASieveComparisonTable(activeZone, passings) {
+    const tbody = document.getElementById('fa-sieve-comparison-tbody');
+    const titleEl = document.getElementById('fa-table-114-title');
+    if (!tbody) return;
+
+    const spec = SNI_ZONE_SPECS[activeZone];
+    if (titleEl) {
+        titleEl.textContent = (typeof currentLang !== 'undefined' && currentLang === 'EN') 
+            ? `TABLE 1.14 AGGREGATE GRADING ZONE COMPARISON (${spec.name.toUpperCase()})` 
+            : `TABEL 1.14 PERBANDINGAN ZONA GRADASI AGREGAT (${spec.name.toUpperCase()})`;
+    }
+
+    let html = '';
+    for (let i = 0; i < 7; i++) {
+        let item = FA_SIEVE_ITEMS[i];
+        let lim = spec.limits[i];
+        let p = passings[i] !== undefined ? passings[i] : 0;
+        let inRange = (p >= lim.min && p <= lim.max);
+
+        html += `
+            <tr>
+                <td style="font-family:var(--font-mono); font-weight:700; color:var(--text-pure);">${item.sizeStr} (${item.no})</td>
+                <td style="font-family:var(--font-mono); color:#3b82f6; font-weight:700; text-align:center;">${lim.min}</td>
+                <td style="font-family:var(--font-mono); color:#f97316; font-weight:700; text-align:center;">${lim.max}</td>
+                <td style="font-family:var(--font-mono); color:var(--cyan-neon); font-weight:800; text-align:center;">${p.toFixed(3)}</td>
+                <td style="text-align:center;">
+                    ${inRange 
+                        ? `<span class="sieve-pass-badge in-range">${(typeof currentLang !== 'undefined' && currentLang === 'EN') ? '✓ Within Limit' : '✓ Masuk Batas'}</span>` 
+                        : `<span class="sieve-pass-badge out-range">${(typeof currentLang !== 'undefined' && currentLang === 'EN') ? '✗ Out of Limit' : '✗ Di Luar Batas'}</span>`}
+                </td>
+            </tr>
+        `;
+    }
+    tbody.innerHTML = html;
+}
+
+function updateFASieveSNIZonesTable(activeZone) {
+    for (let z = 1; z <= 4; z++) {
+        let th = document.getElementById(`th-zone-${z}`);
+        if (th) {
+            if (z === activeZone) th.classList.add('zone-active-header');
+            else th.classList.remove('zone-active-header');
+        }
+
+        let cells = document.querySelectorAll(`.col-zone-${z}`);
+        cells.forEach(td => {
+            if (z === activeZone) td.classList.add('zone-active-col');
+            else td.classList.remove('zone-active-col');
+        });
+    }
+}
+
+function updateFASieveConclusionCard(activeZone, detectedZone, passings, fmStr, isFMPass) {
+    const textEl = document.getElementById('fa-sieve-conclusion-text');
+    const badgeEl = document.getElementById('fa-sieve-eval-status-badge');
+    const cardFm = document.getElementById('fa-sieve-card-fm');
+    const cardFmStatus = document.getElementById('fa-sieve-card-fm-status');
+    const cardZone = document.getElementById('fa-sieve-card-zone');
+    const cardZoneStatus = document.getElementById('fa-sieve-card-zone-status');
+    const cardRecom = document.getElementById('fa-sieve-card-recom');
+
+    const spec = SNI_ZONE_SPECS[activeZone];
+    let inRangeCount = 0;
+    for (let i = 0; i < 7; i++) {
+        let p = passings[i];
+        let lim = spec.limits[i];
+        if (p >= lim.min && p <= lim.max) inRangeCount++;
+    }
+
+    const detectedSpec = SNI_ZONE_SPECS[detectedZone];
+
+    if (textEl) {
+        if (typeof currentLang !== 'undefined' && currentLang === 'EN') {
+            textEl.innerHTML = `
+                The fine aggregate sieve analysis test indicates that the test results can be classified into 
+                <strong style="color:var(--cyan-neon);">Zone ${detectedZone}</strong> (${detectedSpec.name}) 
+                because the calculated gradation curve is closest to this zone's boundaries. 
+                Below is the comparison table and gradation curve of the fine aggregate percentage passing (%) 
+                from test results against the standard grading limits specified in <strong>SNI 03-1968-1990 / ASTM C136</strong>.
+            `;
+        } else {
+            textEl.innerHTML = `
+                Praktikum pengujian gradasi agregat halus yang dilakukan menunjukkan bahwa hasil pengujian dapat dimasukkan ke dalam 
+                <strong style="color:var(--cyan-neon);">zona ${detectedZone}</strong> karena hasil perhitungan paling mendekati batas zona tersebut. 
+                Berikut merupakan tabel dan grafik perbandingan persentase agregat halus yang lolos saringan (%) dari hasil pengujian dengan 
+                batas persentase butiran yang lolos berdasarkan <strong>SNI 03-1968-1990</strong>.
+            `;
+        }
+    }
+
+    let isOverallPass = isFMPass && (inRangeCount >= 5);
+
+    if (badgeEl) {
+        if (isOverallPass) {
+            badgeEl.textContent = (typeof currentLang !== 'undefined' && currentLang === 'EN') ? 'MEETS SPECIFICATIONS (SNI 03-1968-1990 / ASTM C136)' : 'MEMENUHI SYARAT (SNI 03-1968-1990 / ASTM C136)';
+            badgeEl.className = 'telemetry-chip live-chip';
+        } else {
+            badgeEl.textContent = (typeof currentLang !== 'undefined' && currentLang === 'EN') ? 'GRADING ADJUSTMENT / BLENDING REQUIRED' : 'PERLU PERBAIKAN GRADASI / BLENDING';
+            badgeEl.className = 'telemetry-chip';
+            badgeEl.style.color = '#ef4444';
+        }
+    }
+
+    if (cardFm) cardFm.textContent = fmStr;
+    if (cardFmStatus) {
+        if (isFMPass) {
+            cardFmStatus.innerHTML = (typeof currentLang !== 'undefined' && currentLang === 'EN') 
+                ? '✓ Standard SNI 03-1968: 2.20 &ndash; 3.10' 
+                : '✓ Standar SNI 03-1968: 2.20 &ndash; 3.10';
+        } else {
+            cardFmStatus.innerHTML = (typeof currentLang !== 'undefined' && currentLang === 'EN')
+                ? '<span style="color:#ef4444;">! Outside standard sand range (2.20 &ndash; 3.10)</span>'
+                : '<span style="color:#ef4444;">! Di luar rentang pasir standar (2.20 &ndash; 3.10)</span>';
+        }
+    }
+
+    if (cardZone) cardZone.textContent = spec.name;
+    if (cardZoneStatus) {
+        cardZoneStatus.textContent = (typeof currentLang !== 'undefined' && currentLang === 'EN')
+            ? `${inRangeCount} of 7 sieve sizes within zone limits`
+            : `${inRangeCount} dari 7 ukuran saringan masuk rentang zona`;
+    }
+
+    if (cardRecom) {
+        if (isOverallPass) {
+            cardRecom.innerHTML = `<span style="color:var(--accent-emerald);">${(typeof currentLang !== 'undefined' && currentLang === 'EN') ? 'Suitable for Structural Concrete Mix' : 'Layak untuk Campuran Beton Struktural'}</span>`;
+        } else {
+            cardRecom.innerHTML = `<span style="color:#f59e0b;">${(typeof currentLang !== 'undefined' && currentLang === 'EN') ? 'Grading Correction Required (Blend Coarse/Fine Sand)' : 'Perlu Koreksi Gradasi (Campur Pasir Kasar/Halus)'}</span>`;
+        }
+    }
+}
+
+// Backward compatibility wrapper
+function renderFASieveTable(weights) {
+    if (weights && Array.isArray(weights)) {
+        faSieveWeights = [...weights];
+    }
+    renderFASieveTableRows();
+    recalcFASieve();
 }
 
 

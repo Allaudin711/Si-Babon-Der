@@ -5245,3 +5245,124 @@ body:not(.right-sidebar-collapsed) #btn-edge-right-toggle svg {
     align-items: center;
     gap: 6px;
 }
+
+/* ==========================================================================
+   SIEVE ANALYSIS CURVE & ZONE SPECIFICATION TABLES (SNI 03-1968-1990)
+   ========================================================================== */
+.sieve-chart-wrapper {
+    background: rgba(8, 16, 36, 0.9);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.sieve-chart-legend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    font-size: 11.5px;
+    font-weight: 700;
+    font-family: var(--font-heading);
+    padding: 8px 14px;
+    background: rgba(14, 25, 52, 0.7);
+    border-radius: 6px;
+    border: 1px solid var(--border-dim);
+}
+
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-pure);
+}
+
+.legend-symbol {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+}
+
+.sieve-chart-svg {
+    width: 100%;
+    height: auto;
+    max-height: 380px;
+    display: block;
+    overflow: visible;
+}
+
+.zone-selector-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.btn-zone-pill {
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--font-heading);
+    border-radius: 5px;
+    cursor: pointer;
+    background: rgba(14, 25, 52, 0.8);
+    color: var(--text-muted);
+    border: 1px solid var(--border-dim);
+    transition: all 0.2s ease;
+}
+
+.btn-zone-pill:hover {
+    color: var(--text-pure);
+    border-color: rgba(245, 158, 11, 0.5);
+    background: rgba(245, 158, 11, 0.15);
+}
+
+.btn-zone-pill.active {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.22);
+    border-color: #f59e0b;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+}
+
+.zone-active-col {
+    background: rgba(245, 158, 11, 0.12) !important;
+    border-left: 2px solid #f59e0b !important;
+    border-right: 2px solid #f59e0b !important;
+    font-weight: 800;
+}
+
+.zone-active-header {
+    background: rgba(245, 158, 11, 0.25) !important;
+    color: #fbbf24 !important;
+    border-left: 2px solid #f59e0b !important;
+    border-right: 2px solid #f59e0b !important;
+}
+
+.sieve-pass-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+}
+
+.sieve-pass-badge.in-range {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent-emerald);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.sieve-pass-badge.out-range {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--accent-crimson);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
