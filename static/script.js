@@ -10245,6 +10245,375 @@ function renderFineAggregateReferenceGuide(subViewId) {
 /* ==========================================================================
    MODULE 3 WORKSPACE: COARSE AGGREGATE TESTING (SNI 1969 / ASTM C127 / C131)
    ========================================================================== */
+const DEFAULT_CA_SPEC_GRAV_SAMPLES = [
+    { name: 'Sampel I', aak: 2980.5, bak: 3038.2, cak: 1892.4 },
+    { name: 'Sampel II', aak: 2985.0, bak: 3042.8, cak: 1896.1 }
+];
+
+let caSpecGravSamples = JSON.parse(JSON.stringify(DEFAULT_CA_SPEC_GRAV_SAMPLES));
+
+function addCASample() {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'EN');
+    if (caSpecGravSamples.length >= 6) {
+        if (typeof showToast === 'function') {
+            showToast(isEn ? 'Maximum 6 samples allowed' : 'Jumlah sampel maksimum adalah 6', 'warning');
+        }
+        return;
+    }
+
+    const nextIdx = caSpecGravSamples.length + 1;
+    caSpecGravSamples.push({
+        name: isEn ? `Sample ${getRomanNumeral(nextIdx)}` : `Sampel ${getRomanNumeral(nextIdx)}`,
+        aak: 2982.0,
+        bak: 3040.0,
+        cak: 1894.0
+    });
+
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderCASpecGravWorkspace();
+
+    if (typeof showToast === 'function') {
+        showToast(isEn ? `Sample ${getRomanNumeral(nextIdx)} added` : `Sampel ${getRomanNumeral(nextIdx)} berhasil ditambahkan`, 'success');
+    }
+}
+
+function removeCASample() {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'EN');
+    if (caSpecGravSamples.length <= 1) {
+        if (typeof showToast === 'function') {
+            showToast(isEn ? 'Minimum 1 sample required' : 'Jumlah sampel minimum adalah 1', 'warning');
+        }
+        return;
+    }
+
+    const removed = caSpecGravSamples.pop();
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderCASpecGravWorkspace();
+
+    if (typeof showToast === 'function') {
+        showToast(isEn ? `${removed.name} removed` : `${removed.name} dihapus`, 'info');
+    }
+}
+
+function resetCASampleDefaults() {
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'EN');
+    caSpecGravSamples = JSON.parse(JSON.stringify(DEFAULT_CA_SPEC_GRAV_SAMPLES));
+
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderCASpecGravWorkspace();
+
+    if (typeof showToast === 'function') {
+        showToast(isEn ? 'Reset to SNI standard lab data (Duplo)' : 'Data direset ke standar lab SNI (Duplo)', 'info');
+    }
+}
+
+function updateCASampleValue(sampleIdx, key, val) {
+    if (!caSpecGravSamples[sampleIdx]) return;
+    caSpecGravSamples[sampleIdx][key] = parseFloat(val) || 0;
+    calcCASpecGrav();
+}
+
+function renderCASpecGravWorkspace() {
+    if (!canvasView) return;
+    canvasView.classList.add('scroll-mode');
+
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'EN');
+    const n = caSpecGravSamples.length;
+    const isDuplo = (n === 2);
+
+    let sampleHeadersHTML = '';
+    caSpecGravSamples.forEach((s, idx) => {
+        const sName = isEn ? `Sample ${getRomanNumeral(idx + 1)}` : (s.name || `Sampel ${getRomanNumeral(idx + 1)}`);
+        sampleHeadersHTML += `<th class="ca-sample-col-header">${sName}</th>`;
+    });
+
+    // Input rows definitions
+    const inputRowsDef = [
+        {
+            no: 1,
+            label: isEn ? 'Oven-Dry Specimen Mass in Air' : 'Berat Agregat dalam Keadaan Kering Oven',
+            symbol: 'AAK (Wd)',
+            unit: 'gram',
+            key: 'aak',
+            step: '0.1'
+        },
+        {
+            no: 2,
+            label: isEn ? 'Saturated Surface-Dry (SSD) Specimen Mass in Air' : 'Berat Agregat dalam Keadaan Jenuh Kering Permukaan (SSD)',
+            symbol: 'BAK (Wssd)',
+            unit: 'gram',
+            key: 'bak',
+            step: '0.1'
+        },
+        {
+            no: 3,
+            label: isEn ? 'Mass of Saturated Specimen in Water (Hydrostatic Basket)' : 'Berat Benda Uji Jenuh di Dalam Air',
+            symbol: 'CAK (Wsub)',
+            unit: 'gram',
+            key: 'cak',
+            step: '0.1'
+        }
+    ];
+
+    let inputRowsHTML = '';
+    inputRowsDef.forEach(r => {
+        let cellsHTML = '';
+        caSpecGravSamples.forEach((s, sIdx) => {
+            const val = s[r.key] !== undefined ? s[r.key] : 0;
+            // Legacy IDs for index 0 to ensure backward compatibility
+            let legacyId = '';
+            if (sIdx === 0) {
+                if (r.key === 'aak') legacyId = 'id="ca-a"';
+                else if (r.key === 'bak') legacyId = 'id="ca-b"';
+                else if (r.key === 'cak') legacyId = 'id="ca-c"';
+            }
+            cellsHTML += `
+                <td class="ca-sample-cell">
+                    <input type="number" class="ca-sample-input" ${legacyId} value="${val}" step="${r.step}" oninput="updateCASampleValue(${sIdx}, '${r.key}', this.value)">
+                </td>
+            `;
+        });
+
+        inputRowsHTML += `
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">${r.no}</td>
+                <td style="font-weight:600;">${r.label}</td>
+                <td style="text-align:center;"><span class="formula-code" style="color:#f97316; border-color:rgba(249,115,22,0.3);">${r.symbol}</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:#ea580c;">${r.unit}</td>
+                ${cellsHTML}
+            </tr>
+        `;
+    });
+
+    // Output rows definitions
+    const outputRowsDef = [
+        {
+            no: 1,
+            label: isEn ? 'Bulk Specific Gravity (Oven-Dry)' : 'Berat Jenis Curah Kering (Bulk Specific Gravity)',
+            symbol: 'Sd',
+            formula: 'AAK / (BAK - CAK)',
+            unit: '-',
+            key: 'sd',
+            decimals: 4,
+            spec: '2.40 - 2.90'
+        },
+        {
+            no: 2,
+            label: isEn ? 'Bulk Specific Gravity (SSD Basis)' : 'Berat Jenis Curah Jenuh Kering Permukaan (SSD)',
+            symbol: 'Ss',
+            formula: 'BAK / (BAK - CAK)',
+            unit: '-',
+            key: 'ss',
+            decimals: 4,
+            spec: '2.50 - 2.90'
+        },
+        {
+            no: 3,
+            label: isEn ? 'Apparent Specific Gravity' : 'Berat Jenis Semu (Apparent Specific Gravity)',
+            symbol: 'Sa',
+            formula: 'AAK / (AAK - CAK)',
+            unit: '-',
+            key: 'sa',
+            decimals: 4,
+            spec: '2.50 - 2.95'
+        },
+        {
+            no: 4,
+            label: isEn ? 'Water Absorption Capacity' : 'Penyerapan Air (Water Absorption)',
+            symbol: 'Sw',
+            formula: '((BAK - AAK) / AAK) * 100%',
+            unit: '%',
+            key: 'sw',
+            decimals: 2,
+            spec: '≤ 2.0% (SNI: ≤ 2.5%)'
+        }
+    ];
+
+    let outputRowsHTML = '';
+    outputRowsDef.forEach(r => {
+        let cellsHTML = '';
+        caSpecGravSamples.forEach((s, sIdx) => {
+            cellsHTML += `
+                <td class="ca-sample-cell fa-val-mono" id="ca-${r.key}-${sIdx}">
+                    -
+                </td>
+            `;
+        });
+
+        outputRowsHTML += `
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">${r.no}</td>
+                <td style="font-weight:600;">${r.label}</td>
+                <td style="text-align:center;"><span class="formula-code" style="color:#f97316; border-color:rgba(249,115,22,0.3);">${r.symbol}</span></td>
+                <td style="font-family:var(--font-mono); font-size:11px; color:var(--text-secondary); text-align:center;">${r.formula}</td>
+                <td style="text-align:center; font-family:var(--font-mono); color:#ea580c;">${r.unit}</td>
+                ${cellsHTML}
+                <td class="ca-avg-col-cell" id="ca-${r.key}-avg">-</td>
+                <td style="text-align:center; font-size:11px; color:var(--text-secondary);" id="ca-${r.key}-spec">
+                    ${r.spec}
+                </td>
+            </tr>
+        `;
+    });
+
+    canvasView.innerHTML = `
+        <div class="module-workspace-container">
+            <!-- Header Banner -->
+            <div class="module-header-banner">
+                <div>
+                    <div class="module-header-title">
+                        <span style="color:#e05638;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="6 11 16 4 26 9 27 21 17 28 6 23"></polygon></svg></span>
+                        ${isEn ? 'COARSE AGGREGATE SPECIFIC GRAVITY & ABSORPTION TEST' : 'UJI BERAT JENIS &amp; PENYERAPAN AIR AGREGAT KASAR'}
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                        ${isEn 
+                            ? 'Hydrostatic wire basket weighing method to determine Bulk Specific Gravity, SSD, Apparent, and Water Absorption per SNI 1969:2008 / ASTM C127.' 
+                            : 'Metode penimbangan keranjang kawat hidrostatik untuk menentukan Berat Jenis Curah (Bulk), SSD, Semu (Apparent), dan Penyerapan Air sesuai SNI 1969:2008 / ASTM C127.'}
+                    </div>
+                </div>
+                <span class="module-header-code" onclick="switchGuideTopic('coarse-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> SNI 1969:2008 / ASTM C127</span>
+            </div>
+
+            <!-- Dynamic Sample Controller Toolbar -->
+            <div class="sample-controller-toolbar">
+                <div class="sample-count-badge">
+                    <span>${isEn ? 'TEST SAMPLES:' : 'JUMLAH SAMPEL PENGUJIAN:'}</span>
+                    <span class="sample-count-pill" id="ca-sample-count-pill" style="color:#f97316; border-color:rgba(249,115,22,0.4); background:rgba(249,115,22,0.12);">
+                        ${n} ${isEn ? 'SAMPLES' : 'SAMPEL'} ${isDuplo ? '(DUPLO)' : ''}
+                    </span>
+                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
+                        ${isDuplo ? (isEn ? '• Standard Duplo SNI 1969:2008' : '• Standar Uji Duplo SNI 1969:2008') : ''}
+                    </span>
+                </div>
+                <div class="sample-actions-group">
+                    <button class="btn-sample-action btn-add-sample" onclick="addCASample()" ${n >= 6 ? 'disabled' : ''} title="Tambah Kolom Sampel Baru">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        ${isEn ? 'Add Sample' : 'Tambah Sampel'}
+                    </button>
+                    <button class="btn-sample-action btn-remove-sample" onclick="removeCASample()" ${n <= 1 ? 'disabled' : ''} title="Kurangi Kolom Sampel">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        ${isEn ? 'Remove Sample' : 'Kurangi Sampel'}
+                    </button>
+                    <button class="btn-sample-action btn-reset-sample" onclick="resetCASampleDefaults()" title="Kembali ke 2 Sampel Standar SNI">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                        ${isEn ? 'Reset Default' : 'Reset Standar'}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table 1: Lab Data Input Grid -->
+            <div class="testing-calc-card" style="width: 100%;">
+                <div class="testing-calc-header">
+                    <span>${isEn ? 'TABLE 1: LABORATORY RAW MEASUREMENT DATA' : 'TABEL 1: DATA PENGUKURAN LABORATORIUM (RAW LAB MEASUREMENTS)'}</span>
+                    <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT GRID</span>
+                </div>
+                <div class="fa-table-scroll-wrap">
+                    <table class="ca-report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">No</th>
+                                <th>${isEn ? 'Measurement Parameter' : 'Parameter Pengukuran Benda Uji'}</th>
+                                <th style="text-align: center;">${isEn ? 'Lab Symbol' : 'Notasi Lab'}</th>
+                                <th style="text-align: center;">${isEn ? 'Unit' : 'Satuan'}</th>
+                                ${sampleHeadersHTML}
+                            </tr>
+                        </thead>
+                        <tbody id="ca-input-tbody">
+                            ${inputRowsHTML}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                    ${isEn 
+                        ? '*Values can be edited directly with decimals. Recalculation happens automatically in real time.' 
+                        : '*Nilai dapat diedit langsung dalam format desimal. Perhitungan output diperbarui secara otomatis real-time.'}
+                </div>
+            </div>
+
+            <!-- Table 2: Automated Real-time Calculation & Output Grid -->
+            <div class="testing-calc-card" style="width: 100%; margin-top: 14px;">
+                <div class="testing-calc-header">
+                    <span>${isEn ? 'TABLE 2: SPECIFIC GRAVITY & ABSORPTION CALCULATION RESULTS' : 'TABEL 2: HASIL PERHITUNGAN BERAT JENIS &amp; PENYERAPAN AIR'}</span>
+                    <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED REAL-TIME</span>
+                </div>
+                <div class="fa-table-scroll-wrap">
+                    <table class="ca-report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">No</th>
+                                <th>${isEn ? 'Calculated Parameter' : 'Parameter Hasil Perhitungan'}</th>
+                                <th style="text-align: center;">${isEn ? 'Symbol' : 'Notasi'}</th>
+                                <th style="text-align: center;">${isEn ? 'Formula' : 'Rumus Acuan'}</th>
+                                <th style="text-align: center;">${isEn ? 'Unit' : 'Satuan'}</th>
+                                ${sampleHeadersHTML}
+                                <th class="ca-avg-col-header">${isEn ? 'Average' : 'Rata-rata'}</th>
+                                <th style="text-align: center; min-width: 130px;">${isEn ? 'SNI Specification' : 'Standar SNI 1969'}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ca-output-tbody">
+                            ${outputRowsHTML}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Card 3: Summary Metrics Grid -->
+            <div class="fa-summary-metrics-grid">
+                <div class="ca-metric-box">
+                    <span class="metric-title">${isEn ? 'Bulk Specific Gravity (Sd)' : 'Berat Jenis Curah Kering (Sd)'}</span>
+                    <span class="metric-val" id="ca-card-metric-sd">-</span>
+                    <span class="metric-sub" id="ca-card-sub-sd">${isEn ? 'Target: 2.40 - 2.90' : 'Standar: 2.40 - 2.90'}</span>
+                </div>
+                <div class="ca-metric-box">
+                    <span class="metric-title">${isEn ? 'SSD Specific Gravity (Ss)' : 'Berat Jenis SSD (Ss)'}</span>
+                    <span class="metric-val" id="ca-card-metric-ss">-</span>
+                    <span class="metric-sub">${isEn ? 'Saturated Surface-Dry' : 'Kondisi Jenuh Kering Permukaan'}</span>
+                </div>
+                <div class="ca-metric-box">
+                    <span class="metric-title">${isEn ? 'Apparent Specific Gravity (Sa)' : 'Berat Jenis Semu (Sa)'}</span>
+                    <span class="metric-val" id="ca-card-metric-sa">-</span>
+                    <span class="metric-sub">${isEn ? 'Apparent (Impermeable)' : 'Bebas Pori Kedap Air'}</span>
+                </div>
+                <div class="ca-metric-box">
+                    <span class="metric-title">${isEn ? 'Water Absorption (Sw %)' : 'Penyerapan Air (Sw %)'}</span>
+                    <span class="metric-val" id="ca-card-metric-sw">-</span>
+                    <span class="metric-sub" id="ca-card-sub-sw">${isEn ? 'Target: ≤ 2.00%' : 'Batas Maksimum: ≤ 2.00%'}</span>
+                </div>
+            </div>
+
+            <!-- Card 4: Technical Conclusion & SNI 1969:2008 Evaluation -->
+            <div class="testing-calc-card" style="width: 100%; margin-top: 14px;" id="ca-conclusion-card">
+                <div class="testing-calc-header" style="flex-wrap: wrap; gap: 8px;">
+                    <span>${isEn ? 'SPECIFICATION EVALUATION & CONCRETE SUITABILITY CONCLUSION' : 'KESIMPULAN PENGUJIAN &amp; EVALUASI MUTU AGREGAT KASAR (SNI 1969:2008)'}</span>
+                    <span class="telemetry-chip live-chip" id="ca-eval-status-badge">MEMENUHI SYARAT (SNI 1969:2008 / ASTM C127)</span>
+                </div>
+                <div style="padding: 16px 20px;">
+                    <div id="ca-conclusion-text" style="font-size: 13px; line-height: 1.7; color: var(--text-pure); margin-bottom: 14px;">
+                        <!-- Dynamically populated -->
+                    </div>
+
+                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:10px 14px; background:rgba(8,16,36,0.6); border:1px solid var(--border-dim); border-radius:6px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:14px; color:#f97316;">ℹ️</span>
+                            <span style="font-size:11.5px; color:var(--text-secondary);">
+                                ${isEn 
+                                    ? 'Detailed calculation methodologies, hydrostatic basket calibration, and ASTM C127 standards are accessible in Testing Guides.' 
+                                    : 'Metode kalibrasi penimbangan hidrostatik, rumus teknis, dan prosedur SNI 1969:2008 tersedia lengkap di Panduan Pengujian.'}
+                            </span>
+                        </div>
+                        <button class="btn-guide-jump" onclick="switchGuideTopic('coarse-aggregate')" style="padding:4px 12px; font-size:11px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:6px;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                            ${isEn ? 'Open Testing Guides (Coarse Aggregate)' : 'Buka Modul Panduan (Agregat Kasar)'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    calcCASpecGrav();
+}
+
 function renderCoarseAggregateWorkspace(subViewId) {
     if (!canvasView || !panelView) return;
     canvasView.classList.add('scroll-mode');
@@ -10252,62 +10621,7 @@ function renderCoarseAggregateWorkspace(subViewId) {
     let curSub = subViewId || 'ca-spec-grav';
 
     if (curSub === 'ca-spec-grav') {
-        canvasView.innerHTML = `
-            <div class="module-workspace-container">
-                <div class="module-header-banner">
-                    <div>
-                        <div class="module-header-title">
-                            <span style="color:#e05638;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="6 11 16 4 26 9 27 21 17 28 6 23"></polygon></svg></span>
-                            BERAT JENIS &amp; PENYERAPAN AIR KERIKIL (HYDROSTATIC BALANCE)
-                        </div>
-                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
-                            Metode penimbangan keranjang kawat dalam air untuk menentukan Bulk Specific Gravity dan penyerapan kerikil.
-                        </div>
-                    </div>
-                    <span class="module-header-code" onclick="switchGuideTopic('coarse-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> SNI 1969:2016 / ASTM C127</span>
-                </div>
-                <div class="testing-calc-grid">
-                    <div class="testing-calc-card">
-                        <div class="testing-calc-header">
-                            <span>PARAMETER PENIMBANGAN HIDROSTATIS</span>
-                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Kering Oven Kerikil (A)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="ca-a" value="2980" step="1" oninput="calcCASpecGrav()">
-                                <span class="testing-input-unit">gram</span>
-                            </div>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Benda Uji Jenuh Kering Permukaan / SSD (B)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="ca-b" value="3040" step="1" oninput="calcCASpecGrav()">
-                                <span class="testing-input-unit">gram</span>
-                            </div>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Contoh Dalam Air (C)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="ca-c" value="1890" step="1" oninput="calcCASpecGrav()">
-                                <span class="testing-input-unit">gram</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="testing-calc-card">
-                        <div class="testing-calc-header">
-                            <span>HASIL EVALUASI SPESIFIKASI</span>
-                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
-                        </div>
-                        <div class="testing-result-box" id="ca-result-box"></div>
-                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
-                            *Batas SNI: Penyerapan air kerikil &le; 2.5%, dan Berat Jenis Curah Kering &ge; 2.50.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        calcCASpecGrav();
+        renderCASpecGravWorkspace();
     } else if (curSub === 'ca-moisture') {
         canvasView.innerHTML = `
             <div class="module-workspace-container">
@@ -10598,41 +10912,131 @@ function renderCoarseAggregateWorkspace(subViewId) {
 }
 
 function calcCASpecGrav() {
-    let A = parseFloat(document.getElementById('ca-a')?.value) || 2980;
-    let B = parseFloat(document.getElementById('ca-b')?.value) || 3040;
-    let C = parseFloat(document.getElementById('ca-c')?.value) || 1890;
+    const isEn = (typeof currentLang !== 'undefined' && currentLang === 'EN');
+    const n = caSpecGravSamples.length;
+    if (n === 0) return;
 
-    let denom = (B - C);
-    if (denom <= 0) denom = 1150;
+    let sumSd = 0;
+    let sumSs = 0;
+    let sumSa = 0;
+    let sumSw = 0;
 
-    let Gsb = (A / denom).toFixed(3);
-    let Gssd = (B / denom).toFixed(3);
-    let Gsa = (A / (A - C)).toFixed(3);
-    let Sw = (((B - A) / A) * 100).toFixed(2);
-    let isPass = (parseFloat(Sw) <= 2.5 && parseFloat(Gsb) >= 2.50);
+    let validCountSd = 0;
+    let validCountSs = 0;
+    let validCountSa = 0;
+    let validCountSw = 0;
 
-    let resBox = document.getElementById('ca-result-box');
-    if (resBox) {
-        resBox.innerHTML = `
+    caSpecGravSamples.forEach((s, idx) => {
+        const A = parseFloat(s.aak) || 0;
+        const B = parseFloat(s.bak) || 0;
+        const C = parseFloat(s.cak) || 0;
+
+        const denom = B - C;
+        const appDenom = A - C;
+
+        const sd = denom > 0 ? (A / denom) : 0;
+        const ss = denom > 0 ? (B / denom) : 0;
+        const sa = appDenom > 0 ? (A / appDenom) : 0;
+        const sw = A > 0 ? (((B - A) / A) * 100) : 0;
+
+        if (sd > 0) { sumSd += sd; validCountSd++; }
+        if (ss > 0) { sumSs += ss; validCountSs++; }
+        if (sa > 0) { sumSa += sa; validCountSa++; }
+        if (A > 0) { sumSw += sw; validCountSw++; }
+
+        const cellSd = document.getElementById(`ca-sd-${idx}`);
+        const cellSs = document.getElementById(`ca-ss-${idx}`);
+        const cellSa = document.getElementById(`ca-sa-${idx}`);
+        const cellSw = document.getElementById(`ca-sw-${idx}`);
+
+        if (cellSd) cellSd.textContent = sd > 0 ? sd.toFixed(4) : '-';
+        if (cellSs) cellSs.textContent = ss > 0 ? ss.toFixed(4) : '-';
+        if (cellSa) cellSa.textContent = sa > 0 ? sa.toFixed(4) : '-';
+        if (cellSw) cellSw.textContent = A > 0 ? `${sw.toFixed(2)}%` : '-';
+    });
+
+    const avgSd = validCountSd > 0 ? (sumSd / validCountSd) : 0;
+    const avgSs = validCountSs > 0 ? (sumSs / validCountSs) : 0;
+    const avgSa = validCountSa > 0 ? (sumSa / validCountSa) : 0;
+    const avgSw = validCountSw > 0 ? (sumSw / validCountSw) : 0;
+
+    const elAvgSd = document.getElementById('ca-sd-avg');
+    const elAvgSs = document.getElementById('ca-ss-avg');
+    const elAvgSa = document.getElementById('ca-sa-avg');
+    const elAvgSw = document.getElementById('ca-sw-avg');
+
+    if (elAvgSd) elAvgSd.textContent = avgSd > 0 ? avgSd.toFixed(4) : '-';
+    if (elAvgSs) elAvgSs.textContent = avgSs > 0 ? avgSs.toFixed(4) : '-';
+    if (elAvgSa) elAvgSa.textContent = avgSa > 0 ? avgSa.toFixed(4) : '-';
+    if (elAvgSw) elAvgSw.textContent = validCountSw > 0 ? `${avgSw.toFixed(2)}%` : '-';
+
+    // Summary Metric Cards
+    const cardSd = document.getElementById('ca-card-metric-sd');
+    const cardSs = document.getElementById('ca-card-metric-ss');
+    const cardSa = document.getElementById('ca-card-metric-sa');
+    const cardSw = document.getElementById('ca-card-metric-sw');
+
+    if (cardSd) cardSd.textContent = avgSd > 0 ? avgSd.toFixed(3) : '-';
+    if (cardSs) cardSs.textContent = avgSs > 0 ? avgSs.toFixed(3) : '-';
+    if (cardSa) cardSa.textContent = avgSa > 0 ? avgSa.toFixed(3) : '-';
+    if (cardSw) cardSw.textContent = validCountSw > 0 ? `${avgSw.toFixed(2)}%` : '-';
+
+    // Evaluations against SNI 1969:2008 / ASTM C127
+    const isSdPass = (avgSd >= 2.40 && avgSd <= 2.90);
+    const isSwPass = (avgSw <= 2.00);
+    const isOverallPass = (isSdPass && isSwPass);
+
+    const badgeEl = document.getElementById('ca-eval-status-badge');
+    if (badgeEl) {
+        if (isOverallPass) {
+            badgeEl.textContent = isEn ? 'MEETS SPECIFICATIONS (SNI 1969:2008 / ASTM C127)' : 'MEMENUHI SYARAT (SNI 1969:2008 / ASTM C127)';
+            badgeEl.className = 'telemetry-chip live-chip';
+            badgeEl.style.color = 'var(--accent-emerald)';
+        } else {
+            badgeEl.textContent = isEn ? 'ATTENTION: OUTSIDE STANDARD LIMITS' : 'PERLU PERHATIAN / DI LUAR RENTANG STANDAR';
+            badgeEl.className = 'telemetry-chip';
+            badgeEl.style.color = '#ef4444';
+        }
+    }
+
+    const concluEl = document.getElementById('ca-conclusion-text');
+    if (concluEl) {
+        if (isOverallPass) {
+            concluEl.innerHTML = isEn 
+                ? `Based on hydrostatic balance testing of <strong>${n} sample(s)</strong>, the coarse aggregate exhibits an average bulk specific gravity of <strong style="color:#f97316;">${avgSd.toFixed(3)}</strong>, an SSD specific gravity of <strong style="color:var(--cyan-neon);">${avgSs.toFixed(3)}</strong>, an apparent specific gravity of <strong>${avgSa.toFixed(3)}</strong>, and a water absorption of <strong style="color:var(--accent-emerald);">${avgSw.toFixed(2)}%</strong>. All parameters <strong style="color:var(--accent-emerald);">SATISFY SNI 1969:2008 / ASTM C127 SPECIFICATIONS</strong> (absorption &le; 2.0% and bulk specific gravity &ge; 2.40). The aggregate is approved for structural concrete mixtures per SNI 2847:2019 and ASTM C33.`
+                : `Berdasarkan pengujian hidrostatik terhadap <strong>${n} sampel uji</strong>, agregat kasar (kerikil / batu pecah) memiliki berat jenis curah kering rata-rata sebesar <strong style="color:#f97316;">${avgSd.toFixed(3)}</strong>, berat jenis SSD rata-rata <strong style="color:var(--cyan-neon);">${avgSs.toFixed(3)}</strong>, berat jenis semu rata-rata <strong>${avgSa.toFixed(3)}</strong>, serta penyerapan air rata-rata sebesar <strong style="color:var(--accent-emerald);">${avgSw.toFixed(2)}%</strong>. Seluruh parameter <strong style="color:var(--accent-emerald);">MEMENUHI PERSYARATAN SNI 1969:2008 / ASTM C127</strong> (penyerapan air &le; 2.0% dan berat jenis curah &ge; 2.40). Agregat kasar dinyatakan layak digunakan sebagai bahan campuran beton struktural sesuai SNI 2847:2019.`;
+        } else {
+            concluEl.innerHTML = isEn
+                ? `One or more test parameters do not meet SNI 1969:2008 standard limits: average absorption is <strong style="color:#ef4444;">${avgSw.toFixed(2)}%</strong> (standard: &le; 2.00%) or bulk specific gravity is <strong style="color:#ef4444;">${avgSd.toFixed(3)}</strong> (typical: 2.40 - 2.90). High absorption can withdraw mixing water and degrade workability and concrete compressive strength. Mix design water compensation or aggregate re-sourcing is recommended.`
+                : `Satu atau lebih parameter pengujian berada di luar toleransi standar SNI 1969:2008: penyerapan air rata-rata tercatat <strong style="color:#ef4444;">${avgSw.toFixed(2)}%</strong> (standar acuan: &le; 2.00%) atau berat jenis curah tercatat <strong style="color:#ef4444;">${avgSd.toFixed(3)}</strong> (rentang normal: 2.40 - 2.90). Agregat berpori tinggi dapat menyerap air pencampur secara berlebih dan mengurangi kuat tekan beton. Direkomendasikan koreksi kadar air pada job mix design (batching plant) atau pengujian sumber kuari alternatif.`;
+        }
+    }
+
+    // Legacy fallback if ca-result-box element is present
+    const legacyResBox = document.getElementById('ca-result-box');
+    if (legacyResBox) {
+        legacyResBox.innerHTML = `
             <div class="result-row">
                 <span class="result-label">1. Berat Jenis Curah Kering (Bulk Specific Gravity):</span>
-                <span class="result-val">${Gsb}</span>
+                <span class="result-val">${avgSd.toFixed(3)}</span>
             </div>
             <div class="result-row">
                 <span class="result-label">2. Berat Jenis SSD Kerikil:</span>
-                <span class="result-val">${Gssd}</span>
+                <span class="result-val">${avgSs.toFixed(3)}</span>
             </div>
             <div class="result-row">
                 <span class="result-label">3. Berat Jenis Semu (Apparent):</span>
-                <span class="result-val">${Gsa}</span>
+                <span class="result-val">${avgSa.toFixed(3)}</span>
             </div>
             <div class="result-row">
                 <span class="result-label">4. Penyerapan Air (Water Absorption):</span>
-                <span class="result-val ${parseFloat(Sw) <= 2.5 ? 'status-pass' : 'status-fail'}">${Sw}%</span>
+                <span class="result-val ${isSwPass ? 'status-pass' : 'status-fail'}">${avgSw.toFixed(2)}%</span>
             </div>
             <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
-                <span class="result-label">Evaluasi SNI 1969:2016:</span>
-                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}">${isPass ? '✓ MEMENUHI SYARAT BETON STRUKTURAL' : '✗ DI LUAR STANDAR'}</span>
+                <span class="result-label">Evaluasi SNI 1969:2008:</span>
+                <span class="result-val ${isOverallPass ? 'status-pass' : 'status-fail'}" style="font-size:13px; font-weight:800;">
+                    ${isOverallPass ? '✓ MEMENUHI PERSYARATAN (LAYAK PAKAI)' : '✗ DI LUAR STANDAR'}
+                </span>
             </div>
         `;
     }

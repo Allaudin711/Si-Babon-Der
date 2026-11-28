@@ -5679,3 +5679,128 @@ body:not(.right-sidebar-collapsed) #btn-edge-right-toggle svg {
     line-height: 1.5;
     margin-top: 14px;
 }
+
+/* ==========================================================================
+   COARSE AGGREGATE LAB REPORT TABLE & SPECIFIC GRAVITY (SNI 1969 / ASTM C127)
+   ========================================================================== */
+.ca-report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11.5px;
+    font-family: var(--font-sans);
+    min-width: 600px;
+}
+
+.ca-report-table th {
+    background: rgba(24, 28, 48, 0.95);
+    color: var(--chapter-accent, #e05638);
+    padding: 9px 12px;
+    font-weight: 700;
+    font-family: var(--font-heading);
+    font-size: 11px;
+    border: 1px solid var(--border-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+}
+
+.ca-report-table td {
+    padding: 8px 12px;
+    border: 1px solid var(--border-dim);
+    color: var(--text-pure);
+    vertical-align: middle;
+}
+
+.ca-report-table tr:nth-child(even) {
+    background: rgba(18, 24, 46, 0.4);
+}
+
+.ca-report-table tr:hover {
+    background: rgba(224, 86, 56, 0.05);
+}
+
+.ca-sample-col-header {
+    min-width: 110px;
+    text-align: center !important;
+    color: #f97316 !important;
+}
+
+.ca-avg-col-header {
+    min-width: 120px;
+    text-align: center !important;
+    background: rgba(224, 86, 56, 0.18) !important;
+    color: #fb923c !important;
+    border-left: 2px solid rgba(224, 86, 56, 0.5) !important;
+}
+
+.ca-sample-cell {
+    text-align: center;
+}
+
+.ca-avg-col-cell {
+    font-family: var(--font-mono);
+    font-weight: 800;
+    text-align: center;
+    color: #fb923c;
+    background: rgba(224, 86, 56, 0.08);
+    border-left: 2px solid rgba(224, 86, 56, 0.4);
+}
+
+.ca-sample-input {
+    width: 90px;
+    padding: 5px 8px;
+    border-radius: 5px;
+    background: rgba(8, 16, 36, 0.85);
+    border: 1px solid var(--border-dim);
+    color: var(--text-pure);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: right;
+    transition: all 0.2s ease;
+}
+
+.ca-sample-input:focus {
+    outline: none;
+    border-color: #f97316;
+    box-shadow: 0 0 8px rgba(249, 115, 22, 0.35);
+    background: rgba(20, 24, 48, 0.95);
+}
+
+.ca-metric-box {
+    background: rgba(8, 16, 36, 0.85);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+    border-left: 3px solid #e05638;
+    transition: all 0.2s ease;
+}
+
+.ca-metric-box:hover {
+    border-color: rgba(224, 86, 56, 0.5);
+    transform: translateY(-1px);
+}
+
+.ca-metric-box .metric-title {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.ca-metric-box .metric-val {
+    font-size: 19px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    color: #f97316;
+}
+
+.ca-metric-box .metric-sub {
+    font-size: 10.5px;
+    color: var(--text-muted);
+}
