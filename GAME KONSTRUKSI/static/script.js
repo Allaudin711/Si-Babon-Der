@@ -6619,73 +6619,7 @@ function renderFineAggregateWorkspace(subViewId) {
 
     // Sub-view definitions
     if (subViewId === 'fa-spec-grav') {
-        canvasView.innerHTML = `
-            <div class="module-workspace-container">
-                <div class="module-header-banner">
-                    <div>
-                        <div class="module-header-title">
-                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span>
-                            UJI BERAT JENIS &amp; PENYERAPAN AIR AGREGAT HALUS
-                        </div>
-                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
-                            Pengujian piknometer untuk menentukan Bulk Specific Gravity, SSD, dan Water Absorption pasir beton.
-                        </div>
-                    </div>
-                    <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> SNI 1970:2016 / ASTM C128</span>
-                </div>
-
-                <div class="testing-calc-grid">
-                    <div class="testing-calc-card">
-                        <div class="testing-calc-header">
-                            <span>PARAMETER PENGUKURAN PIKNOMETER</span>
-                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Benda Uji Kering Oven (Wd)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-wd" value="490.5" step="0.1" oninput="calcFASpecGrav()">
-                                <span class="testing-input-unit">gram</span>
-                            </div>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Benda Uji Kondisi Jenuh Kering Permukaan / SSD (Wssd)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-wssd" value="500.0" step="0.1" oninput="calcFASpecGrav()">
-                                <span class="testing-input-unit">gram</span>
-                            </div>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Piknometer Diisi Air Penuh (Wpyc)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-wpyc" value="650.0" step="0.1" oninput="calcFASpecGrav()">
-                                <span class="testing-input-unit">gram</span>
-                            </div>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Piknometer + Pasir + Air (Wtotal)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-wtotal" value="962.2" step="0.1" oninput="calcFASpecGrav()">
-                                <span class="testing-input-unit">gram</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="testing-calc-card">
-                        <div class="testing-calc-header">
-                            <span>HASIL KALKULASI &amp; VERIFIKASI SNI</span>
-                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
-                        </div>
-                        <div class="testing-result-box" id="fa-result-box">
-                            <!-- Calculated via JS -->
-                        </div>
-                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
-                            *Batas SNI: Pasir beton berkualitas baik memiliki penyerapan air &le; 3.0% dan Berat Jenis Curah (Dry) &ge; 2.40.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        calcFASpecGrav();
+        renderFASpecGravWorkspace();
     } else if (subViewId === 'fa-sieve') {
         canvasView.innerHTML = `
             <div class="module-workspace-container">
@@ -6746,44 +6680,450 @@ function renderFineAggregateWorkspace(subViewId) {
     renderFineAggregateReferenceGuide(subViewId);
 }
 
+/* ==========================================================================
+   DYNAMIC MULTI-SAMPLE LAB REPORT & REAL-TIME CALCULATION (SNI 1970 / ASTM C128)
+   ========================================================================== */
+/* ==========================================================================
+   DYNAMIC MULTI-SAMPLE LAB REPORT & REAL-TIME CALCULATION (SNI 1970 / ASTM C128)
+   ========================================================================== */
+const DEFAULT_FA_SPEC_GRAV_SAMPLES = [
+    { name: 'Sampel I', sah: 500.0, aah: 490.5, bah: 650.0, cah: 962.2 },
+    { name: 'Sampel II', sah: 500.0, aah: 489.8, bah: 650.0, cah: 961.8 }
+];
+
+let faSpecGravSamples = JSON.parse(JSON.stringify(DEFAULT_FA_SPEC_GRAV_SAMPLES));
+
+function getRomanNumeral(n) {
+    const romans = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+    return romans[n - 1] || `${n}`;
+}
+
+function addFASample() {
+    if (faSpecGravSamples.length >= 6) {
+        if (typeof showToast === 'function') {
+            showToast(currentLang === 'EN' ? 'Maximum 6 samples allowed' : 'Jumlah sampel maksimum adalah 6', 'warning');
+        }
+        return;
+    }
+    const idx = faSpecGravSamples.length + 1;
+    const lastSample = faSpecGravSamples[faSpecGravSamples.length - 1];
+    faSpecGravSamples.push({
+        name: currentLang === 'EN' ? `Sample ${getRomanNumeral(idx)}` : `Sampel ${getRomanNumeral(idx)}`,
+        sah: 500.0,
+        aah: lastSample ? Number((lastSample.aah - 0.7).toFixed(1)) : 490.0,
+        bah: 650.0,
+        cah: lastSample ? Number((lastSample.cah - 0.4).toFixed(1)) : 962.0
+    });
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFASpecGravWorkspace();
+    if (typeof showToast === 'function') {
+        showToast(currentLang === 'EN' ? `Sample ${getRomanNumeral(idx)} added` : `Sampel ${getRomanNumeral(idx)} berhasil ditambahkan`, 'success');
+    }
+}
+
+function removeFASample() {
+    if (faSpecGravSamples.length <= 1) {
+        if (typeof showToast === 'function') {
+            showToast(currentLang === 'EN' ? 'Minimum 1 sample required' : 'Minimal harus ada 1 sampel pengujian', 'warning');
+        }
+        return;
+    }
+    const removed = faSpecGravSamples.pop();
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFASpecGravWorkspace();
+    if (typeof showToast === 'function') {
+        showToast(currentLang === 'EN' ? `${removed.name} removed` : `${removed.name} dihapus`, 'info');
+    }
+}
+
+function resetFASampleDefaults() {
+    faSpecGravSamples = JSON.parse(JSON.stringify(DEFAULT_FA_SPEC_GRAV_SAMPLES));
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFASpecGravWorkspace();
+    if (typeof showToast === 'function') {
+        showToast(currentLang === 'EN' ? 'Reset to default Duplo samples (SNI 1970)' : 'Parameter sampel di-reset ke standar Duplo (SNI 1970)', 'info');
+    }
+}
+
+function updateFASampleValue(sampleIdx, paramKey, val) {
+    const parsed = parseFloat(val);
+    if (!isNaN(parsed) && faSpecGravSamples[sampleIdx]) {
+        faSpecGravSamples[sampleIdx][paramKey] = parsed;
+        const rowMap = { sah: 0, aah: 1, bah: 2, cah: 3 };
+        const rowIdx = rowMap[paramKey];
+        if (rowIdx !== undefined) {
+            const rowInputs = document.querySelectorAll('#fa-input-tbody tr');
+            if (rowInputs[rowIdx]) {
+                const inp = rowInputs[rowIdx].querySelectorAll('input')[sampleIdx];
+                if (inp && parseFloat(inp.value) !== parsed) {
+                    inp.value = parsed;
+                }
+            }
+        }
+    }
+    calcFASpecGrav();
+}
+
+function renderFASpecGravWorkspace() {
+    if (!canvasView) return;
+    canvasView.classList.add('scroll-mode');
+
+    const isEn = (currentLang === 'EN');
+    const n = faSpecGravSamples.length;
+    const isDuplo = (n === 2);
+
+    let sampleHeadersHTML = '';
+    faSpecGravSamples.forEach((s, idx) => {
+        const sName = isEn ? `Sample ${getRomanNumeral(idx + 1)}` : (s.name || `Sampel ${getRomanNumeral(idx + 1)}`);
+        sampleHeadersHTML += `<th class="fa-sample-col-header">${sName}</th>`;
+    });
+
+    // Generate input rows
+    const inputRowsDef = [
+        {
+            no: 1,
+            label: isEn ? 'Saturated Surface-Dry (SSD) Specimen Mass' : 'Berat Benda Uji Kondisi Jenuh Kering Permukaan (SSD)',
+            symbol: 'SAH (Wssd)',
+            unit: 'gram',
+            key: 'sah',
+            step: '0.1'
+        },
+        {
+            no: 2,
+            label: isEn ? 'Oven-Dry Specimen Mass' : 'Berat Benda Uji Kering Oven',
+            symbol: 'AAH (Wd)',
+            unit: 'gram',
+            key: 'aah',
+            step: '0.1'
+        },
+        {
+            no: 3,
+            label: isEn ? 'Mass of Pycnometer Filled with Water' : 'Berat Piknometer Diisi Air Penuh',
+            symbol: 'BAH (Wpyc)',
+            unit: 'gram',
+            key: 'bah',
+            step: '0.1'
+        },
+        {
+            no: 4,
+            label: isEn ? 'Mass of Pycnometer + Specimen + Water' : 'Berat Piknometer + Benda Uji + Air',
+            symbol: 'CAH (Wtotal)',
+            unit: 'gram',
+            key: 'cah',
+            step: '0.1'
+        }
+    ];
+
+    let inputRowsHTML = '';
+    inputRowsDef.forEach(r => {
+        let cellsHTML = '';
+        faSpecGravSamples.forEach((s, sIdx) => {
+            const val = s[r.key] !== undefined ? s[r.key] : 0;
+            // Legacy IDs for index 0 to guarantee any external scripts continue working seamlessly
+            let legacyId = '';
+            if (sIdx === 0) {
+                if (r.key === 'aah') legacyId = 'id="fa-wd"';
+                else if (r.key === 'sah') legacyId = 'id="fa-wssd"';
+                else if (r.key === 'bah') legacyId = 'id="fa-wpyc"';
+                else if (r.key === 'cah') legacyId = 'id="fa-wtotal"';
+            }
+            cellsHTML += `
+                <td class="fa-sample-cell">
+                    <input type="number" class="fa-sample-input" ${legacyId} value="${val}" step="${r.step}" oninput="updateFASampleValue(${sIdx}, '${r.key}', this.value)">
+                </td>
+            `;
+        });
+
+        inputRowsHTML += `
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">${r.no}</td>
+                <td style="font-weight:600;">${r.label}</td>
+                <td style="text-align:center;"><span class="formula-code">${r.symbol}</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">${r.unit}</td>
+                ${cellsHTML}
+            </tr>
+        `;
+    });
+
+    canvasView.innerHTML = `
+        <div class="module-workspace-container">
+            <div class="module-header-banner">
+                <div>
+                    <div class="module-header-title">
+                        <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span>
+                        ${isEn ? 'FINE AGGREGATE SPECIFIC GRAVITY & ABSORPTION TEST' : 'UJI BERAT JENIS &amp; PENYERAPAN AIR AGREGAT HALUS'}
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                        ${isEn 
+                            ? 'Standard pycnometer test to determine Bulk Specific Gravity, SSD, Apparent, and Water Absorption of sand.' 
+                            : 'Pengujian piknometer untuk menentukan Bulk Specific Gravity, SSD, Apparent, dan Water Absorption pasir beton.'}
+                    </div>
+                </div>
+                <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> SNI 1970:2016 / ASTM C128</span>
+            </div>
+
+            <!-- Dynamic Sample Controller Toolbar -->
+            <div class="sample-controller-toolbar">
+                <div class="sample-count-badge">
+                    <span>${isEn ? 'TEST SAMPLES:' : 'JUMLAH SAMPEL PENGUJIAN:'}</span>
+                    <span class="sample-count-pill" id="fa-sample-count-pill">
+                        ${n} ${isEn ? 'SAMPLES' : 'SAMPEL'} ${isDuplo ? '(DUPLO)' : ''}
+                    </span>
+                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
+                        ${isDuplo ? (isEn ? '• Standard Duplo SNI 1970' : '• Standar Uji Duplo SNI 1970') : ''}
+                    </span>
+                </div>
+                <div class="sample-actions-group">
+                    <button class="btn-sample-action btn-add-sample" onclick="addFASample()" ${n >= 6 ? 'disabled' : ''} title="Tambah Kolom Sampel Baru">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        ${isEn ? 'Add Sample' : 'Tambah Sampel'}
+                    </button>
+                    <button class="btn-sample-action btn-remove-sample" onclick="removeFASample()" ${n <= 1 ? 'disabled' : ''} title="Kurangi Kolom Sampel">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        ${isEn ? 'Remove Sample' : 'Kurangi Sampel'}
+                    </button>
+                    <button class="btn-sample-action btn-reset-sample" onclick="resetFASampleDefaults()" title="Kembali ke 2 Sampel Standar SNI">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                        ${isEn ? 'Reset Default' : 'Reset Standar'}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table 1: Lab Data Input Grid -->
+            <div class="testing-calc-card" style="width: 100%;">
+                <div class="testing-calc-header">
+                    <span>${isEn ? 'TABLE 1: LABORATORY RAW MEASUREMENT DATA' : 'TABEL 1: DATA PENGUKURAN LABORATORIUM (RAW LAB MEASUREMENTS)'}</span>
+                    <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT GRID</span>
+                </div>
+                <div class="fa-table-scroll-wrap">
+                    <table class="fa-report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">No</th>
+                                <th>${isEn ? 'Measurement Parameter' : 'Parameter Pengukuran Benda Uji'}</th>
+                                <th style="text-align: center;">${isEn ? 'Lab Symbol' : 'Notasi Lab'}</th>
+                                <th style="text-align: center;">${isEn ? 'Unit' : 'Satuan'}</th>
+                                ${sampleHeadersHTML}
+                            </tr>
+                        </thead>
+                        <tbody id="fa-input-tbody">
+                            ${inputRowsHTML}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                    ${isEn 
+                        ? '*Values can be edited directly with decimals. Recalculation happens automatically.' 
+                        : '*Nilai dapat diedit langsung dalam format desimal. Perhitungan output diperbarui secara otomatis real-time.'}
+                </div>
+            </div>
+
+            <!-- Table 2: Automated Real-time Calculation & Output Grid -->
+            <div class="testing-calc-card" style="width: 100%; margin-top: 14px;">
+                <div class="testing-calc-header">
+                    <span>${isEn ? 'TABLE 2: SPECIFIC GRAVITY & ABSORPTION CALCULATION RESULTS' : 'TABEL 2: HASIL PERHITUNGAN BERAT JENIS &amp; PENYERAPAN AIR'}</span>
+                    <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED REAL-TIME</span>
+                </div>
+                <div class="fa-table-scroll-wrap">
+                    <table class="fa-report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">No</th>
+                                <th>${isEn ? 'Test Parameter' : 'Parameter Hasil Pengujian'}</th>
+                                <th>${isEn ? 'Formula / Calculation Notation' : 'Notasi &amp; Rumus Perhitungan'}</th>
+                                <th style="text-align: center;">${isEn ? 'Unit' : 'Satuan'}</th>
+                                ${sampleHeadersHTML}
+                                <th class="fa-avg-col-header">${isEn ? 'AVERAGE' : 'RATA-RATA'}</th>
+                                <th style="text-align: center;">${isEn ? 'Standard Limit (SNI 1970)' : 'Syarat Mutu (SNI 1970)'}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fa-output-tbody">
+                            <!-- Populated dynamically via calcFASpecGrav -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Summary Metrics & Compliance Verification -->
+                <div id="fa-summary-metrics">
+                    <!-- Populated dynamically via calcFASpecGrav -->
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Perform initial live calculation
+    calcFASpecGrav();
+}
+
 function calcFASpecGrav() {
-    let Wd = parseFloat(document.getElementById('fa-wd')?.value) || 490.5;
-    let Wssd = parseFloat(document.getElementById('fa-wssd')?.value) || 500.0;
-    let Wpyc = parseFloat(document.getElementById('fa-wpyc')?.value) || 650.0;
-    let Wtotal = parseFloat(document.getElementById('fa-wtotal')?.value) || 962.2;
+    const isEn = (currentLang === 'EN');
+    const n = faSpecGravSamples.length;
 
-    let denom = (Wpyc + Wssd) - Wtotal;
-    if (denom <= 0) denom = 187.8;
+    if (n === 0) return;
 
-    let Gsb = (Wd / denom).toFixed(3);
-    let Gssd = (Wssd / denom).toFixed(3);
-    let Gsa = (Wd / ((Wpyc + Wd) - Wtotal)).toFixed(3);
-    let Sw = (((Wssd - Wd) / Wd) * 100).toFixed(2);
+    // Calculate individual samples
+    const sampleResults = faSpecGravSamples.map((s) => {
+        const sah = Number(s.sah) || 0;
+        const aah = Number(s.aah) || 0;
+        const bah = Number(s.bah) || 0;
+        const cah = Number(s.cah) || 0;
 
-    let isPass = (parseFloat(Sw) <= 3.0 && parseFloat(Gsb) >= 2.40);
+        const denom = (bah + sah) - cah;
+        const bulkSG = denom > 0 ? (aah / denom) : 0;
+        const ssdSG = denom > 0 ? (sah / denom) : 0;
 
-    let resBox = document.getElementById('fa-result-box');
+        const appDenom = (bah + aah) - cah;
+        const appSG = appDenom > 0 ? (aah / appDenom) : 0;
+
+        const absPct = aah > 0 ? (((sah - aah) / aah) * 100) : 0;
+
+        return { bulkSG, ssdSG, appSG, absPct };
+    });
+
+    // Compute averages
+    const avgBulk = sampleResults.reduce((acc, cur) => acc + cur.bulkSG, 0) / n;
+    const avgSSD = sampleResults.reduce((acc, cur) => acc + cur.ssdSG, 0) / n;
+    const avgApp = sampleResults.reduce((acc, cur) => acc + cur.appSG, 0) / n;
+    const avgAbs = sampleResults.reduce((acc, cur) => acc + cur.absPct, 0) / n;
+
+    const isBulkPass = (avgBulk >= 2.40);
+    const isAbsPass = (avgAbs <= 3.00);
+    const isOverallPass = (isBulkPass && isAbsPass);
+
+    // Render output table rows
+    const tbody = document.getElementById('fa-output-tbody');
+    if (tbody) {
+        let r1Cells = '', r2Cells = '', r3Cells = '', r4Cells = '';
+        sampleResults.forEach(r => {
+            r1Cells += `<td class="fa-sample-cell fa-val-mono">${r.bulkSG.toFixed(4)}</td>`;
+            r2Cells += `<td class="fa-sample-cell fa-val-mono">${r.ssdSG.toFixed(4)}</td>`;
+            r3Cells += `<td class="fa-sample-cell fa-val-mono">${r.appSG.toFixed(4)}</td>`;
+            const absClass = r.absPct <= 3.0 ? 'status-pass' : 'status-fail';
+            r4Cells += `<td class="fa-sample-cell fa-val-mono ${absClass}">${r.absPct.toFixed(2)}%</td>`;
+        });
+
+        tbody.innerHTML = `
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">1</td>
+                <td style="font-weight:600;">${isEn ? 'Bulk Specific Gravity (Dry)' : 'Berat Jenis Curah Kering (Bulk Specific Gravity)'}</td>
+                <td><span class="formula-code">AAH / (BAH + SAH - CAH)</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">-</td>
+                ${r1Cells}
+                <td class="fa-avg-col-cell">${avgBulk.toFixed(4)}</td>
+                <td style="text-align:center; font-weight:700; color:var(--text-secondary);">&ge; 2.40</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">2</td>
+                <td style="font-weight:600;">${isEn ? 'Bulk Specific Gravity (SSD)' : 'Berat Jenis Jenuh Kering Permukaan (SSD)'}</td>
+                <td><span class="formula-code">SAH / (BAH + SAH - CAH)</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">-</td>
+                ${r2Cells}
+                <td class="fa-avg-col-cell">${avgSSD.toFixed(4)}</td>
+                <td style="text-align:center; font-weight:600; color:var(--text-secondary);">2.50 - 2.70</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">3</td>
+                <td style="font-weight:600;">${isEn ? 'Apparent Specific Gravity (Sa)' : 'Berat Jenis Semu (Apparent Specific Gravity / Sa)'}</td>
+                <td><span class="formula-code">AAH / (BAH + AAH - CAH)</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">-</td>
+                ${r3Cells}
+                <td class="fa-avg-col-cell">${avgApp.toFixed(4)}</td>
+                <td style="text-align:center; font-weight:600; color:var(--text-secondary);">${isEn ? 'Reference Standard' : 'Standar Referensi'}</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">4</td>
+                <td style="font-weight:600;">${isEn ? 'Water Absorption (Sw %)' : 'Penyerapan Air (Water Absorption / Sw)'}</td>
+                <td><span class="formula-code">((SAH - AAH) / AAH) &times; 100%</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">%</td>
+                ${r4Cells}
+                <td class="fa-avg-col-cell ${avgAbs <= 3.0 ? 'status-pass' : 'status-fail'}">${avgAbs.toFixed(2)}%</td>
+                <td style="text-align:center; font-weight:700; color:var(--accent-emerald);">&le; 3.00%</td>
+            </tr>
+        `;
+    }
+
+    // Render summary metrics & compliance verification
+    const summaryContainer = document.getElementById('fa-summary-metrics');
+    if (summaryContainer) {
+        summaryContainer.innerHTML = `
+            <div class="fa-summary-metrics-grid">
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Bulk Specific Gravity' : 'Berat Jenis Curah (Gsb)'}</span>
+                    <span class="metric-val">${avgBulk.toFixed(4)}</span>
+                    <span class="metric-sub ${isBulkPass ? 'status-pass' : 'status-fail'}">
+                        ${isBulkPass ? (isEn ? '✓ Pass (Min. 2.40)' : '✓ Memenuhi SNI (&ge; 2.40)') : (isEn ? '✗ Below Minimum (< 2.40)' : '✗ Di Bawah Batas (< 2.40)')}
+                    </span>
+                </div>
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'SSD Specific Gravity' : 'Berat Jenis SSD (Gssd)'}</span>
+                    <span class="metric-val">${avgSSD.toFixed(4)}</span>
+                    <span class="metric-sub" style="color:var(--chapter-accent, #f59e0b);">
+                        ${isEn ? 'Standard Saturated Dry' : 'Kondisi Jenuh Kering Muka'}
+                    </span>
+                </div>
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Apparent Specific Gravity' : 'Berat Jenis Semu (Gsa)'}</span>
+                    <span class="metric-val">${avgApp.toFixed(4)}</span>
+                    <span class="metric-sub" style="color:var(--text-secondary);">
+                        ${isEn ? 'Effective Solid Mineral Mass' : 'Massa Efektif Butiran Padat'}
+                    </span>
+                </div>
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Water Absorption (Sw)' : 'Penyerapan Air (Sw)'}</span>
+                    <span class="metric-val ${isAbsPass ? 'status-pass' : 'status-fail'}">${avgAbs.toFixed(2)}%</span>
+                    <span class="metric-sub ${isAbsPass ? 'status-pass' : 'status-fail'}">
+                        ${isAbsPass ? (isEn ? '✓ Pass (Max. 3.00%)' : '✓ Memenuhi SNI (&le; 3.00%)') : (isEn ? '✗ Exceeds Limit (> 3.00%)' : '✗ Melebihi Batas (> 3.00%)')}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Compliance Status Banner -->
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:12px 16px; background:${isOverallPass ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border:1px solid ${isOverallPass ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}; border-radius:8px; margin-top:14px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:16px;">${isOverallPass ? '✓' : '⚠️'}</span>
+                    <div>
+                        <div style="color:${isOverallPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'}; font-weight:800; font-size:12.5px;">
+                            ${isOverallPass 
+                                ? (isEn ? 'STATUS: MEETS SNI 1970:2016 SPECIFICATIONS (SUITABLE FOR STRUCTURAL CONCRETE)' : 'STATUS KELAYAKAN: MEMENUHI SYARAT SNI 1970:2016 (LAYAK UNTUK BETON STRUKTURAL)') 
+                                : (isEn ? 'STATUS: EXCEEDS ALLOWABLE SPECIFICATION LIMITS' : 'STATUS KELAYAKAN: MELEBIHI AMBANG BATAS SNI 1970:2016')}
+                        </div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+                            ${isOverallPass
+                                ? (isEn ? 'Average test values satisfy absorption (<= 3.0%) and bulk density (>= 2.40) criteria.' : 'Nilai pengujian rata-rata memenuhi kriteria penyerapan air (≤ 3.0%) dan berat jenis curah (≥ 2.40).')
+                                : (isEn ? 'Specimen absorption exceeds 3.00% or bulk specific gravity is below 2.40; aggregate must be washed or treated.' : 'Nilai penyerapan air melebihi 3.00% atau berat jenis curah di bawah 2.40; agregat perlu dicuci ulang atau diolah.')}
+                        </div>
+                    </div>
+                </div>
+                <div class="telemetry-chip ${isOverallPass ? 'live-chip' : ''}" style="color:${isOverallPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'};">
+                    ${isOverallPass ? 'SNI COMPLIANT' : 'NON-COMPLIANT'}
+                </div>
+            </div>
+        `;
+    }
+
+    // Also update legacy fa-result-box if it exists anywhere in DOM
+    const resBox = document.getElementById('fa-result-box');
     if (resBox) {
         resBox.innerHTML = `
             <div class="result-row">
                 <span class="result-label">1. Berat Jenis Curah Kering (Bulk Specific Gravity):</span>
-                <span class="result-val">${Gsb}</span>
+                <span class="result-val">${avgBulk.toFixed(4)}</span>
             </div>
             <div class="result-row">
                 <span class="result-label">2. Berat Jenis Jenuh Kering Permukaan (SSD):</span>
-                <span class="result-val">${Gssd}</span>
+                <span class="result-val">${avgSSD.toFixed(4)}</span>
             </div>
             <div class="result-row">
                 <span class="result-label">3. Berat Jenis Semu (Apparent Specific Gravity):</span>
-                <span class="result-val">${Gsa}</span>
+                <span class="result-val">${avgApp.toFixed(4)}</span>
             </div>
             <div class="result-row">
                 <span class="result-label">4. Penyerapan Air (Water Absorption, Sw):</span>
-                <span class="result-val ${parseFloat(Sw) <= 3.0 ? 'status-pass' : 'status-fail'}">${Sw}%</span>
+                <span class="result-val ${avgAbs <= 3.0 ? 'status-pass' : 'status-fail'}">${avgAbs.toFixed(2)}%</span>
             </div>
             <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
                 <span class="result-label">Evaluasi Kelayakan Agregat Halus:</span>
-                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}">${isPass ? '✓ MEMENUHI SNI 1970' : '✗ MELEBIHI AMBANG BATAS'}</span>
+                <span class="result-val ${isOverallPass ? 'status-pass' : 'status-fail'}">${isOverallPass ? '✓ MEMENUHI SNI 1970' : '✗ MELEBIHI AMBANG BATAS'}</span>
             </div>
         `;
     }
