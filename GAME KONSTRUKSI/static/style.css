@@ -5366,3 +5366,316 @@ body:not(.right-sidebar-collapsed) #btn-edge-right-toggle svg {
     color: var(--accent-crimson);
     border: 1px solid rgba(239, 68, 68, 0.4);
 }
+
+/* ==========================================================================
+   FINE AGGREGATE ORGANIC IMPURITIES TEST (ASTM C40 / SNI 03-2816-1992)
+   ========================================================================== */
+.organic-sample-card {
+    background: rgba(12, 22, 45, 0.85);
+    border: 1px solid var(--border-dim);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+.organic-sample-card:hover {
+    border-color: rgba(245, 158, 11, 0.45);
+    box-shadow: 0 6px 22px rgba(245, 158, 11, 0.12);
+}
+
+.organic-sample-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.organic-sample-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-pure);
+    font-family: var(--font-heading);
+}
+
+.organic-sample-body-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .organic-sample-body-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.organic-scale-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.organic-scale-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+}
+
+.organic-swatch-item {
+    background: rgba(16, 28, 56, 0.9);
+    border: 1.5px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    user-select: none;
+}
+
+.organic-swatch-item:hover {
+    transform: translateY(-2px);
+    border-color: rgba(245, 158, 11, 0.6);
+    background: rgba(24, 40, 78, 0.95);
+}
+
+.organic-swatch-item.active {
+    border-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.12);
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.35);
+}
+
+.organic-swatch-box {
+    width: 100%;
+    height: 38px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    margin-bottom: 8px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.organic-swatch-box::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 100%);
+    border-radius: 5px 5px 0 0;
+}
+
+.organic-swatch-plate {
+    font-size: 11px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    color: var(--text-pure);
+    margin-bottom: 2px;
+}
+
+.organic-swatch-desc {
+    font-size: 9.5px;
+    color: var(--text-muted);
+    line-height: 1.25;
+}
+
+.organic-std-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #f59e0b;
+    color: #0b1426;
+    font-size: 8px;
+    font-weight: 900;
+    font-family: var(--font-heading);
+    padding: 1px 5px;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    letter-spacing: 0.5px;
+}
+
+.organic-comp-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.organic-comp-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+@media (max-width: 600px) {
+    .organic-comp-selector {
+        grid-template-columns: 1fr;
+    }
+}
+
+.btn-organic-comp {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-dim);
+    background: rgba(14, 25, 52, 0.7);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--font-heading);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
+}
+
+.btn-organic-comp:hover {
+    color: var(--text-pure);
+    border-color: rgba(245, 158, 11, 0.5);
+    background: rgba(245, 158, 11, 0.12);
+}
+
+.btn-organic-comp.active-lighter {
+    border-color: var(--accent-emerald);
+    background: rgba(16, 185, 129, 0.18);
+    color: #34d399;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+}
+
+.btn-organic-comp.active-matches {
+    border-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.22);
+    color: #fbbf24;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+}
+
+.btn-organic-comp.active-darker {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.18);
+    color: #f87171;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
+}
+
+/* Glass Test Tube CAD Graphic */
+.organic-tube-card {
+    background: rgba(9, 17, 36, 0.95);
+    border: 1px solid var(--border-dim);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 160px;
+}
+
+.organic-tube-wrapper {
+    position: relative;
+    width: 68px;
+    height: 165px;
+    border-radius: 0 0 12px 12px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top: 3px solid rgba(255, 255, 255, 0.6);
+    background: rgba(10, 20, 42, 0.6);
+    overflow: hidden;
+    box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.6), 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.organic-tube-liquid {
+    position: absolute;
+    bottom: 60px;
+    left: 0;
+    right: 0;
+    top: 25px;
+    transition: background 0.4s ease;
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+
+.organic-tube-sand {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: radial-gradient(circle at 50% 50%, #92754e 10%, #785a32 90%);
+    border-top: 1.5px dashed rgba(255, 255, 255, 0.4);
+}
+
+.organic-tube-sand::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(0,0,0,0.3) 1px, transparent 0);
+    background-size: 4px 4px;
+    opacity: 0.6;
+}
+
+.organic-tube-glare {
+    position: absolute;
+    top: 0;
+    left: 4px;
+    bottom: 0;
+    width: 6px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);
+    pointer-events: none;
+    z-index: 5;
+}
+
+.organic-tube-markings {
+    position: absolute;
+    right: 3px;
+    top: 25px;
+    bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none;
+    z-index: 6;
+}
+
+.organic-tube-tick {
+    width: 6px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.organic-tube-tick.major {
+    width: 12px;
+    height: 1.5px;
+    background: rgba(255, 255, 255, 0.85);
+}
+
+.organic-disclaimer-card {
+    background: rgba(14, 25, 52, 0.6);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-left: 3px solid #f59e0b;
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-top: 14px;
+}

@@ -6628,6 +6628,8 @@ function renderFineAggregateWorkspace(subViewId) {
         renderFAUnitWeightWorkspace();
     } else if (subViewId === 'fa-sieve') {
         renderFASieveWorkspace();
+    } else if (subViewId === 'fa-organic') {
+        renderFAOrganicWorkspace();
     } else {
         // Generic fallback for other sub-views (Unit Weight, Organic)
         renderFAGenericView(subViewId);
@@ -9688,33 +9690,520 @@ function calcFAUnitWeight() {
 }
 
 
-function calcFAOrganic() {
-    let plate = parseInt(document.getElementById('fa-org-plate')?.value) || 2;
-    let isPass = plate <= 3;
+/* ==========================================================================
+   FINE AGGREGATE ORGANIC IMPURITIES TEST (ASTM C40 / SNI 03-2816-1992)
+   ========================================================================== */
+const ASTM_C40_COLOR_PLATES = [
+    {
+        level: 1,
+        no: 1,
+        nameID: 'Plat No. 1: Sangat Bening (Kuning Pucat)',
+        nameEN: 'Plate No. 1: Nearly Clear (Pale Straw)',
+        shortID: 'Plat 1: Kuning Pucat',
+        shortEN: 'Plate 1: Pale Straw',
+        colorHex: '#fef08a',
+        glowColor: 'rgba(254, 240, 138, 0.45)',
+        liquidBg: 'linear-gradient(180deg, rgba(254, 240, 138, 0.35) 0%, rgba(254, 240, 138, 0.75) 100%)',
+        descID: 'Warna cairan hampir jernih seperti air murni, bebas dari senyawa asam organik aktif.',
+        descEN: 'Liquid is nearly clear like water, free from active organic impurities.'
+    },
+    {
+        level: 2,
+        no: 2,
+        nameID: 'Plat No. 2: Kuning Muda (Jerami / Bersih)',
+        nameEN: 'Plate No. 2: Light Yellow (Straw / Clean)',
+        shortID: 'Plat 2: Kuning Muda',
+        shortEN: 'Plate 2: Light Yellow',
+        colorHex: '#facc15',
+        glowColor: 'rgba(250, 204, 21, 0.45)',
+        liquidBg: 'linear-gradient(180deg, rgba(250, 204, 21, 0.45) 0%, rgba(250, 204, 21, 0.88) 100%)',
+        descID: 'Kuning muda jernih, kadar zat organik sangat rendah dan aman untuk hidrasi semen.',
+        descEN: 'Clear light yellow, minimal organic content and completely safe for cement hydration.'
+    },
+    {
+        level: 3,
+        no: 3,
+        nameID: 'Plat No. 3: Standar Acuan ASTM (Kuning Emas / Amber)',
+        nameEN: 'Plate No. 3: ASTM Reference Standard (Amber / Golden)',
+        shortID: 'Plat 3: Standar Acuan',
+        shortEN: 'Plate 3: ASTM Standard',
+        colorHex: '#d97706',
+        glowColor: 'rgba(217, 119, 6, 0.55)',
+        liquidBg: 'linear-gradient(180deg, rgba(217, 119, 6, 0.55) 0%, rgba(217, 119, 6, 0.92) 100%)',
+        isStandardReference: true,
+        descID: 'Larutan standar kalium dikromat dalam H2SO4. Batas ambang maksimum penerimaan visual.',
+        descEN: 'Potassium dichromate in H2SO4 standard solution. Maximum visual acceptance threshold.'
+    },
+    {
+        level: 4,
+        no: 4,
+        nameID: 'Plat No. 4: Cokelat Kemerahan (Melebihi Standar)',
+        nameEN: 'Plate No. 4: Dark Amber / Brown (Above Standard)',
+        shortID: 'Plat 4: Cokelat Kemerahan',
+        shortEN: 'Plate 4: Dark Amber',
+        colorHex: '#9a3412',
+        glowColor: 'rgba(154, 52, 18, 0.55)',
+        liquidBg: 'linear-gradient(180deg, rgba(154, 52, 18, 0.65) 0%, rgba(154, 52, 18, 0.95) 100%)',
+        descID: 'Warna lebih gelap dari larutan standar acuan, berisiko menghambat waktu ikat semen.',
+        descEN: 'Darker than reference standard solution, potential risk of retarding cement setting.'
+    },
+    {
+        level: 5,
+        no: 5,
+        nameID: 'Plat No. 5: Cokelat Kehitaman Pekat (Zat Organik Tinggi)',
+        nameEN: 'Plate No. 5: Dark Brown / Peat (High Impurities)',
+        shortID: 'Plat 5: Cokelat Gelap Pekat',
+        shortEN: 'Plate 5: Dark Brown',
+        colorHex: '#451a03',
+        glowColor: 'rgba(69, 26, 3, 0.65)',
+        liquidBg: 'linear-gradient(180deg, rgba(69, 26, 3, 0.75) 0%, rgba(69, 26, 3, 0.98) 100%)',
+        descID: 'Cokelat sangat pekat, kandungan asam humus tinggi; pasir berpotensi merusak beton.',
+        descEN: 'Very dark peat brown, excessive humic acid content; aggregate may severely degrade concrete.'
+    }
+];
 
-    let resBox = document.getElementById('fa-org-result-box');
-    if (resBox) {
-        let msg = isPass ? '✓ MEMENUHI PERSYARATAN (LAYAK PAKAI)' : '✗ TIDAK MEMENUHI (MENGANDUNG ZAT ASAM BERBAHAYA)';
-        let desc = isPass ? 'Warna larutan lebih muda atau sama dengan Plat No. 3 (Standar SNI).' : 'Warna larutan lebih tua dari Plat No. 3, dapat menghambat hidrasi semen!';
-        resBox.innerHTML = `
-            <div class="result-row">
-                <span class="result-label">Peringkat Warna Plat Gardner:</span>
-                <span class="result-val" style="color:#f59e0b; font-weight:800;">Plat No. ${plate}</span>
+const DEFAULT_FA_ORGANIC_SAMPLES = [
+    {
+        id: 'samp-1',
+        name: 'Sampel I',
+        plateLevel: 2,
+        comparison: 'lighter'
+    },
+    {
+        id: 'samp-2',
+        name: 'Sampel II',
+        plateLevel: 2,
+        comparison: 'lighter'
+    }
+];
+
+let faOrganicSamples = JSON.parse(JSON.stringify(DEFAULT_FA_ORGANIC_SAMPLES));
+let faOrganicReferenceThreshold = 3;
+
+function renderFAOrganicWorkspace() {
+    if (!canvasView) return;
+    const isEn = typeof currentLang !== 'undefined' && currentLang === 'EN';
+
+    canvasView.innerHTML = `
+        <div class="module-workspace-container">
+            <!-- Header Banner -->
+            <div class="module-header-banner">
+                <div>
+                    <div class="module-header-title">
+                        <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 2v7.31L4.35 19.46A2 2 0 0 0 6.09 22h11.82a2 2 0 0 0 1.74-2.54L14 9.31V2"></path></svg></span>
+                        ${isEn ? 'ORGANIC IMPURITIES TEST (3% NaOH SOLUTION METHOD)' : 'UJI KANDUNGAN ZAT ORGANIK (METODE NaOH 3%)'}
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                        ${isEn 
+                            ? 'Qualitative determination of harmful organic compounds in fine aggregate per ASTM C40 / SNI 03-2816-1992 & Gardner standard color scale.' 
+                            : 'Identifikasi senyawa asam organik berbahaya pada agregat halus berdasarkan pembanding warna standar Gardner / ASTM C40 & SNI 03-2816-1992.'}
+                    </div>
+                </div>
+                <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> SNI 03-2816-1992 / ASTM C40</span>
             </div>
-            <div class="result-row">
-                <span class="result-label">Batas Toleransi SNI 03-2816:</span>
-                <span class="result-val">&le; Plat No. 3</span>
+
+            <!-- Top Control Bar: Reference Standard & Dynamic Sample Controller -->
+            <div class="testing-calc-card" style="width: 100%; margin-bottom: 16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                    <!-- Standard Reference Selector -->
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <span style="font-size:12px; font-weight:700; color:var(--text-pure); font-family:var(--font-heading);">
+                            ${isEn ? 'Reference Standard Threshold:' : 'Ambang Batas Standar Acuan:'}
+                        </span>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <button class="btn-zone-pill ${faOrganicReferenceThreshold === 3 ? 'active' : ''}" 
+                                    id="btn-org-thresh-3" onclick="setFAOrganicReferenceThreshold(3)">
+                                ${isEn ? 'Plate No. 3 (ASTM C40 Standard)' : 'Plat No. 3 (Standar ASTM C40 / SNI)'}
+                            </button>
+                            <button class="btn-zone-pill ${faOrganicReferenceThreshold === 2 ? 'active' : ''}" 
+                                    id="btn-org-thresh-2" onclick="setFAOrganicReferenceThreshold(2)">
+                                ${isEn ? 'Plate No. 2 (Strict / Clean Spec)' : 'Plat No. 2 (Kriteria Sangat Bersih)'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Sample Controller -->
+                    <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
+                        <button class="btn-action" style="padding:5px 12px; font-size:11px;" onclick="addFAOrganicSample()">
+                            + ${isEn ? 'Add Sample' : 'Tambah Sampel'}
+                        </button>
+                        <button class="btn-action" style="padding:5px 12px; font-size:11px; background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#f87171;" onclick="removeFAOrganicSample()">
+                            - ${isEn ? 'Remove Sample' : 'Hapus Sampel'}
+                        </button>
+                        <button class="btn-action" style="padding:5px 12px; font-size:11px;" onclick="resetFAOrganicDefault()">
+                            ${isEn ? 'Reset Default' : 'Reset Standar'}
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="result-row">
-                <span class="result-label">Status Kelayakan:</span>
-                <span class="result-val ${isPass ? 'status-pass' : 'status-fail'}" style="font-size:13px; font-weight:800;">${msg}</span>
+
+            <!-- Dynamic Sample Cards List -->
+            <div id="fa-organic-samples-container">
+                <!-- Rendered dynamically -->
             </div>
-            <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
-                <span class="result-label">Keterangan Teknis:</span>
-                <span class="result-val" style="font-size:11px;">${desc}</span>
+
+            <!-- Overall ASTM C40 Evaluation Card -->
+            <div class="testing-calc-card" style="width: 100%; margin-top: 16px;" id="fa-organic-evaluation-card">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    `;
+
+    renderFAOrganicSampleCards();
+    updateFAOrganicEvaluation();
+}
+
+function renderFAOrganicSampleCards() {
+    const container = document.getElementById('fa-organic-samples-container');
+    if (!container) return;
+    const isEn = typeof currentLang !== 'undefined' && currentLang === 'EN';
+
+    let html = '';
+    faOrganicSamples.forEach((sample, idx) => {
+        const isPass = sample.comparison === 'lighter' || sample.comparison === 'matches';
+        const selectedPlate = ASTM_C40_COLOR_PLATES.find(p => p.level === sample.plateLevel) || ASTM_C40_COLOR_PLATES[1];
+        const sampleDisplayName = isEn 
+            ? (sample.name.replace(/^Sampel\s+/i, 'Sample ')) 
+            : (sample.name.replace(/^Sample\s+/i, 'Sampel '));
+
+        // Build swatches
+        let swatchesHtml = '';
+        ASTM_C40_COLOR_PLATES.forEach(p => {
+            const isActive = p.level === sample.plateLevel;
+            const isRef = p.level === faOrganicReferenceThreshold;
+            swatchesHtml += `
+                <div class="organic-swatch-item ${isActive ? 'active' : ''}" 
+                     onclick="setFAOrganicPlateLevel(${idx}, ${p.level})"
+                     title="${isEn ? p.nameEN : p.nameID}">
+                    ${isRef ? `<span class="organic-std-badge">${isEn ? 'REF' : 'ACUAN'}</span>` : ''}
+                    <div class="organic-swatch-box" style="background: ${p.colorHex}; box-shadow: 0 0 10px ${isActive ? p.glowColor : 'transparent'};"></div>
+                    <div class="organic-swatch-plate">${isEn ? `Plate No. ${p.no}` : `Plat No. ${p.no}`}</div>
+                    <div class="organic-swatch-desc">${isEn ? p.shortEN : p.shortID}</div>
+                </div>
+            `;
+        });
+
+        // Build Comparison Segmented Buttons
+        const compHtml = `
+            <div class="organic-comp-selector">
+                <button class="btn-organic-comp ${sample.comparison === 'lighter' ? 'active-lighter' : ''}" 
+                        onclick="setFAOrganicComparison(${idx}, 'lighter')">
+                    <span>☀</span> ${isEn ? 'Lighter than Standard' : 'Lebih Terang dari Standar'}
+                </button>
+                <button class="btn-organic-comp ${sample.comparison === 'matches' ? 'active-matches' : ''}" 
+                        onclick="setFAOrganicComparison(${idx}, 'matches')">
+                    <span>=</span> ${isEn ? 'Matches Standard' : 'Setara Standar'}
+                </button>
+                <button class="btn-organic-comp ${sample.comparison === 'darker' ? 'active-darker' : ''}" 
+                        onclick="setFAOrganicComparison(${idx}, 'darker')">
+                    <span>☁</span> ${isEn ? 'Darker than Standard' : 'Lebih Gelap dari Standar'}
+                </button>
             </div>
         `;
+
+        html += `
+            <div class="organic-sample-card" id="fa-org-card-${idx}">
+                <div class="organic-sample-header">
+                    <div class="organic-sample-title">
+                        <span style="color:#f59e0b;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></span>
+                        <span>${sampleDisplayName.toUpperCase()}</span>
+                        <span style="font-size:11px; font-weight:400; color:var(--text-muted);">[ASTM C40 / SNI 03-2816]</span>
+                    </div>
+                    <div class="telemetry-chip ${isPass ? 'live-chip' : ''}" 
+                         style="color:${isPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'}; font-weight:800;">
+                        ${isPass 
+                            ? (isEn ? '✓ MEETS SPECIFICATIONS (SUITABLE)' : '✓ MEMENUHI SYARAT (LAYAK PAKAI)') 
+                            : (isEn ? '! ATTENTION / FURTHER TESTING' : '! PERLU PERHATIAN / UJI LANJUTAN')}
+                    </div>
+                </div>
+
+                <div class="organic-sample-body-grid">
+                    <!-- Left: Combined Color Scale & Comparison Selector -->
+                    <div class="organic-scale-container">
+                        <div>
+                            <div style="font-size:11.5px; font-weight:700; color:var(--text-pure); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                                <span>1. ${isEn ? 'Visual Gardner Color Scale Swatch (NaOH 3% Reaction):' : 'Pilihan Skala Warna Gardner (Reaksi Larutan NaOH 3%):'}</span>
+                                <span style="font-size:11px; color:#f59e0b; font-family:var(--font-mono); font-weight:700;">${isEn ? selectedPlate.nameEN : selectedPlate.nameID}</span>
+                            </div>
+                            <div class="organic-scale-grid">
+                                ${swatchesHtml}
+                            </div>
+                        </div>
+
+                        <div class="organic-comp-row">
+                            <div style="font-size:11.5px; font-weight:700; color:var(--text-pure); margin-top:6px;">
+                                2. ${isEn ? 'Relative Comparison to Standard Reference Plate:' : 'Komparasi Relatif Terhadap Batas Standar Acuan:'}
+                            </div>
+                            ${compHtml}
+                        </div>
+
+                        <div style="font-size:11px; color:var(--text-secondary); background:rgba(10,18,38,0.7); border:1px solid var(--border-dim); border-radius:6px; padding:8px 12px; margin-top:6px; line-height:1.45;">
+                            <strong style="color:var(--text-pure);">${isEn ? 'Chemical Significance:' : 'Makna Teknis Reaksi:'}</strong> 
+                            ${isEn ? selectedPlate.descEN : selectedPlate.descID}
+                        </div>
+                    </div>
+
+                    <!-- Right: Precision Test Tube CAD Graphic -->
+                    <div class="organic-tube-card">
+                        <div style="font-size:10.5px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">
+                            ${isEn ? 'Test Bottle (200 mL)' : 'Botol Reagen (200 mL)'}
+                        </div>
+                        <div class="organic-tube-wrapper">
+                            <div class="organic-tube-liquid" style="background: ${selectedPlate.liquidBg};"></div>
+                            <div class="organic-tube-sand"></div>
+                            <div class="organic-tube-glare"></div>
+                            <div class="organic-tube-markings">
+                                <div class="organic-tube-tick major" title="200 mL"></div>
+                                <div class="organic-tube-tick"></div>
+                                <div class="organic-tube-tick"></div>
+                                <div class="organic-tube-tick major" title="130 mL"></div>
+                                <div class="organic-tube-tick"></div>
+                                <div class="organic-tube-tick major" title="50 mL"></div>
+                            </div>
+                        </div>
+                        <div style="text-align:center; font-size:10px; font-family:var(--font-mono); color:var(--cyan-neon);">
+                            ${isEn ? '24-Hour NaOH 3%' : '24 Jam NaOH 3%'}<br>
+                            <span style="color:#f59e0b; font-weight:700;">${isEn ? `Plate No. ${selectedPlate.no}` : `Plat No. ${selectedPlate.no}`}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function setFAOrganicPlateLevel(sampleIdx, level) {
+    if (!faOrganicSamples[sampleIdx]) return;
+    faOrganicSamples[sampleIdx].plateLevel = level;
+
+    // Auto-synchronize comparison selector relative to reference threshold
+    if (level < faOrganicReferenceThreshold) {
+        faOrganicSamples[sampleIdx].comparison = 'lighter';
+    } else if (level === faOrganicReferenceThreshold) {
+        faOrganicSamples[sampleIdx].comparison = 'matches';
+    } else {
+        faOrganicSamples[sampleIdx].comparison = 'darker';
     }
+
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFAOrganicSampleCards();
+    updateFAOrganicEvaluation();
+}
+
+function setFAOrganicComparison(sampleIdx, choice) {
+    if (!faOrganicSamples[sampleIdx]) return;
+    faOrganicSamples[sampleIdx].comparison = choice;
+
+    // Auto-align plate level if inconsistent
+    if (choice === 'lighter' && faOrganicSamples[sampleIdx].plateLevel >= faOrganicReferenceThreshold) {
+        faOrganicSamples[sampleIdx].plateLevel = Math.max(1, faOrganicReferenceThreshold - 1);
+    } else if (choice === 'matches') {
+        faOrganicSamples[sampleIdx].plateLevel = faOrganicReferenceThreshold;
+    } else if (choice === 'darker' && faOrganicSamples[sampleIdx].plateLevel <= faOrganicReferenceThreshold) {
+        faOrganicSamples[sampleIdx].plateLevel = Math.min(5, faOrganicReferenceThreshold + 1);
+    }
+
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFAOrganicSampleCards();
+    updateFAOrganicEvaluation();
+}
+
+function setFAOrganicReferenceThreshold(thresh) {
+    faOrganicReferenceThreshold = thresh;
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+
+    const btn3 = document.getElementById('btn-org-thresh-3');
+    const btn2 = document.getElementById('btn-org-thresh-2');
+    if (btn3) btn3.classList.toggle('active', thresh === 3);
+    if (btn2) btn2.classList.toggle('active', thresh === 2);
+
+    // Re-evaluate comparisons based on new threshold
+    faOrganicSamples.forEach(s => {
+        if (s.plateLevel < thresh) s.comparison = 'lighter';
+        else if (s.plateLevel === thresh) s.comparison = 'matches';
+        else s.comparison = 'darker';
+    });
+
+    renderFAOrganicSampleCards();
+    updateFAOrganicEvaluation();
+}
+
+function addFAOrganicSample() {
+    const isEn = typeof currentLang !== 'undefined' && currentLang === 'EN';
+    if (faOrganicSamples.length >= 6) {
+        if (typeof showToast === 'function') {
+            showToast(isEn ? 'Maximum 6 samples allowed' : 'Jumlah sampel maksimum adalah 6', 'warning');
+        }
+        return;
+    }
+
+    const nextIdx = faOrganicSamples.length + 1;
+    faOrganicSamples.push({
+        id: `samp-${Date.now()}`,
+        name: isEn ? `Sample ${getRomanNumeral(nextIdx)}` : `Sampel ${getRomanNumeral(nextIdx)}`,
+        plateLevel: 2,
+        comparison: 'lighter'
+    });
+
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFAOrganicSampleCards();
+    updateFAOrganicEvaluation();
+
+    if (typeof showToast === 'function') {
+        showToast(isEn ? `Sample ${getRomanNumeral(nextIdx)} added` : `Sampel ${getRomanNumeral(nextIdx)} berhasil ditambahkan`, 'success');
+    }
+}
+
+function removeFAOrganicSample() {
+    const isEn = typeof currentLang !== 'undefined' && currentLang === 'EN';
+    if (faOrganicSamples.length <= 1) {
+        if (typeof showToast === 'function') {
+            showToast(isEn ? 'Minimum 1 sample required' : 'Jumlah sampel minimum adalah 1', 'warning');
+        }
+        return;
+    }
+
+    const removed = faOrganicSamples.pop();
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFAOrganicSampleCards();
+    updateFAOrganicEvaluation();
+
+    if (typeof showToast === 'function') {
+        showToast(isEn ? `${removed.name} removed` : `${removed.name} dihapus`, 'info');
+    }
+}
+
+function resetFAOrganicDefault() {
+    const isEn = typeof currentLang !== 'undefined' && currentLang === 'EN';
+    faOrganicSamples = JSON.parse(JSON.stringify(DEFAULT_FA_ORGANIC_SAMPLES));
+    faOrganicReferenceThreshold = 3;
+
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFAOrganicWorkspace();
+
+    if (typeof showToast === 'function') {
+        showToast(isEn ? 'Reset to ASTM C40 default samples' : 'Data direset ke standar acuan ASTM C40', 'info');
+    }
+}
+
+function updateFAOrganicEvaluation() {
+    const card = document.getElementById('fa-organic-evaluation-card');
+    if (!card) return;
+    const isEn = typeof currentLang !== 'undefined' && currentLang === 'EN';
+
+    const allPass = faOrganicSamples.every(s => s.comparison === 'lighter' || s.comparison === 'matches' || s.plateLevel <= faOrganicReferenceThreshold);
+
+    // Build summary table rows
+    let tableRows = '';
+    faOrganicSamples.forEach((sample, idx) => {
+        const isPass = sample.comparison === 'lighter' || sample.comparison === 'matches';
+        const plate = ASTM_C40_COLOR_PLATES.find(p => p.level === sample.plateLevel) || ASTM_C40_COLOR_PLATES[1];
+        const sampleDisplayName = isEn 
+            ? (sample.name.replace(/^Sampel\s+/i, 'Sample ')) 
+            : (sample.name.replace(/^Sample\s+/i, 'Sampel '));
+
+        let compText = '';
+        if (sample.comparison === 'lighter') compText = isEn ? 'Lighter than Standard' : 'Lebih Terang dari Standar';
+        else if (sample.comparison === 'matches') compText = isEn ? 'Matches Standard' : 'Setara Standar Acuan';
+        else compText = isEn ? 'Darker than Standard' : 'Lebih Gelap dari Standar';
+
+        tableRows += `
+            <tr>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--text-muted);">${idx + 1}</td>
+                <td style="font-weight:700; color:var(--text-pure);">${sampleDisplayName}</td>
+                <td style="font-family:var(--font-mono);">
+                    <div style="display:inline-flex; align-items:center; gap:6px;">
+                        <span style="display:inline-block; width:12px; height:12px; border-radius:3px; background:${plate.colorHex}; border:1px solid rgba(255,255,255,0.4);"></span>
+                        <strong style="color:#f59e0b;">Plat No. ${plate.no}</strong> (${isEn ? plate.shortEN : plate.shortID})
+                    </div>
+                </td>
+                <td style="font-family:var(--font-mono); color:var(--text-secondary);">${compText}</td>
+                <td style="text-align:center;">
+                    <span class="telemetry-chip ${isPass ? 'live-chip' : ''}" 
+                          style="color:${isPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'}; font-size:10px; font-weight:800;">
+                        ${isPass ? (isEn ? '✓ PASS' : '✓ MEMENUHI') : (isEn ? '✗ FAIL' : '✗ DI LUAR BATAS')}
+                    </span>
+                </td>
+                <td style="font-size:11.5px; color:${isPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'}; font-weight:600;">
+                    ${isPass 
+                        ? (isEn ? 'Suitable for Structural Concrete' : 'Layak untuk Campuran Beton Struktural') 
+                        : (isEn ? 'Requires Washing or ASTM C87 Mortar Test' : 'Perlu Pencucian Agregat / Uji Mortar ASTM C87')}
+                </td>
+            </tr>
+        `;
+    });
+
+    card.innerHTML = `
+        <div class="testing-calc-header" style="flex-wrap:wrap; gap:10px;">
+            <span>${isEn ? 'TEST EVALUATION & ASTM C40 SPECIFICATION COMPLIANCE' : 'KESIMPULAN PENGUJIAN & EVALUASI KELAYAKAN ZAT ORGANIK (ASTM C40)'}</span>
+            <span class="telemetry-chip ${allPass ? 'live-chip' : ''}" 
+                  id="fa-org-eval-badge"
+                  style="color:${allPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'}; font-weight:800;">
+                ${allPass 
+                    ? 'MEMENUHI SYARAT (SNI 03-2816-1992 / ASTM C40)' 
+                    : 'PERLU PERHATIAN / UJI LANJUTAN (ASTM C87)'}
+            </span>
+        </div>
+
+        <div class="sieve-table-container" style="margin-top:12px;">
+            <table class="sieve-table">
+                <thead>
+                    <tr>
+                        <th style="width:40px;">No.</th>
+                        <th>${isEn ? 'Sample' : 'Sampel'}</th>
+                        <th>${isEn ? 'Observed Color Plate' : 'Peringkat Warna (Gardner)'}</th>
+                        <th>${isEn ? 'Standard Comparison' : 'Komparasi Relatif Standar'}</th>
+                        <th style="text-align:center;">${isEn ? 'Status' : 'Status Uji'}</th>
+                        <th>${isEn ? 'Recommendation' : 'Rekomendasi Pemakaian'}</th>
+                    </tr>
+                </thead>
+                <tbody id="fa-organic-summary-tbody">
+                    ${tableRows}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Technical Assessment Narrative -->
+        <div style="background:rgba(10,20,42,0.7); border:1px solid var(--border-dim); border-radius:8px; padding:14px 18px; margin-top:16px;">
+            <div style="font-size:11px; text-transform:uppercase; color:var(--text-muted); font-weight:700; margin-bottom:6px;">
+                ${isEn ? 'Engineering Evaluation & Recommendations:' : 'Uraian Kesimpulan & Rekomendasi Teknis:'}
+            </div>
+            <div id="fa-org-recom-text" style="font-size:12.5px; line-height:1.6; color:var(--text-pure);">
+                ${allPass 
+                    ? (isEn 
+                        ? 'All fine aggregate samples exhibit solution colors lighter than or equal to the Standard Reference Plate (Plate No. 3). The aggregate is verified <strong>FREE FROM HARMFUL ORGANIC IMPURITIES</strong> and is fully approved for immediate use in structural concrete mixtures in accordance with <strong>ASTM C33</strong> and <strong>SNI 2847:2019</strong>.' 
+                        : 'Seluruh sampel agregat halus menghasilkan warna larutan NaOH 3% setelah 24 jam yang lebih terang atau setara dengan Plat Standar Acuan No. 3. Agregat halus dinyatakan <strong>BERSIH DARI ZAT ORGANIK ASAM BERBAHAYA</strong> dan <strong>MEMENUHI PERSYARATAN SNI 03-2816-1992 / ASTM C40</strong> sehingga layak langsung digunakan pada campuran beton struktural.') 
+                    : (isEn 
+                        ? 'One or more fine aggregate samples produced a solution color darker than Standard Reference Plate No. 3, indicating presence of harmful organic matter (such as humic acids) that may retard cement setting and reduce strength. <strong>Action Required:</strong> (1) Perform aggregate washing with clean running water, OR (2) Conduct 7-day and 28-day mortar compressive strength testing per <strong>ASTM C87 / SNI 03-2816</strong> (sand is acceptable only if relative mortar strength achieves &ge; 95% of standard washed reference sand).' 
+                        : 'Satu atau lebih sampel agregat halus menghasilkan warna larutan NaOH yang lebih tua dari Plat Standar Acuan No. 3. Kondisi ini mengindikasikan adanya senyawa organik berbahaya (asam tanin/humus) yang dapat memperlambat pengikatan semen dan menurunkan kuat tekan beton. <strong>Rekomendasi Penanganan:</strong> (1) Lakukan pencucian agregat halus (aggregate washing) dengan air bersih mengalir, ATAU (2) Lakukan uji komparasi kuat tekan mortar 7 & 28 hari sesuai <strong>ASTM C87 / SNI 03-2816</strong> (pasir hanya boleh digunakan jika kuat tekan mortar mencapai minimal 95% dari pasir pembanding standar).')}
+            </div>
+        </div>
+
+        <!-- Disclaimer & Testing Guide Navigation -->
+        <div class="organic-disclaimer-card">
+            <span style="font-size:16px;">ℹ️</span>
+            <div>
+                <div>
+                    ${isEn 
+                        ? '<strong>Visual Calibration Note:</strong> On-screen color swatches are digital visual aids only; official laboratory compliance is governed by physical ASTM C40 Gardner glass color discs or standard potassium dichromate reference solutions.' 
+                        : '<strong>Catatan Kalibrasi Visual:</strong> Swatch warna pada layar monitor merupakan representasi grafis digital; penentuan kelayakan resmi laboratorium tetap mengacu pada piringan kaca standar Gardner fisik (ASTM C40) atau larutan pembanding standar kalium dikromat dalam asam sulfat pekat.'}
+                </div>
+                <div style="margin-top:8px;">
+                    <button class="btn-guide-jump" onclick="switchGuideTopic('fine-aggregate')" style="padding:4px 12px; font-size:11px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:6px;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                        ${isEn ? 'Open Testing Guides (ASTM C40 & NaOH SOP)' : 'Buka Modul Panduan (SOP ASTM C40 & Larutan NaOH)'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Backward compatibility wrapper
+function calcFAOrganic() {
+    updateFAOrganicEvaluation();
 }
 
 
