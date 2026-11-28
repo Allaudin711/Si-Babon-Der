@@ -6624,6 +6624,8 @@ function renderFineAggregateWorkspace(subViewId) {
         renderFAMoistureWorkspace();
     } else if (subViewId === 'fa-silt') {
         renderFASiltWorkspace();
+    } else if (subViewId === 'fa-unit-weight') {
+        renderFAUnitWeightWorkspace();
     } else if (subViewId === 'fa-sieve') {
         canvasView.innerHTML = `
             <div class="module-workspace-container">
@@ -8515,72 +8517,7 @@ function renderFAGenericView(subViewId) {
     let code = "SNI 1970";
     let desc = "";
 
-    if (subViewId === 'fa-unit-weight') {
-        title = "BOBOT ISI DAN RONGGA UDARA DALAM AGREGAT HALUS";
-        code = "SNI 03-4804-1998 / ASTM C29";
-        desc = "Penentuan berat volume gembur dan padat (rodding) serta persentase rongga udara antar-butir pasir.";
-        canvasView.innerHTML = `
-            <div class="module-workspace-container">
-                <div class="module-header-banner">
-                    <div>
-                        <div class="module-header-title">
-                            <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg></span>
-                            ${title}
-                        </div>
-                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">${desc}</div>
-                    </div>
-                    <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> ${code}</span>
-                </div>
-                <div class="testing-calc-grid">
-                    <div class="testing-calc-card">
-                        <div class="testing-calc-header">
-                            <span>PARAMETER BEJANA UKUR KALIBRASI</span>
-                            <span class="telemetry-chip live-chip"><span class="dot-live"></span>LAB INPUT</span>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Volume Bejana Ukur (V)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-uw-vol" value="5.0" step="0.1" oninput="calcFAUnitWeight()">
-                                <span class="testing-input-unit">Liter</span>
-                            </div>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Bejana Kosong (Wb)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-uw-wempty" value="2.5" step="0.1" oninput="calcFAUnitWeight()">
-                                <span class="testing-input-unit">kg</span>
-                            </div>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Bejana + Pasir Padat / Rodding (Wp)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-uw-wfull" value="10.8" step="0.1" oninput="calcFAUnitWeight()">
-                                <span class="testing-input-unit">kg</span>
-                            </div>
-                        </div>
-                        <div class="testing-input-group">
-                            <label>Berat Jenis SSD Pasir (Gssd)</label>
-                            <div class="testing-input-row">
-                                <input type="number" id="fa-uw-gssd" value="2.60" step="0.01" oninput="calcFAUnitWeight()">
-                                <span class="testing-input-unit">gr/cm&sup3;</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="testing-calc-card">
-                        <div class="testing-calc-header">
-                            <span>HASIL BOBOT ISI &amp; RONGGA UDARA</span>
-                            <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED</span>
-                        </div>
-                        <div class="testing-result-box" id="fa-uw-result-box"></div>
-                        <div style="font-size: 11px; color: var(--text-muted); line-height: 1.45;">
-                            *Standar SNI 03-4804: Bobot isi padat pasir umumnya berkisar antara 1400 - 1750 kg/m&sup3;.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        calcFAUnitWeight();
-    } else if (subViewId === 'fa-organic') {
+    if (subViewId === 'fa-organic') {
         title = "UJI KANDUNGAN ZAT ORGANIK (METODE NaOH 3%)";
         code = "SNI 03-2816-1992 / ASTM C40";
         desc = "Identifikasi kandungan senyawa organik asam berbahaya menggunakan larutan NaOH dan pembanding warna standar Gardner.";
@@ -8640,39 +8577,461 @@ function renderFAGenericView(subViewId) {
 }
 
 
+/* ==========================================================================
+   DYNAMIC MULTI-SAMPLE BULK DENSITY & VOID CONTENT (ASTM C29 / SNI 03-4804)
+   ========================================================================== */
+const DEFAULT_FA_UNIT_WEIGHT_SAMPLES = [
+    { name: 'Sampel I', vah: 0.0050, aah: 2.50, bah: 10.85, cah: 10.15, swah: 2.01, sah: 2.66, wah: 998.0 },
+    { name: 'Sampel II', vah: 0.0050, aah: 2.50, bah: 10.80, cah: 10.10, swah: 2.01, sah: 2.66, wah: 998.0 }
+];
+
+let faUnitWeightSamples = JSON.parse(JSON.stringify(DEFAULT_FA_UNIT_WEIGHT_SAMPLES));
+
+function addFAUnitWeightSample() {
+    if (faUnitWeightSamples.length >= 6) {
+        if (typeof showToast === 'function') showToast(currentLang === 'EN' ? 'Maximum 6 samples allowed' : 'Jumlah sampel maksimum adalah 6', 'warning');
+        return;
+    }
+    const idx = faUnitWeightSamples.length + 1;
+    const lastSample = faUnitWeightSamples[faUnitWeightSamples.length - 1];
+    faUnitWeightSamples.push({
+        name: currentLang === 'EN' ? `Sample ${getRomanNumeral(idx)}` : `Sampel ${getRomanNumeral(idx)}`,
+        vah: lastSample ? lastSample.vah : 0.0050,
+        aah: lastSample ? lastSample.aah : 2.50,
+        bah: lastSample ? Number((lastSample.bah - 0.05).toFixed(2)) : 10.80,
+        cah: lastSample ? Number((lastSample.cah - 0.05).toFixed(2)) : 10.10,
+        swah: lastSample ? lastSample.swah : 2.01,
+        sah: lastSample ? lastSample.sah : 2.66,
+        wah: lastSample ? lastSample.wah : 998.0
+    });
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFAUnitWeightWorkspace();
+    if (typeof showToast === 'function') showToast(currentLang === 'EN' ? `Sample ${getRomanNumeral(idx)} added` : `Sampel ${getRomanNumeral(idx)} berhasil ditambahkan`, 'success');
+}
+
+function removeFAUnitWeightSample() {
+    if (faUnitWeightSamples.length <= 1) {
+        if (typeof showToast === 'function') showToast(currentLang === 'EN' ? 'Minimum 1 sample required' : 'Minimal harus ada 1 sampel pengujian', 'warning');
+        return;
+    }
+    const removed = faUnitWeightSamples.pop();
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFAUnitWeightWorkspace();
+    if (typeof showToast === 'function') showToast(currentLang === 'EN' ? `${removed.name} removed` : `${removed.name} dihapus`, 'info');
+}
+
+function resetFAUnitWeightDefaults() {
+    faUnitWeightSamples = JSON.parse(JSON.stringify(DEFAULT_FA_UNIT_WEIGHT_SAMPLES));
+    if (typeof playSynthSound === 'function') playSynthSound('click');
+    renderFAUnitWeightWorkspace();
+    if (typeof showToast === 'function') showToast(currentLang === 'EN' ? 'Reset to default Duplo samples (ASTM C29)' : 'Parameter sampel di-reset ke standar Duplo (ASTM C29)', 'info');
+}
+
+function updateFAUnitWeightSampleValue(sampleIdx, paramKey, val) {
+    const parsed = parseFloat(val);
+    if (!isNaN(parsed) && faUnitWeightSamples[sampleIdx]) {
+        faUnitWeightSamples[sampleIdx][paramKey] = parsed;
+        const rowMap = { vah: 0, aah: 1, bah: 2, cah: 3, swah: 4, sah: 5, wah: 6 };
+        const rowIdx = rowMap[paramKey];
+        if (rowIdx !== undefined) {
+            const rowInputs = document.querySelectorAll('#fa-uw-input-tbody tr');
+            if (rowInputs[rowIdx]) {
+                const inp = rowInputs[rowIdx].querySelectorAll('input')[sampleIdx];
+                if (inp && parseFloat(inp.value) !== parsed) {
+                    inp.value = parsed;
+                }
+            }
+        }
+    }
+    calcFAUnitWeight();
+}
+
+function renderFAUnitWeightWorkspace() {
+    if (!canvasView) return;
+    canvasView.classList.add('scroll-mode');
+
+    const isEn = (currentLang === 'EN');
+    const n = faUnitWeightSamples.length;
+    const isDuplo = (n === 2);
+
+    let sampleHeadersHTML = '';
+    faUnitWeightSamples.forEach((s, idx) => {
+        const sName = isEn ? `Sample ${getRomanNumeral(idx + 1)}` : (s.name || `Sampel ${getRomanNumeral(idx + 1)}`);
+        sampleHeadersHTML += `<th class="fa-sample-col-header">${sName}</th>`;
+    });
+
+    const inputRowsDef = [
+        {
+            no: 1,
+            label: isEn ? 'Cylinder Measure Volume (VAH)' : 'Volume Lubang Silinder Bejana Ukur (VAH)',
+            symbol: 'VAH',
+            unit: 'm³',
+            key: 'vah',
+            step: '0.0001'
+        },
+        {
+            no: 2,
+            label: isEn ? 'Empty Cylinder Measure Mass (AAH)' : 'Berat Silinder Kosong (AAH)',
+            symbol: 'AAH',
+            unit: 'kg',
+            key: 'aah',
+            step: '0.01'
+        },
+        {
+            no: 3,
+            label: isEn ? 'Compacted Dry Sand + Cylinder Mass (BAH)' : 'Berat Pasir Padat Kering + Silinder (BAH)',
+            symbol: 'BAH',
+            unit: 'kg',
+            key: 'bah',
+            step: '0.01'
+        },
+        {
+            no: 4,
+            label: isEn ? 'Loose Dry Sand + Cylinder Mass (CAH)' : 'Berat Pasir Gembur Kering + Silinder (CAH)',
+            symbol: 'CAH',
+            unit: 'kg',
+            key: 'cah',
+            step: '0.01'
+        },
+        {
+            no: 5,
+            label: isEn ? 'Water Absorption of Fine Aggregate (SWAH)' : 'Serapan Air Agregat Halus (SWAH)',
+            symbol: 'SWAH',
+            unit: '%',
+            key: 'swah',
+            step: '0.01'
+        },
+        {
+            no: 6,
+            label: isEn ? 'SSD Specific Gravity (SAH / Ss)' : 'Berat Jenis SSD Agregat Halus (SAH / Ss)',
+            symbol: 'SAH (Ss)',
+            unit: '-',
+            key: 'sah',
+            step: '0.01'
+        },
+        {
+            no: 7,
+            label: isEn ? 'Water Density at Test Temperature (WAH)' : 'Kerapatan / Densitas Air Suhu Uji (WAH)',
+            symbol: 'WAH',
+            unit: 'kg/m³',
+            key: 'wah',
+            step: '1.0'
+        }
+    ];
+
+    let inputRowsHTML = '';
+    inputRowsDef.forEach(r => {
+        let cellsHTML = '';
+        faUnitWeightSamples.forEach((s, sIdx) => {
+            const val = s[r.key] !== undefined ? s[r.key] : 0;
+            let legacyId = '';
+            if (sIdx === 0) {
+                if (r.key === 'aah') legacyId = 'id="fa-uw-wempty"';
+                else if (r.key === 'bah') legacyId = 'id="fa-uw-wfull"';
+                else if (r.key === 'sah') legacyId = 'id="fa-uw-gssd"';
+            }
+            cellsHTML += `
+                <td class="fa-sample-cell">
+                    <input type="number" class="fa-sample-input" ${legacyId} value="${val}" step="${r.step}" oninput="updateFAUnitWeightSampleValue(${sIdx}, '${r.key}', this.value)">
+                </td>
+            `;
+        });
+
+        inputRowsHTML += `
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">${r.no}</td>
+                <td style="font-weight:600;">${r.label}</td>
+                <td style="text-align:center;"><span class="formula-code">${r.symbol}</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">${r.unit}</td>
+                ${cellsHTML}
+            </tr>
+        `;
+    });
+
+    canvasView.innerHTML = `
+        <div class="module-workspace-container">
+            <div class="module-header-banner">
+                <div>
+                    <div class="module-header-title">
+                        <span style="color:#f59e0b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg></span>
+                        ${isEn ? 'FINE AGGREGATE BULK DENSITY & VOID CONTENT TEST' : 'UJI BOBOT ISI &amp; RONGGA UDARA AGREGAT HALUS'}
+                    </div>
+                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                        ${isEn 
+                            ? 'Compacted and loose bulk density, SSD unit weight, and inter-particle air void content per ASTM C29 / SNI 03-4804-1998.' 
+                            : 'Penentuan bobot isi padat (rodding), bobot isi gembur, berat isi SSD, dan persentase rongga udara antar-butir pasir.'}
+                    </div>
+                </div>
+                <span class="module-header-code" onclick="switchGuideTopic('fine-aggregate')" title="Buka Standar di Modul Panduan"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg> ASTM C29 / SNI 03-4804-1998</span>
+            </div>
+
+            <!-- Dynamic Sample Controller Toolbar -->
+            <div class="sample-controller-toolbar">
+                <div class="sample-count-badge">
+                    <span>${isEn ? 'TEST SAMPLES:' : 'JUMLAH SAMPEL PENGUJIAN:'}</span>
+                    <span class="sample-count-pill" id="fa-uw-sample-count-pill">
+                        ${n} ${isEn ? 'SAMPLES' : 'SAMPEL'} ${isDuplo ? '(DUPLO)' : ''}
+                    </span>
+                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
+                        ${isDuplo ? (isEn ? '• Standard Duplo ASTM C29' : '• Standar Uji Duplo SNI 03-4804-1998 / ASTM C29') : ''}
+                    </span>
+                </div>
+                <div class="sample-actions-group">
+                    <button class="btn-sample-action btn-add-sample" onclick="addFAUnitWeightSample()" ${n >= 6 ? 'disabled' : ''} title="Tambah Kolom Sampel">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        ${isEn ? 'Add Sample' : 'Tambah Sampel'}
+                    </button>
+                    <button class="btn-sample-action btn-remove-sample" onclick="removeFAUnitWeightSample()" ${n <= 1 ? 'disabled' : ''} title="Kurangi Kolom Sampel">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        ${isEn ? 'Remove Sample' : 'Kurangi Sampel'}
+                    </button>
+                    <button class="btn-sample-action btn-reset-sample" onclick="resetFAUnitWeightDefaults()" title="Kembali ke Standar Duplo">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                        ${isEn ? 'Reset Default' : 'Reset Standar'}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table 1: Lab Data Input Grid -->
+            <div class="testing-calc-card" style="width: 100%;">
+                <div class="testing-calc-header">
+                    <span>${isEn ? 'TABLE 1: LABORATORY RAW MEASUREMENT DATA' : 'TABEL 1: DATA PENGUKURAN LABORATORIUM (RAW LAB MEASUREMENTS)'}</span>
+                    <span class="telemetry-chip live-chip"><span class="dot-live"></span>CYLINDER MEASURE</span>
+                </div>
+                <div class="fa-table-scroll-wrap">
+                    <table class="fa-report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">No</th>
+                                <th>${isEn ? 'Measurement Parameter' : 'Parameter Pengukuran Benda Uji'}</th>
+                                <th style="text-align: center;">${isEn ? 'Lab Symbol' : 'Notasi Lab'}</th>
+                                <th style="text-align: center;">${isEn ? 'Unit' : 'Satuan'}</th>
+                                ${sampleHeadersHTML}
+                            </tr>
+                        </thead>
+                        <tbody id="fa-uw-input-tbody">
+                            ${inputRowsHTML}
+                        </tbody>
+                    </table>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                    ${isEn 
+                        ? '*Cylinder calibrated volume is 0.0050 m³ (5 L). Rodding performed with 25 strokes per layer in 3 layers per ASTM C29.' 
+                        : '*Volume bejana ukur kalibrasi 0.0050 m³ (5 Liter). Pemadatan rodding dilakukan 25 kali tumbukan per lapis dalam 3 lapis sesuai SNI 03-4804.'}
+                </div>
+            </div>
+
+            <!-- Table 2: Intermediate & Output Calculation Grid -->
+            <div class="testing-calc-card" style="width: 100%; margin-top: 14px;">
+                <div class="testing-calc-header">
+                    <span>${isEn ? 'TABLE 2: BULK DENSITY & AIR VOID CALCULATION RESULTS' : 'TABEL 2: HASIL PERHITUNGAN BOBOT ISI &amp; RONGGA UDARA'}</span>
+                    <span class="telemetry-chip" style="color:var(--accent-emerald);">AUTOMATED REAL-TIME</span>
+                </div>
+                <div class="fa-table-scroll-wrap">
+                    <table class="fa-report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px; text-align: center;">No</th>
+                                <th>${isEn ? 'Calculation Parameter' : 'Parameter Hasil Perhitungan'}</th>
+                                <th>${isEn ? 'Formula / Calculation Notation' : 'Notasi &amp; Rumus Perhitungan'}</th>
+                                <th style="text-align: center;">${isEn ? 'Unit' : 'Satuan'}</th>
+                                ${sampleHeadersHTML}
+                                <th class="fa-avg-col-header">${isEn ? 'AVERAGE' : 'RATA-RATA'}</th>
+                                <th style="text-align: center;">${isEn ? 'ASTM C29 / SNI Threshold' : 'Batas Syarat SNI / ASTM'}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fa-uw-output-tbody">
+                            <!-- Populated dynamically via calcFAUnitWeight -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="fa-uw-summary-metrics">
+                    <!-- Populated dynamically via calcFAUnitWeight -->
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Trigger initial calculations
+    calcFAUnitWeight();
+}
+
 function calcFAUnitWeight() {
-    let volL = parseFloat(document.getElementById('fa-uw-vol')?.value) || 5.0;
-    let wb = parseFloat(document.getElementById('fa-uw-wempty')?.value) || 2.5;
-    let wp = parseFloat(document.getElementById('fa-uw-wfull')?.value) || 10.8;
-    let gssd = parseFloat(document.getElementById('fa-uw-gssd')?.value) || 2.60;
+    const isEn = (currentLang === 'EN');
+    const n = faUnitWeightSamples.length;
+    if (n === 0) return;
 
-    let netWeight = Math.max(0, wp - wb);
-    let volM3 = volL / 1000.0;
-    let unitWeight = volM3 > 0 ? (netWeight / volM3).toFixed(1) : '0.0';
-    let voidsPct = gssd > 0 ? ((1 - (parseFloat(unitWeight) / (gssd * 1000))) * 100).toFixed(2) : '0.00';
+    const sampleResults = faUnitWeightSamples.map(s => {
+        const vah = Number(s.vah) || 0.0050;
+        const aah = Number(s.aah) || 0;
+        const bah = Number(s.bah) || 0;
+        const cah = Number(s.cah) || 0;
+        const swah = Number(s.swah) || 0;
+        const sah = Number(s.sah) || 0;
+        const wah = Number(s.wah) || 998.0;
 
-    let resBox = document.getElementById('fa-uw-result-box');
+        const mah = vah > 0 ? ((bah - aah) / vah) : 0; // Compacted density (kg/m3)
+        const mgembur = vah > 0 ? ((cah - aah) / vah) : 0; // Loose density (kg/m3)
+        const mssd = mah * (1 + (swah / 100)); // SSD density (kg/m3)
+        const theoDensity = sah * wah;
+        const voids = theoDensity > 0 ? (((theoDensity - mah) / theoDensity) * 100) : 0; // Air voids (%)
+
+        return { vah, aah, bah, cah, swah, sah, wah, mah, mgembur, mssd, voids };
+    });
+
+    const avgMah = sampleResults.reduce((acc, c) => acc + c.mah, 0) / n;
+    const avgMgembur = sampleResults.reduce((acc, c) => acc + c.mgembur, 0) / n;
+    const avgMssd = sampleResults.reduce((acc, c) => acc + c.mssd, 0) / n;
+    const avgVoids = sampleResults.reduce((acc, c) => acc + c.voids, 0) / n;
+
+    // ASTM C29 / SNI 03-4804-1998 Specification checks:
+    // Bulk density range: 1200 - 1800 kg/m3
+    // Void content range: 30% - 45%
+    const isMahPass = (avgMah >= 1200.0 && avgMah <= 1800.0);
+    const isMgemburPass = (avgMgembur >= 1200.0 && avgMgembur <= 1800.0);
+    const isVoidsPass = (avgVoids >= 30.0 && avgVoids <= 45.0);
+    const isOverallPass = (isMahPass && isMgemburPass && isVoidsPass);
+
+    const tbody = document.getElementById('fa-uw-output-tbody');
+    if (tbody) {
+        let r1Cells = '', r2Cells = '', r3Cells = '', r4Cells = '';
+        sampleResults.forEach(r => {
+            const rMahPass = (r.mah >= 1200.0 && r.mah <= 1800.0);
+            r1Cells += `<td class="fa-sample-cell fa-val-mono ${rMahPass ? 'status-pass' : 'status-fail'}">${r.mah.toFixed(2)}</td>`;
+            const rMgemburPass = (r.mgembur >= 1200.0 && r.mgembur <= 1800.0);
+            r2Cells += `<td class="fa-sample-cell fa-val-mono ${rMgemburPass ? 'status-pass' : 'status-fail'}">${r.mgembur.toFixed(2)}</td>`;
+            r3Cells += `<td class="fa-sample-cell fa-val-mono">${r.mssd.toFixed(2)}</td>`;
+            const rVoidsPass = (r.voids >= 30.0 && r.voids <= 45.0);
+            r4Cells += `<td class="fa-sample-cell fa-val-mono ${rVoidsPass ? 'status-pass' : 'status-fail'}">${r.voids.toFixed(2)}%</td>`;
+        });
+
+        tbody.innerHTML = `
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">1</td>
+                <td style="font-weight:600;">${isEn ? 'Compacted Bulk Density (MAH)' : 'Berat Isi Padat / Density (MAH)'}</td>
+                <td><span class="formula-code">(BAH - AAH) / VAH</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">kg/m³</td>
+                ${r1Cells}
+                <td class="fa-avg-col-cell ${isMahPass ? 'status-pass' : 'status-fail'}">${avgMah.toFixed(2)}</td>
+                <td style="text-align:center; font-weight:700; color:var(--text-secondary);">1200 - 1800 kg/m³</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">2</td>
+                <td style="font-weight:600;">${isEn ? 'Loose Bulk Density (MgemburAH)' : 'Berat Isi Gembur / Loose Density (MgemburAH)'}</td>
+                <td><span class="formula-code">(CAH - AAH) / VAH</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">kg/m³</td>
+                ${r2Cells}
+                <td class="fa-avg-col-cell ${isMgemburPass ? 'status-pass' : 'status-fail'}">${avgMgembur.toFixed(2)}</td>
+                <td style="text-align:center; font-weight:700; color:var(--text-secondary);">1200 - 1800 kg/m³</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">3</td>
+                <td style="font-weight:600;">${isEn ? 'SSD Bulk Density (MSSDAH)' : 'Berat Isi Kondisi SSD (MSSDAH)'}</td>
+                <td><span class="formula-code">MAH &times; (1 + (SWAH / 100))</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">kg/m³</td>
+                ${r3Cells}
+                <td class="fa-avg-col-cell">${avgMssd.toFixed(2)}</td>
+                <td style="text-align:center; color:var(--text-secondary);">${isEn ? 'Operational Range' : 'Kondisi SSD Pasir'}</td>
+            </tr>
+            <tr>
+                <td style="text-align:center; font-weight:700; color:var(--text-muted);">4</td>
+                <td style="font-weight:600;">${isEn ? 'Air Voids Content (%)' : 'Persentase Rongga Udara (Air Voids %)'}</td>
+                <td><span class="formula-code">(((SAH &times; WAH) - MAH) / (SAH &times; WAH)) &times; 100%</span></td>
+                <td style="text-align:center; font-family:var(--font-mono); color:var(--chapter-accent, #f59e0b);">%</td>
+                ${r4Cells}
+                <td class="fa-avg-col-cell ${isVoidsPass ? 'status-pass' : 'status-fail'}">${avgVoids.toFixed(2)}%</td>
+                <td style="text-align:center; font-weight:700; color:var(--accent-emerald);">30.00% - 45.00%</td>
+            </tr>
+        `;
+    }
+
+    const summaryContainer = document.getElementById('fa-uw-summary-metrics');
+    if (summaryContainer) {
+        summaryContainer.innerHTML = `
+            <div class="fa-summary-metrics-grid">
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Compacted Bulk Density (MAH)' : 'Bobot Isi Padat (MAH)'}</span>
+                    <span class="metric-val ${isMahPass ? 'status-pass' : 'status-fail'}">${avgMah.toFixed(2)} <span style="font-size:12px; font-weight:600; color:var(--text-muted);">kg/m³</span></span>
+                    <span class="metric-sub ${isMahPass ? 'status-pass' : 'status-fail'}">
+                        ${isMahPass ? (isEn ? '✓ Pass (1200 - 1800 kg/m³)' : '✓ Memenuhi (1200 - 1800 kg/m³)') : (isEn ? '✗ Outside Range' : '✗ Di Luar Standar')}
+                    </span>
+                </div>
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Loose Bulk Density (Mgembur)' : 'Bobot Isi Gembur (Mgembur)'}</span>
+                    <span class="metric-val ${isMgemburPass ? 'status-pass' : 'status-fail'}">${avgMgembur.toFixed(2)} <span style="font-size:12px; font-weight:600; color:var(--text-muted);">kg/m³</span></span>
+                    <span class="metric-sub ${isMgemburPass ? 'status-pass' : 'status-fail'}">
+                        ${isMgemburPass ? (isEn ? '✓ Pass (1200 - 1800 kg/m³)' : '✓ Memenuhi (1200 - 1800 kg/m³)') : (isEn ? '✗ Outside Range' : '✗ Di Luar Standar')}
+                    </span>
+                </div>
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'SSD Bulk Density (MSSDAH)' : 'Bobot Isi SSD (Mssd)'}</span>
+                    <span class="metric-val" style="color:var(--chapter-accent, #f59e0b);">${avgMssd.toFixed(2)} <span style="font-size:12px; font-weight:600; color:var(--text-muted);">kg/m³</span></span>
+                    <span class="metric-sub" style="color:var(--text-secondary);">
+                        ${isEn ? 'Saturated Surface-Dry Mass' : 'Kondisi Jenuh Kering Permukaan'}
+                    </span>
+                </div>
+                <div class="fa-metric-box">
+                    <span class="metric-title">${isEn ? 'Air Void Content (%)' : 'Rongga Udara Pasir (%)'}</span>
+                    <span class="metric-val ${isVoidsPass ? 'status-pass' : 'status-fail'}">${avgVoids.toFixed(2)}%</span>
+                    <span class="metric-sub ${isVoidsPass ? 'status-pass' : 'status-fail'}">
+                        ${isVoidsPass ? (isEn ? '✓ Normal (30% - 45%)' : '✓ Normal (30% - 45%)') : (isEn ? '✗ Outside Normal Range' : '✗ Di Luar Rentang Normal')}
+                    </span>
+                </div>
+            </div>
+
+            <!-- ASTM C29 / SNI 03-4804-1998 Compliance Banner -->
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:12px 16px; background:${isOverallPass ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border:1px solid ${isOverallPass ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}; border-radius:8px; margin-top:14px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:18px;">${isOverallPass ? '✓' : '⚠️'}</span>
+                    <div>
+                        <div style="color:${isOverallPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'}; font-weight:800; font-size:12.5px;">
+                            ${isOverallPass 
+                                ? (isEn ? 'STATUS: MEETS ASTM C29 / SNI 03-4804-1998 SPECIFICATIONS' : 'STATUS: MEMENUHI SYARAT (ASTM C29 / SNI 03-4804-1998)') 
+                                : (isEn ? 'STATUS: DEVIATES FROM ASTM C29 / SNI 03-4804 SPECIFICATIONS' : 'STATUS: TIDAK MEMENUHI SYARAT (DI LUAR AMBANG BATAS)')}
+                        </div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+                            ${isOverallPass 
+                                ? (isEn 
+                                    ? `Compacted density (${avgMah.toFixed(2)} kg/m³) and air voids (${avgVoids.toFixed(2)}%) satisfy concrete volumetric mix design criteria.` 
+                                    : `Nilai bobot isi padat (${avgMah.toFixed(2)} kg/m³) dan rongga udara (${avgVoids.toFixed(2)}%) memenuhi kriteria proporsi campuran beton struktural.`)
+                                : (isEn 
+                                    ? 'Bulk density or void ratio falls outside standard allowable limits; recheck aggregate grading and packing efficiency.' 
+                                    : 'Bobot isi atau persentase rongga udara berada di luar rentang normal; periksa kembali gradasi dan kepadatan susunan butir agregat.')}
+                        </div>
+                    </div>
+                </div>
+                <div class="telemetry-chip ${isOverallPass ? 'live-chip' : ''}" style="color:${isOverallPass ? 'var(--accent-emerald)' : 'var(--accent-crimson)'};">
+                    ${isOverallPass ? 'ASTM C29 COMPLIANT' : 'OUT OF SPECIFICATION'}
+                </div>
+            </div>
+        `;
+    }
+
+    // Keep legacy fa-uw-result-box updated if present
+    const resBox = document.getElementById('fa-uw-result-box');
     if (resBox) {
         resBox.innerHTML = `
             <div class="result-row">
-                <span class="result-label">Berat Bersih Pasir (Wp - Wb):</span>
-                <span class="result-val">${netWeight.toFixed(2)} kg</span>
+                <span class="result-label">Berat Bersih Pasir (BAH - AAH):</span>
+                <span class="result-val">${(sampleResults[0].bah - sampleResults[0].aah).toFixed(2)} kg</span>
             </div>
             <div class="result-row">
                 <span class="result-label">Bobot Isi Padat (Unit Weight):</span>
-                <span class="result-val status-pass" style="font-size:14px; font-weight:800;">${unitWeight} kg/m&sup3;</span>
+                <span class="result-val ${isMahPass ? 'status-pass' : 'status-fail'}" style="font-size:14px; font-weight:800;">${avgMah.toFixed(2)} kg/m³</span>
             </div>
             <div class="result-row">
                 <span class="result-label">Persentase Rongga Udara (Voids):</span>
-                <span class="result-val" style="color:var(--cyan-neon); font-weight:700;">${voidsPct}%</span>
+                <span class="result-val" style="color:var(--chapter-accent, #f59e0b); font-weight:700;">${avgVoids.toFixed(2)}%</span>
             </div>
             <div class="result-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border-dim);">
                 <span class="result-label">Evaluasi SNI 03-4804:</span>
-                <span class="result-val status-pass">✓ BOBOT ISI NORMAL UNTUK CAMPURAN BETON</span>
+                <span class="result-val ${isOverallPass ? 'status-pass' : 'status-fail'}">${isOverallPass ? '✓ MEMENUHI SYARAT (1200 - 1800 kg/m³)' : '✗ DI LUAR STANDAR'}</span>
             </div>
         `;
     }
 }
+
 
 function calcFAOrganic() {
     let plate = parseInt(document.getElementById('fa-org-plate')?.value) || 2;
